@@ -79,7 +79,7 @@ export const siteConfig: SiteConfig = {
 			alt: "🍀",
 		},
 		// 导航栏标题
-		title: "Firefly",
+		title: "YSDY",
 		// 全宽导航栏，导航栏是否占满屏幕宽度
 		widthFull: false,
 		// 导航菜单对齐方式，left：左对齐，center：居中
@@ -118,11 +118,11 @@ export const siteConfig: SiteConfig = {
 	// bangumi配置
 	bangumi: {
 		// Bangumi用户ID
-		userId: "1143164",
+		userId: "1245769",
 		// 条目类型排序，数组中的类型将按顺序优先展示
 		// 可选值: "anime" | "book" | "music" | "game" | "real" (暂不支持"real"类型)
 		// 未列出的类型将按默认顺序排在后面
-		categoryOrder: ["anime", "book", "music", "game"],
+		categoryOrder: ["anime", "music", "game"],
 	},
 
 	// 页面开关配置 - 控制特定页面的访问权限，设为false会返回404
@@ -131,7 +131,7 @@ export const siteConfig: SiteConfig = {
 		// 友链页面开关
 		friends: true,
 		// 赞助页面开关
-		sponsor: true,
+		sponsor: false,
 		// 留言板页面开关，需要配置评论系统
 		guestbook: true,
 		// 番组计划页面开关，含追番、游戏、书籍和音乐，dev调试时只获取一页数据，build才会获取全部数据

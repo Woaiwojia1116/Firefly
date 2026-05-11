@@ -11,7 +11,7 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 	showInNavbar: true,
 
 	// 使用方式："meting" 使用 Meting API，"local" 使用本地音乐列表
-	mode: "meting",
+	mode: "local",
 
 	// 默认音量 (0-1)
 	volume: 0.7,
@@ -20,7 +20,7 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 	playMode: "list",
 
 	// 是否显启用歌词
-	showLyrics: true,
+	showLyrics: false,
 
 	// Meting API 配置
 	meting: {
@@ -50,10 +50,24 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 	local: {
 		playlist: [
 			{
-				name: "使一颗心免于哀伤",
-				artist: "知更鸟 / HOYO-MiX / Chevy",
-				url: "/assets/music/使一颗心免于哀伤-哼唱.mp3",
-				cover: "/assets/music/cover/109951169585655912.webp",
+				name: "潮鸣-折户伸治",
+				artist: "折户伸治",
+				url: "assets/music/潮鸣折户伸治.mp3",
+				cover: "assets/music/cover/thumbbig-808375.webp",
+				lrc: "",
+			},
+			{
+				name: "満ちてゆく",
+				artist: "藤井风",
+				url: "assets/music/満ちてゆく.mp3",
+				cover: "assets/music/cover/c8ea15ce36d3d539b600281115dcfe50352ac75c1a94.webp",
+				lrc: "",
+			},
+			{
+				name: "city of tear",
+				artist: "Hollow Knight",
+				url: "assets/music/city of tear.mp3",
+				cover: "assets/music/cover/kdqs.png",
 				lrc: "",
 			},
 		],
