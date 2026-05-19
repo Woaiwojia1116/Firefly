@@ -3,7 +3,7 @@ title: 第一次vibecoding
 published: 2026-05-09
 pinned: false
 description: vibecoding做出桌宠
-tags: [Markdown, vibecoding]
+tags: [记录, vibecoding]
 category: vibecoding
 draft: false
 image: ./images/miku.jpg
