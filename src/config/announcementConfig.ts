@@ -5,7 +5,7 @@ export const announcementConfig: AnnouncementConfig = {
 	title: "公告",
 
 	// 公告内容
-	content: "生命不息，折腾不止",
+	content: "我们相信科技是可爱且有趣的，而不是总是严肃的，应是能给人们带来快乐的。",
 
 	// 是否允许用户关闭公告
 	closable: true,

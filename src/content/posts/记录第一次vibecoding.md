@@ -1,6 +1,6 @@
 ---
 title: 第一次vibecoding
-published: 2026-05-09
+published: 2026-05-19
 pinned: false
 description: vibecoding做出桌宠
 tags: [记录, vibecoding]
