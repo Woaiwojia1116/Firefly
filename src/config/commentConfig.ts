@@ -10,7 +10,7 @@ export const commentConfig: CommentConfig = {
 		// 设置 Twikoo 评论系统语言
 		lang: "zh-CN",
 		// 是否启用文章访问量统计功能
-		visitorCount: true,
+		visitorCount: false,
 	},
 
 	//waline评论系统配置

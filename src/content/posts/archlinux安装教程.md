@@ -212,7 +212,9 @@ pacstrap -K /mnt base base-devel linux-zen linux-firmware btrfs-progs
 ```
 
 `pacstrap is designed to create a new system installation from scratch. The specified packages will be installed into a given directory after setting up some basic mountpoints. By default, the host system’s pacman signing keys and mirrorlist will be used to seed the chroot.`（摘自ArchWiki）
+
 翻译如下
+
 `pacstrap 旨在从头开始创建一个全新的系统安装。在设置好一些基本的挂载点之后，指定的软件包将会被安装到给定的目录中。默认情况下，主机的 pacman 签名密钥和镜像列表将被用来初始化这个 chroot 环境。`
 
 
