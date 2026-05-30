@@ -39,6 +39,8 @@ enum I18nKey {
 	minutesCount = "minutesCount",
 	postCount = "postCount",
 	postsCount = "postsCount",
+	eventCount = "eventCount",
+	eventsCount = "eventsCount",
 
 	// Music Widget
 	musicNoPlaying = "musicNoPlaying",
@@ -294,6 +296,9 @@ enum I18nKey {
 	galleryAlbums = "galleryAlbums",
 	galleryNoAlbums = "galleryNoAlbums",
 	galleryBackToAlbums = "galleryBackToAlbums",
+
+	// 时间轴页面
+	timeline = "timeline",
 
 	// 密码保护
 	passwordProtected = "passwordProtected",

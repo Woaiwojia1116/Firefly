@@ -47,6 +47,9 @@ const navbarWidthFull = siteConfig.navbar.widthFull ?? false;
 const navbarMenuAlign = siteConfig.navbar.menuAlign ?? "center";
 const isNavbarMenuCentered = navbarMenuAlign === "center";
 
+// 获取导航栏自动隐藏配置
+const autoHide = siteConfig.navbar.autoHide;
+
 // 检查是否为首页
 const isHomePageCheck = isHomePage(Astro.url.pathname);
 
@@ -89,13 +92,13 @@ if (isLocalSrcLogo) {
 	}
 }
 ---
-<div id="navbar" class="z-50" style={`--navbar-glass-blur: ${navbarBlur}px;`} data-transparent-mode={navbarTransparentMode} data-enable-blur={String(navbarEnableBlur)} data-is-home={isHomePageCheck} data-full-width={navbarWidthFull}>
+<div id="navbar" class="z-50" style={`--navbar-glass-blur: ${navbarBlur}px;`} data-transparent-mode={navbarTransparentMode} data-enable-blur={String(navbarEnableBlur)} data-is-home={isHomePageCheck} data-full-width={navbarWidthFull} data-auto-hide={autoHide ? JSON.stringify(autoHide) : ''}>
     <div class:list={[
         className,
         "overflow-visible! h-18 px-4"
     ]}>
         <div class="mx-auto h-full w-full max-w-(--page-width) grid grid-cols-[auto_minmax(0,1fr)_auto] items-center">
-            <a href={url('/')} class="btn-plain scale-animation rounded-lg h-13 px-5 font-bold active:scale-95">
+            <a href={url('/')} class="navbar-item btn-plain scale-animation rounded-lg h-13 px-5 font-bold active:scale-95">
                 <div class:list={[
                     "flex flex-row items-center text-md",
                     siteConfig.navbar.followTheme ? "text-(--primary)" : "dark:text-white text-black"
@@ -124,7 +127,7 @@ if (isLocalSrcLogo) {
                 </div>
             </a>
             <div class:list={[
-                "hidden lg:flex items-center space-x-1 col-start-2",
+                "navbar-item hidden lg:flex items-center space-x-1 col-start-2",
                 isNavbarMenuCentered
                     ? "justify-center"
                     : "justify-start pl-2"
@@ -133,7 +136,7 @@ if (isLocalSrcLogo) {
                     return <DropdownMenu link={l} />;
                 })}
             </div>
-            <div class="flex col-start-3 justify-self-end">
+            <div class="navbar-item flex col-start-3 justify-self-end">
                 <!--<SearchPanel client:load>-->
                 <Search
                     client:load
@@ -294,6 +297,205 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initSemifullScrollDetection);
 } else {
     initSemifullScrollDetection();
+}
+
+// ===== 导航栏自动隐藏 =====
+function initAutoHide() {
+    const navbar = document.getElementById('navbar');
+    if (!navbar) return;
+
+    // 从 data 属性读取配置
+    const rawConfig = navbar.getAttribute('data-auto-hide');
+    if (!rawConfig) return;
+
+    let autoHideConfig: {
+        enable: boolean;
+        threshold: number;
+        hideOnScrollDown: boolean;
+        showOnScrollUp: boolean;
+        enableHoverZone: boolean;
+        hoverZoneHeight: number;
+    };
+    try {
+        autoHideConfig = JSON.parse(rawConfig);
+    } catch {
+        return;
+    }
+    if (!autoHideConfig || !autoHideConfig.enable) return;
+
+    const {
+        threshold = 100,
+        hideOnScrollDown = true,
+        showOnScrollUp = true,
+        enableHoverZone = true,
+        hoverZoneHeight = 60,
+    } = autoHideConfig;
+
+    let lastScrollY = window.scrollY || window.pageYOffset;
+    let ticking = false;
+    let hoverZone: HTMLDivElement | null = null;
+    let isHidden = false;
+    let animationRafId: number | null = null;
+
+    // 创建顶部悬停区域
+    if (enableHoverZone) {
+        hoverZone = document.createElement('div');
+        hoverZone.id = 'navbar-hover-zone';
+        hoverZone.style.position = 'fixed';
+        hoverZone.style.top = '0';
+        hoverZone.style.left = '0';
+        hoverZone.style.right = '0';
+        hoverZone.style.height = hoverZoneHeight + 'px';
+        hoverZone.style.zIndex = '40';
+        hoverZone.style.pointerEvents = 'auto';
+        document.body.appendChild(hoverZone);
+
+        hoverZone.addEventListener('mouseenter', () => {
+            if (isHidden) {
+                showNavbar();
+            }
+        });
+    }
+
+    // 重播子项滑入动画
+    function replayItemAnimation() {
+        // 取消之前待处理的动画帧，避免重复触发导致闪烁
+        if (animationRafId !== null) {
+            cancelAnimationFrame(animationRafId);
+            animationRafId = null;
+        }
+        // 移除可见状态，瞬间添加重置状态（无过渡）
+        navbar!.classList.remove('navbar-visible');
+        navbar!.classList.add('navbar-animate-reset');
+        // 强制重绘：访问 offsetWidth 触发回流，确保重置状态生效
+        void (navbar as HTMLElement).offsetWidth;
+        // 下一帧：移除重置，添加可见，触发递进过渡
+        animationRafId = requestAnimationFrame(() => {
+            animationRafId = null;
+            navbar!.classList.remove('navbar-animate-reset');
+            navbar!.classList.add('navbar-visible');
+        });
+    }
+
+    // 显示导航栏
+    function showNavbar() {
+        if (!isHidden) return;
+        navbar!.classList.remove('navbar-hidden');
+        isHidden = false;
+        // 导航栏本身通过 CSS transition 滑入，子项单独重播动画
+        replayItemAnimation();
+    }
+
+    // 隐藏导航栏
+    function hideNavbar() {
+        if (isHidden) return;
+        // 隐藏时清理动画状态
+        navbar!.classList.remove('navbar-visible');
+        navbar!.classList.remove('navbar-animate-reset');
+        navbar!.classList.add('navbar-hidden');
+        isHidden = true;
+    }
+
+    // 滚动处理（RAF 节流）
+    function handleScroll() {
+        if (ticking) return;
+        ticking = true;
+
+        requestAnimationFrame(() => {
+            // 跳过页面切换期间的滚动处理
+            if (document.documentElement.classList.contains('is-page-transitioning')) {
+                ticking = false;
+                return;
+            }
+
+            const scrollY = window.scrollY || window.pageYOffset;
+            const delta = scrollY - lastScrollY;
+            const isScrollingDown = delta > 0;
+
+            // 仅在超过阈值时触发隐藏/显示
+            if (scrollY > threshold) {
+                if (hideOnScrollDown && isScrollingDown && !isHidden) {
+                    hideNavbar();
+                } else if (showOnScrollUp && !isScrollingDown && isHidden) {
+                    showNavbar();
+                }
+            } else if (scrollY <= threshold && isHidden) {
+                // 回到阈值以下时显示导航栏
+                showNavbar();
+            }
+
+            lastScrollY = scrollY;
+            ticking = false;
+        });
+    }
+
+    // 根据当前滚动位置初始化状态
+    function initState() {
+        const scrollY = window.scrollY || window.pageYOffset;
+        lastScrollY = scrollY;
+
+        if (scrollY > threshold) {
+            // 页面已滚动：立即隐藏（无动画），同时清理动画类
+            navbar!.classList.remove('navbar-visible');
+            navbar!.classList.remove('navbar-animate-reset');
+            navbar!.classList.add('navbar-hidden');
+            isHidden = true;
+        } else {
+            // 页面在阈值内：显示导航栏，触发子项进场动画
+            navbar!.classList.remove('navbar-hidden');
+            isHidden = false;
+            // 仅在动画尚未播放时触发，避免 swup:enable 等事件导致重复播放
+            if (!navbar!.classList.contains('navbar-visible')) {
+                navbar!.classList.add('navbar-animate-reset');
+                replayItemAnimation();
+            }
+        }
+    }
+
+    // 绑定事件
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    // 初始化状态
+    initState();
+
+    // SPA 切换页面时重新绑定
+    function onSwupEnable() {
+        initState();
+    }
+
+    function onSwupContentReplaced() {
+        const scrollY = window.scrollY || window.pageYOffset;
+        lastScrollY = scrollY;
+
+        if (scrollY <= threshold && isHidden) {
+            showNavbar();
+        }
+    }
+
+    document.addEventListener('swup:enable', onSwupEnable);
+    document.addEventListener('swup:contentReplaced', onSwupContentReplaced);
+
+    // 返回清理函数，挂载到 window 以便外部调用
+    const dispose = () => {
+        window.removeEventListener('scroll', handleScroll);
+        document.removeEventListener('swup:enable', onSwupEnable);
+        document.removeEventListener('swup:contentReplaced', onSwupContentReplaced);
+        if (hoverZone && hoverZone.parentNode) {
+            hoverZone.parentNode.removeChild(hoverZone);
+            hoverZone = null;
+        }
+    };
+
+    window.disposeAutoHide = dispose;
+
+    return dispose;
+}
+
+// 页面加载完成后初始化自动隐藏
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAutoHide);
+} else {
+    initAutoHide();
 }
 </script>
 

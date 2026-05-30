@@ -67,6 +67,8 @@ export const ru: Translation = {
 	[Key.minutesCount]: "минуты",
 	[Key.postCount]: "пост",
 	[Key.postsCount]: "постов",
+	[Key.eventCount]: "событие",
+	[Key.eventsCount]: "событий",
 
 	[Key.themeColor]: "Цвет темы",
 
@@ -308,6 +310,9 @@ export const ru: Translation = {
 	[Key.galleryAlbums]: "альбомов",
 	[Key.galleryNoAlbums]: "Пока нет альбомов",
 	[Key.galleryBackToAlbums]: "Вернуться к альбомам",
+
+	// Хронология
+	[Key.timeline]: "Хронология",
 
 	// Защита паролем
 	[Key.passwordProtected]: "Защищено паролем",

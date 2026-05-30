@@ -300,3 +300,60 @@ body.wallpaper-transparent .float-panel {
         display: none !important;
     }
 }
+
+/* ============================================
+ * 导航栏自动隐藏动画
+ * ============================================ */
+
+/*
+ * 隐藏/显示过渡：
+ * - 显示时（移除 navbar-hidden）：使用基类的弹性过渡 0.35s cubic-bezier
+ * - 隐藏时（添加 navbar-hidden）：使用 .navbar-hidden 的快速过渡 0.25s ease-out
+ */
+#navbar {
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#navbar.navbar-hidden {
+    opacity: 1 !important;
+    transform: translateY(-100%) !important;
+    transition: transform 0.25s ease-out;
+}
+
+/* 子项：默认可见，不做任何 opacity/transform 限制 */
+
+/* 动画前状态：子项瞬间隐藏（无过渡），用于准备重播动画 */
+#navbar.navbar-animate-reset .navbar-item {
+    opacity: 0 !important;
+    transform: translateX(40px) !important;
+    transition: none !important;
+}
+
+/* 子项显示状态：从隐藏滑入，带递进延迟 */
+#navbar.navbar-visible .navbar-item {
+    opacity: 1;
+    transform: translateX(0);
+    transition: opacity 0.35s ease-out, transform 0.35s ease-out;
+}
+
+/* 子项递进延迟：从右向左每项延迟 50ms */
+#navbar.navbar-visible .navbar-item:nth-child(1) { transition-delay: 0ms; }
+#navbar.navbar-visible .navbar-item:nth-child(2) { transition-delay: 50ms; }
+#navbar.navbar-visible .navbar-item:nth-child(3) { transition-delay: 100ms; }
+#navbar.navbar-visible .navbar-item:nth-child(4) { transition-delay: 150ms; }
+#navbar.navbar-visible .navbar-item:nth-child(5) { transition-delay: 200ms; }
+#navbar.navbar-visible .navbar-item:nth-child(6) { transition-delay: 250ms; }
+#navbar.navbar-visible .navbar-item:nth-child(7) { transition-delay: 300ms; }
+#navbar.navbar-visible .navbar-item:nth-child(8) { transition-delay: 350ms; }
+#navbar.navbar-visible .navbar-item:nth-child(9) { transition-delay: 400ms; }
+#navbar.navbar-visible .navbar-item:nth-child(10) { transition-delay: 450ms; }
+
+/* 顶部悬停触发热区 */
+#navbar-hover-zone {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    pointer-events: auto;
+}

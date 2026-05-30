@@ -4,9 +4,9 @@ import { i18n } from "@i18n/translation";
 import { getCategoryUrl } from "@utils/url-utils";
 
 // // Retrieve posts and sort them by publication date
-async function getRawSortedPosts() {
+async function getRawSortedPosts(includeTimelineOnly = false) {
 	const allBlogPosts = await getCollection("posts", ({ data }) => {
-		return import.meta.env.PROD ? data.draft !== true : true;
+		return (import.meta.env.PROD ? data.draft !== true : true) && (includeTimelineOnly || !data.timelineOnly);
 	});
 
 	const sorted = allBlogPosts.sort((a, b) => {
@@ -22,8 +22,8 @@ async function getRawSortedPosts() {
 	return sorted;
 }
 
-export async function getSortedPosts() {
-	const sorted = await getRawSortedPosts();
+export async function getSortedPosts(includeTimelineOnly = false) {
+	const sorted = await getRawSortedPosts(includeTimelineOnly);
 
 	for (let i = 1; i < sorted.length; i++) {
 		sorted[i].data.nextSlug = sorted[i - 1].id;
@@ -40,8 +40,8 @@ export type PostForList = {
 	id: string;
 	data: CollectionEntry<"posts">["data"];
 };
-export async function getSortedPostsList(): Promise<PostForList[]> {
-	const sortedFullPosts = await getRawSortedPosts();
+export async function getSortedPostsList(includeTimelineOnly = false): Promise<PostForList[]> {
+	const sortedFullPosts = await getRawSortedPosts(includeTimelineOnly);
 
 	// delete post.body
 	const sortedPostsList = sortedFullPosts.map((post) => ({
@@ -56,9 +56,13 @@ export type Tag = {
 	count: number;
 };
 
+export async function getPostsForTimeline(): Promise<PostForList[]> {
+	return getSortedPostsList(true);
+}
+
 export async function getTagList(): Promise<Tag[]> {
 	const allBlogPosts = await getCollection<"posts">("posts", ({ data }) => {
-		return import.meta.env.PROD ? data.draft !== true : true;
+		return (import.meta.env.PROD ? data.draft !== true : true) && !data.timelineOnly;
 	});
 
 	const countMap: { [key: string]: number } = {};
@@ -85,7 +89,7 @@ export type Category = {
 
 export async function getCategoryList(): Promise<Category[]> {
 	const allBlogPosts = await getCollection<"posts">("posts", ({ data }) => {
-		return import.meta.env.PROD ? data.draft !== true : true;
+		return (import.meta.env.PROD ? data.draft !== true : true) && !data.timelineOnly;
 	});
 	const count: { [key: string]: number } = {};
 	allBlogPosts.forEach((post: { data: { category: string | null } }) => {
@@ -164,9 +168,9 @@ export async function getRelatedPosts(
 		return import.meta.env.PROD ? data.draft !== true : true;
 	});
 
-	// 排除自身和加密文章
+	// 排除自身、加密文章和 timelineOnly 文章
 	const candidates = allPosts.filter(
-		(p) => p.id !== currentPost.id && !p.data.password,
+		(p) => p.id !== currentPost.id && !p.data.password && !p.data.timelineOnly,
 	);
 
 	const currentTags = new Set(currentPost.data.tags || []);

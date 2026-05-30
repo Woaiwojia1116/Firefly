@@ -355,22 +355,22 @@
   .friends-glass-btn-title {
     font-weight: 600;
     font-size: 0.9rem;
-    color: #fff;
+    color: #1a1a1a;
     line-height: 1.2;
   }
 
-  html.dark .friends-glass-btn-title {
+  :global(html.dark) .friends-glass-btn-title {
     color: #fff;
   }
 
   .friends-glass-btn-sub {
     font-size: 0.7rem;
-    color: rgba(255, 255, 255, 0.75);
+    color: #1a1a1a;
     line-height: 1.2;
   }
 
-  html.dark .friends-glass-btn-sub {
-    color: rgba(255, 255, 255, 0.65);
+  :global(html.dark) .friends-glass-btn-sub {
+    color: #fff;
   }
 
   /* ========== 弹窗遮罩 ========== */

@@ -11,6 +11,9 @@ declare global {
 		live2dModelInitialized?: boolean;
 		spineModelInitialized?: boolean;
 		floatingTOCListenersInitialized?: boolean;
+		semifullScrollHandler?: () => void;
+		initSemifullScrollDetection?: () => void;
+		disposeAutoHide?: () => void;
 		// biome-ignore lint/suspicious/noExplicitAny: External library
 		spinePlayerInstance?: any;
 		pagefind: {

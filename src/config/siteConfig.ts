@@ -57,11 +57,11 @@ export const siteConfig: SiteConfig = {
 	favicon: [
 		{
 			// 图标文件路径
-			src: "/favicon/favicon.ico",
+			src: "/favicon/76336609.webp",
 			// 可选，指定主题 'light' | 'dark'
 			// theme: "light",
 			// 可选，图标大小
-			// sizes: "32x32",
+			sizes: "32x32",
 		},
 	],
 
@@ -88,6 +88,15 @@ export const siteConfig: SiteConfig = {
 		followTheme: false,
 		// 导航栏是否固定在顶部并始终可见
 		stickyNavbar: true,
+		// 导航栏自动隐藏配置
+		autoHide: {
+			enable: true,           // 是否启用自动隐藏
+			threshold: 100,          // 滚动阈值(px)，默认100
+			hideOnScrollDown: true,  // 向下滚动时隐藏
+			showOnScrollUp: true,    // 向上滚动时显示
+			enableHoverZone: true,   // 是否启用顶部悬停区域
+			hoverZoneHeight: 60,     // 悬停区域高度(px)，默认60
+		},
 	},
 
 	// 站点开始日期，用于统计运行天数

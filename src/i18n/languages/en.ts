@@ -67,6 +67,8 @@ export const en: Translation = {
 	[Key.minutesCount]: "minutes",
 	[Key.postCount]: "post",
 	[Key.postsCount]: "posts",
+	[Key.eventCount]: "event",
+	[Key.eventsCount]: "events",
 
 	[Key.themeColor]: "Theme Color",
 
@@ -307,6 +309,9 @@ export const en: Translation = {
 	[Key.galleryAlbums]: "albums",
 	[Key.galleryNoAlbums]: "No albums yet",
 	[Key.galleryBackToAlbums]: "Back to albums",
+
+	// Timeline
+	[Key.timeline]: "Timeline",
 
 	// Password Protection
 	[Key.passwordProtected]: "Password Protected",

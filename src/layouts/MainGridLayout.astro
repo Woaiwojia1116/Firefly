@@ -56,6 +56,9 @@ interface Props {
 		words?: number;
 		minutes?: number;
 	};
+	hideSidebars?: boolean;
+	minimal?: boolean;
+	pageBg?: string;
 }
 
 const backgroundImages = getBackgroundImages();
@@ -70,6 +73,9 @@ const {
 	postCategory,
 	headings = [],
 	bannerPostMeta,
+	hideSidebars = false,
+	minimal = false,
+	pageBg = "",
 } = Astro.props;
 
 // 检查背景壁纸模式和是否允许切换
@@ -217,24 +223,34 @@ const updatedGridConfig: ResponsiveSidebarConfig = {
 	tabletSidebar: effectiveTabletSidebar,
 };
 
-const { gridCols } = generateGridClasses(updatedGridConfig);
-const sidebarClass = generateSidebarClasses(updatedGridConfig);
+const effectiveGridConfig = hideSidebars
+	? {
+			...updatedGridConfig,
+			isBothSidebars: false,
+			hasLeftComponents: false,
+			hasRightComponents: false,
+			mobileShowSidebar: false,
+		}
+	: updatedGridConfig;
+
+const { gridCols } = generateGridClasses(effectiveGridConfig);
+const sidebarClass = generateSidebarClasses(effectiveGridConfig);
 const rightSidebarClass =
-	effectiveIsBothSidebars || sidebarLayoutConfig.position === "right"
-		? generateRightSidebarClasses(updatedGridConfig)
+	!hideSidebars && (effectiveIsBothSidebars || sidebarLayoutConfig.position === "right")
+		? generateRightSidebarClasses(effectiveGridConfig)
 		: "";
-const mainContentClass = generateMainContentClasses(updatedGridConfig);
+const mainContentClass = generateMainContentClasses(effectiveGridConfig);
 const staticBarClass = mainContentClass.replace("transition-main", "").trim();
 
 const footerClass = ["footer", "col-span-1", "onload-animation"];
 
 if (
-	updatedGridConfig.isBothSidebars &&
-	updatedGridConfig.hasLeftComponents &&
-	updatedGridConfig.hasRightComponents
+	effectiveGridConfig.isBothSidebars &&
+	effectiveGridConfig.hasLeftComponents &&
+	effectiveGridConfig.hasRightComponents
 ) {
 	// 双侧栏：Footer 在平板与桌面都跟随内容列
-	if (updatedGridConfig.tabletSidebar === "right") {
+	if (effectiveGridConfig.tabletSidebar === "right") {
 		footerClass.push(
 			"md:col-start-1 md:col-span-1 xl:col-start-2 xl:col-span-1",
 		);
@@ -244,14 +260,14 @@ if (
 		);
 	}
 } else if (
-	updatedGridConfig.hasLeftComponents &&
-	!updatedGridConfig.hasRightComponents
+	effectiveGridConfig.hasLeftComponents &&
+	!effectiveGridConfig.hasRightComponents
 ) {
 	// 仅左侧栏：内容列在第2列
 	footerClass.push("md:col-start-2 md:col-span-1 xl:col-start-2 xl:col-span-1");
 } else if (
-	!updatedGridConfig.hasLeftComponents &&
-	updatedGridConfig.hasRightComponents
+	!effectiveGridConfig.hasLeftComponents &&
+	effectiveGridConfig.hasRightComponents
 ) {
 	// 仅右侧栏：内容列在第1列
 	footerClass.push("md:col-start-1 md:col-span-1 xl:col-start-1 xl:col-span-1");
@@ -311,6 +327,23 @@ const bannerCarouselInterval = Math.max(
     </div>
 </div>
 
+{minimal ? (
+  <>
+    <main
+      id="swup-container"
+      class="transition-main"
+      data-current-post-category={postCategory || ""}
+    >
+      <h1 class="sr-only">{title}</h1>
+      <div id="content-wrapper" class="onload-animation transition-leaving">
+        <slot />
+      </div>
+    </main>
+    <div class="footer col-span-1 onload-animation">
+      <Footer />
+    </div>
+  </>
+) : (
 <!-- Wallpaper - 如果允许切换则始终渲染，否则只渲染当前模式 -->
 {(isWallpaperSwitchable || isBannerMode || isOverlayMode) && (
 <div id="wallpaper-wrapper" class:list={[
@@ -802,7 +835,7 @@ const bannerCarouselInterval = Math.max(
 <!-- Main content -->
 <div class={`absolute w-full z-30 pointer-events-none ${mobileNonHomeBannerClass ? 'mobile-main-no-banner' : ''} ${!(isBannerMode && isBackgroundEnabled) ? 'no-banner-layout' : ''}`} style={`top: ${finalMainPanelTop}`}>
     <!-- The pointer-events-none here prevent blocking the click event of the TOC -->
-    <div class="relative w-full xl:w-[92vw] max-w-(--page-width) mx-auto pointer-events-auto">
+    <div class={`relative w-full pointer-events-auto ${hideSidebars ? '' : 'xl:w-[92vw] max-w-(--page-width) mx-auto'}`}>
         <div id="main-grid"
           class={`transition duration-700 w-full left-0 right-0 grid ${gridCols} grid-rows-[auto_1fr_auto] lg:grid-rows-[auto] mx-auto gap-4 px-2 md:px-4 ${!sidebarConfig.mobileShowSidebar ? 'mobile-no-sidebar' : ''}`}
           data-sidebar-position={sidebarLayoutConfig.position}
@@ -856,7 +889,7 @@ const bannerCarouselInterval = Math.max(
                 如果全局配置为仅右侧栏(position: right)，则使用动态容器(被swup替换)，以便在文章页显示左侧栏。
                 注意：为了满足swup要求所有containers必须存在，我们在所有模式下都必须渲染 #left-sidebar-dynamic。
             */}
-            {sidebarLayoutConfig.position !== "right" ? (
+            {!hideSidebars && sidebarLayoutConfig.position !== "right" ? (
                 <>
                     <div id="left-sidebar-wrapper" class="contents" style="contain: layout style paint;">
                         {effectiveHasLeftComponents && (
@@ -869,13 +902,13 @@ const bannerCarouselInterval = Math.max(
                     </div>
                     <div id="left-sidebar-dynamic" class="hidden transition-swup-fade"></div>
                 </>
-            ) : (
+            ) : !hideSidebars ? (
                 <div id="left-sidebar-dynamic" class="contents transition-swup-fade">
                     {effectiveIsBothSidebars && effectiveHasLeftComponents && (
 						<SideBar side="left" class={sidebarClass} headings={headings}></SideBar>
                     )}
                 </div>
-            )}
+            ) : null}
                     
             {/* 主内容区包装器 - 包含静态栏位和swup容器，作为单个grid item */}
             <div class={staticBarClass}>
@@ -904,7 +937,7 @@ const bannerCarouselInterval = Math.max(
                 注意：为了满足swup要求所有containers必须存在，我们在所有模式下都必须渲染 #right-sidebar-dynamic。
                 右侧边栏的显示由CSS类控制。
             */}
-            {(sidebarLayoutConfig.position === "both" || sidebarLayoutConfig.position === "right") ? (
+            {!hideSidebars && (sidebarLayoutConfig.position === "both" || sidebarLayoutConfig.position === "right") ? (
                 <>
                     <div id="right-sidebar-static" class="contents">
                         {(effectiveIsBothSidebars || sidebarLayoutConfig.position === "right") && effectiveHasRightComponents && (
@@ -913,16 +946,16 @@ const bannerCarouselInterval = Math.max(
                     </div>
                     <div id="right-sidebar-dynamic" class="hidden transition-swup-fade"></div>
                 </>
-            ) : (
+            ) : !hideSidebars ? (
                 <div id="right-sidebar-dynamic" class="contents transition-swup-fade">
                     {effectiveIsBothSidebars && effectiveHasRightComponents && (
 						<SideBar side="right" class={rightSidebarClass} headings={headings}></SideBar>
                     )}
                 </div>
-            )}
+            ) : null}
 
             {/* 移动端底部组件 - 768px及以下显示 */}
-            {sidebarLayoutConfig.mobileBottomComponents && sidebarLayoutConfig.mobileBottomComponents.length > 0 && (
+            {!hideSidebars && sidebarLayoutConfig.mobileBottomComponents && sidebarLayoutConfig.mobileBottomComponents.length > 0 && (
                 <div id="mobile-bottom-sidebar" class="col-span-1 block md:hidden mt-4">
 					<SideBar side="bottom" headings={headings}></SideBar>
                 </div>
@@ -940,7 +973,7 @@ const bannerCarouselInterval = Math.max(
 
 <FloatingControls headings={headings} />
 
-
+)}
 </Layout>
 
 <style is:global>

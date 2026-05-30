@@ -47,7 +47,6 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 			// "assets/images/DesktopWallpaper/d6.avif",
 			"assets/images/DesktopWallpaper/d7.jpg",
 			"assets/images/DesktopWallpaper/d8.jpg",
-			"assets/images/DesktopWallpaper/d9.jpg",
 			"assets/images/DesktopWallpaper/d10.jpg",
 			"assets/images/DesktopWallpaper/d11.png",
 			"assets/images/DesktopWallpaper/d12.png",
@@ -174,4 +173,6 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 		// 卡片透明度，0-1之间，值越小越透明
 		cardOpacity: 0.5,
 	},
+	// 时间轴页面背景图（可选，留空则不显示）
+	timelineBg: "assets/images/DesktopWallpaper/d15.jpg",
 };

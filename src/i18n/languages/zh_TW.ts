@@ -65,6 +65,8 @@ export const zh_TW: Translation = {
 	[Key.minutesCount]: "分鐘",
 	[Key.postCount]: "篇文章",
 	[Key.postsCount]: "篇文章",
+	[Key.eventCount]: "個事件",
+	[Key.eventsCount]: "個事件",
 
 	[Key.themeColor]: "主題色相",
 
@@ -300,6 +302,9 @@ export const zh_TW: Translation = {
 	[Key.galleryAlbums]: "本相簿",
 	[Key.galleryNoAlbums]: "暫無相簿",
 	[Key.galleryBackToAlbums]: "返回相簿列表",
+
+	// 時間軸
+	[Key.timeline]: "時間軸",
 
 	// 密碼保護
 	[Key.passwordProtected]: "密碼保護",

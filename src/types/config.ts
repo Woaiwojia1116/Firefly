@@ -72,6 +72,14 @@ export type SiteConfig = {
 		menuAlign?: "left" | "center"; // 导航菜单对齐方式（仅桌面端菜单）
 		followTheme?: boolean; // 导航栏图标和标题是否跟随主题色
 		stickyNavbar?: boolean; // 导航栏是否固定在顶部始终可见
+		autoHide?: {
+			enable: boolean; // 是否启用导航栏自动隐藏
+			threshold: number; // 滚动阈值(px)，默认100
+			hideOnScrollDown: boolean; // 向下滚动时隐藏
+			showOnScrollUp: boolean; // 向上滚动时显示
+			enableHoverZone: boolean; // 是否启用顶部悬停区域
+			hoverZoneHeight: number; // 悬停区域高度(px)，默认60
+		};
 	};
 
 	showLastModified: boolean; // 控制"上次编辑"卡片显示的开关
@@ -177,6 +185,7 @@ export enum LinkPreset {
 	Guestbook = 5,
 	Bangumi = 6,
 	Gallery = 7,
+	Timeline = 8,
 }
 
 export type NavBarLink = {
@@ -635,6 +644,8 @@ export type BackgroundWallpaperConfig = {
 		blur?: number; // 背景模糊程度，单位px
 		cardOpacity?: number; // 卡片背景透明度，0-1之间
 	};
+	// 时间轴页面背景图（可选，留空则不显示）
+	timelineBg?: string;
 };
 
 // 广告栏配置

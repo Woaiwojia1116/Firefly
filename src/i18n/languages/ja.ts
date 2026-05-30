@@ -67,6 +67,8 @@ export const ja: Translation = {
 	[Key.minutesCount]: "分",
 	[Key.postCount]: "投稿",
 	[Key.postsCount]: "投稿",
+	[Key.eventCount]: "イベント",
+	[Key.eventsCount]: "イベント",
 
 	[Key.themeColor]: "テーマカラー",
 
@@ -306,6 +308,9 @@ export const ja: Translation = {
 	[Key.galleryAlbums]: "冊のアルバム",
 	[Key.galleryNoAlbums]: "アルバムがありません",
 	[Key.galleryBackToAlbums]: "アルバム一覧に戻る",
+
+	// タイムライン
+	[Key.timeline]: "タイムライン",
 
 	// パスワード保護
 	[Key.passwordProtected]: "パスワード保護",
