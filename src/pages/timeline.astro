@@ -643,6 +643,18 @@ let animIdx = 0;
     object-fit: cover;
   }
 
+  /* 禁用时间轴页面的弹性入场动画，使用自己的动画 */
+  :global(#content-wrapper) {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+
+  /* 始终显示右侧垂直滚动条，不显示底部水平滚动条，防止布局抖动 */
+  :global(html) {
+    overflow-y: scroll;
+    overflow-x: hidden;
+  }
+
   /* ===================================================================
      Navbar: 半透明背景（无毛玻璃）
      =================================================================== */
