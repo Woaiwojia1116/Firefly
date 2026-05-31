@@ -7,6 +7,7 @@ import { getPostsForTimeline } from "@/utils/content-utils";
 import { backgroundWallpaper } from "@/config";
 import { getFileDirFromPath, getPostUrlBySlug } from "@utils/url-utils";
 import type { ImageMetadata } from "astro";
+import mikuAvatar from "@/assets/images/miku.png";
 
 // ── Types ────────────────────────────────────────────────────────────────
 interface ArticleInfo {
@@ -255,6 +256,7 @@ let animIdx = 0;
       )
     }
   </div>
+
 </MainGridLayout>
 
 <style>
@@ -270,7 +272,7 @@ let animIdx = 0;
     --tl-line: 2px;   /* central line thickness */
   }
 
-  /* Vertical centre line */
+  /* Vertical centre line — 生长动画 */
   .tl::before {
     content: "";
     position: absolute;
@@ -279,8 +281,14 @@ let animIdx = 0;
     bottom: 0;
     width: var(--tl-line);
     background: var(--line-divider);
-    transform: translateX(-50%);
+    transform: translateX(-50%) scaleY(0);
+    transform-origin: top center;
     border-radius: 1px;
+    animation: tl-line-grow 1.5s cubic-bezier(0.4, 0, 0.2, 1) 0.2s forwards;
+  }
+
+  @keyframes tl-line-grow {
+    to { transform: translateX(-50%) scaleY(1); }
   }
 
   .tl-empty {
@@ -308,6 +316,12 @@ let animIdx = 0;
     margin-bottom: 0.75rem;
     position: relative;
     user-select: none;
+    opacity: 0;
+    animation: tl-fade-in 0.6s ease 0.3s forwards;
+  }
+
+  @keyframes tl-fade-in {
+    to { opacity: 1; }
   }
 
   .tl-year-summary::-webkit-details-marker {
@@ -384,7 +398,7 @@ let animIdx = 0;
     display: none;
   }
 
-  /* Circular dot on the central line */
+  /* Circular dot on the central line — 弹跳出现 */
   .tl-month-dot {
     display: block;
     width: var(--tl-dot);
@@ -395,6 +409,13 @@ let animIdx = 0;
     position: relative;
     z-index: 1;
     box-shadow: 0 0 0 3px var(--page-bg);
+    opacity: 0;
+    transform: scale(0);
+    animation: tl-bounce-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  @keyframes tl-bounce-in {
+    to { opacity: 1; transform: scale(1); }
   }
 
   .tl-month-label {
@@ -438,28 +459,56 @@ let animIdx = 0;
   }
 
   /* ===================================================================
-     Card row (wrapper for dot + card)
+     Card row (wrapper for dot + card) — 左右滑入动画
      =================================================================== */
   .tl-card-row {
     position: relative;
     padding-top: 0.5rem;
+  }
+
+  /* 左侧卡片从左滑入 */
+  .tl-card--left {
     opacity: 0;
-    animation: tl-fade-up 0.5s ease forwards;
+    animation: tl-slide-left 0.5s ease forwards;
     animation-delay: var(--stagger-delay, 0ms);
   }
 
-  /* Node dot on the centre line */
+  /* 右侧卡片从右滑入 */
+  .tl-card--right {
+    opacity: 0;
+    animation: tl-slide-right 0.5s ease forwards;
+    animation-delay: var(--stagger-delay, 0ms);
+  }
+
+  @keyframes tl-slide-left {
+    from { opacity: 0; transform: translateX(-40px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes tl-slide-right {
+    from { opacity: 0; transform: translateX(40px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  /* Node dot on the centre line — 弹跳出现 */
   .tl-card-dot {
     position: absolute;
     left: 50%;
     top: 50%;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%) scale(0);
     width: 8px;
     height: 8px;
     border-radius: 50%;
     background: var(--primary);
     z-index: 1;
     box-shadow: 0 0 0 2px var(--page-bg);
+    opacity: 0;
+    animation: tl-bounce-in-center 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation-delay: var(--stagger-delay, 0ms);
+  }
+
+  @keyframes tl-bounce-in-center {
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
   }
 
   /* ===================================================================
@@ -518,7 +567,11 @@ let animIdx = 0;
   }
 
   /* Suppress entrance animation during Swup page-leave */
-  .transition-leaving .tl-card-row {
+  .transition-leaving .tl-card-row,
+  .transition-leaving .tl-month-dot,
+  .transition-leaving .tl-card-dot,
+  .transition-leaving .tl-year-summary,
+  .transition-leaving .tl::before {
     animation: none;
     opacity: 1;
     transform: none;
@@ -570,20 +623,6 @@ let animIdx = 0;
   }
 
   /* ===================================================================
-     Staggered fade-in-up keyframes
-     =================================================================== */
-  @keyframes tl-fade-up {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  /* ===================================================================
      Responsive: mobile < 768 px
      =================================================================== */
   /* ===================================================================
@@ -605,15 +644,11 @@ let animIdx = 0;
   }
 
   /* ===================================================================
-     Glassmorphism: navbar (global - element is in MainGridLayout)
+     Navbar: 半透明背景（无毛玻璃）
      =================================================================== */
   :global(#navbar-wrapper),
   :global(#navbar > div) {
-    background: color-mix(in srgb, var(--card-bg) 20%, transparent) !important;
-    backdrop-filter: blur(12px) !important;
-    -webkit-backdrop-filter: blur(12px) !important;
-    border-bottom: 1px solid color-mix(in srgb, var(--line-divider) 30%, transparent);
-    border-radius: 0 0 var(--radius-large) var(--radius-large) !important;
+    background: color-mix(in srgb, var(--card-bg) 60%, transparent) !important;
   }
 
   /* ===================================================================

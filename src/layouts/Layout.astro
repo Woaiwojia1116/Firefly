@@ -8,6 +8,8 @@ import FontManager from "@components/features/FontManager.astro";
 import MusicManager from "@components/features/MusicManager.astro";
 import SakuraEffect from "@components/features/SakuraEffect.astro";
 import ConfigCarrier from "@components/layout/ConfigCarrier.astro";
+import mikuAvatar from "@/assets/images/miku.png";
+import WelcomeOverlay from "@components/features/WelcomeOverlay.svelte";
 
 import {
 	backgroundWallpaper,
@@ -236,6 +238,30 @@ const siteLang = lang.replace("_", "-");
         })();
       </script>
     )}
+
+    <!-- 页面首次加载时隐藏内容，等待欢迎遮罩动画结束后再显示 -->
+    <script is:inline>
+      if (!window._welcomeOverlayInitialized) {
+        document.documentElement.classList.add('welcome-overlay-active');
+        window._welcomeOverlayInitialized = true;
+      }
+    </script>
+    <style is:global>
+      html.welcome-overlay-active body > :not(.welcome-overlay) {
+        opacity: 0;
+      }
+      /* 时间轴进站动画期间隐藏下方内容，防止闪烁 */
+      html.tl-entrance-active #swup-container,
+      html.tl-entrance-active #banner-overlay-container,
+      html.tl-entrance-active #banner-dim-container,
+      html.tl-entrance-active #left-sidebar-dynamic,
+      html.tl-entrance-active #right-sidebar-dynamic,
+      html.tl-entrance-active #floating-toc-wrapper,
+      html.tl-entrance-active .main-grid-wrap,
+      html.tl-entrance-active nav {
+        opacity: 0 !important;
+      }
+    </style>
 
     <!-- Set the theme before the page is rendered to avoid a flash -->
     <script
@@ -543,6 +569,9 @@ const siteLang = lang.replace("_", "-");
 
     <!-- Sakura Effect -->
     <SakuraEffect />
+
+    <!-- Welcome Overlay (首次访问欢迎遮罩) -->
+    <WelcomeOverlay client:load avatarSrc={mikuAvatar.src} />
 
     <!-- Fancybox Manager -->
     <FancyboxManager />
@@ -887,6 +916,14 @@ function disableAnimation() {
       }
     });
     window.swup.hooks.on("content:replace", () => {
+      // 用行内 !important 样式覆盖所有 .onload-animation，防止进站动画在 SPA 切换时重播。
+      // 使用行内样式是因为 SwupHeadPlugin 会在 page:view 时替换 <head>，
+      // 导致注入的 <style> 被移除、CSS animation 重新触发。
+      document.querySelectorAll('.onload-animation').forEach(function(el) {
+        (el as HTMLElement).style.setProperty('opacity', '1', 'important');
+        (el as HTMLElement).style.setProperty('animation', 'none', 'important');
+      });
+
       // 更新侧边栏组件的可见性（根据新页面的 URL）
       updateSidebarComponentsVisibility();
 
@@ -929,6 +966,7 @@ function disableAnimation() {
 
     });
     window.swup.hooks.on("visit:start", (visit: { to: { url: string } }) => {
+      (window as any).__swupVisit = true;
       // Start progress bar
       const progressBar = document.getElementById("progress-bar");
       if (progressBar) {
@@ -1107,6 +1145,9 @@ function disableAnimation() {
           );
         }
       }, 300);
+    });
+    window.swup.hooks.on("page:view", () => {
+      (window as any).__swupVisit = false;
     });
     window.swup.hooks.on("visit:end", (_visit: { to: { url: string } }) => {
       // Finish progress bar
