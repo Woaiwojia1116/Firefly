@@ -174,5 +174,5 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 		cardOpacity: 0.5,
 	},
 	// 时间轴页面背景图（可选，留空则不显示）
-	timelineBg: "assets/images/DesktopWallpaper/d15.jpg",
+	timelineBg: "assets/images/DesktopWallpaper/d17.jpg",
 };

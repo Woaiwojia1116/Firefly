@@ -135,9 +135,9 @@ let animIdx = 0;
             0,
           );
           return (
-            <details class="tl-year" open>
+            <div class="tl-year" data-tl-toggle>
               {/* ── Year header ─────────────────────────── */}
-              <summary class="tl-year-summary">
+              <button class="tl-year-summary" data-tl-trigger>
                 <span class="tl-year-text">{yg.year}</span>
                 <span class="tl-year-count">
                   &middot; {yearTotal}{" "}
@@ -147,16 +147,19 @@ let animIdx = 0;
                       : I18nKey.eventsCount,
                   )}
                 </span>
-              </summary>
+                <svg class="tl-toggle-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
 
               {/* ── Months under this year ─────────────── */}
-              <div class="tl-year-body">
+              <div class="tl-year-body" data-tl-body>
                 {yg.months.map((mg, mIdx) => {
                   const mc = mg.articles.length;
                   return (
-                    <details class="tl-month" open>
+                    <div class="tl-month" data-tl-toggle>
                       {/* ── Month node + label ────────── */}
-                      <summary class="tl-month-summary">
+                      <button class="tl-month-summary" data-tl-trigger>
                         <span class="tl-month-dot" />
                         <span class="tl-month-label">
                           {i18n(CALENDAR_MONTH_KEYS[mg.month])}
@@ -169,10 +172,13 @@ let animIdx = 0;
                               : I18nKey.eventsCount,
                           )}
                         </span>
-                      </summary>
+                        <svg class="tl-toggle-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                      </button>
 
                       {/* ── Article cards ──────────────── */}
-                      <div class="tl-cards">
+                      <div class="tl-cards" data-tl-body>
                         {mg.articles.map((a) => {
                           const idx = animIdx++;
                           const delay = idx * 80;
@@ -246,11 +252,11 @@ let animIdx = 0;
                           );
                         })}
                       </div>
-                    </details>
+                    </div>
                   );
                 })}
               </div>
-            </details>
+            </div>
           );
         })
       )
@@ -307,7 +313,7 @@ let animIdx = 0;
 
   .tl-year-summary {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: center;
     gap: 0.35rem;
     cursor: pointer;
@@ -318,6 +324,11 @@ let animIdx = 0;
     user-select: none;
     opacity: 0;
     animation: tl-fade-in 0.6s ease 0.3s forwards;
+    background: none;
+    border: none;
+    width: 100%;
+    font: inherit;
+    color: inherit;
   }
 
   @keyframes tl-fade-in {
@@ -326,6 +337,16 @@ let animIdx = 0;
 
   .tl-year-summary::-webkit-details-marker {
     display: none;
+  }
+
+  .tl-year .tl-toggle-icon {
+    margin-left: 0.25rem;
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+  }
+
+  .tl-year[data-tl-expanded="false"] .tl-toggle-icon {
+    transform: rotate(-90deg);
   }
 
   /* Horizontal lines extending from year text to container edges */
@@ -392,10 +413,24 @@ let animIdx = 0;
     list-style: none;
     padding: 0.35rem 0;
     user-select: none;
+    background: none;
+    border: none;
+    width: 100%;
+    font: inherit;
+    color: inherit;
   }
 
   .tl-month-summary::-webkit-details-marker {
     display: none;
+  }
+
+  .tl-month .tl-toggle-icon {
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+  }
+
+  .tl-month[data-tl-expanded="false"] .tl-toggle-icon {
+    transform: rotate(-90deg);
   }
 
   /* Circular dot on the central line — 弹跳出现 */
@@ -424,15 +459,23 @@ let animIdx = 0;
     color: var(--primary);
   }
 
-  .tl-month-label {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--primary);
-  }
-
   .tl-month-count {
     font-size: 0.72rem;
     color: var(--btn-content);
+  }
+
+  /* ===================================================================
+     Toggle body — transition for fade in / out
+     =================================================================== */
+  .tl-year-body,
+  .tl-cards {
+    overflow: hidden;
+    transition:
+      opacity 0.35s ease,
+      max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Start visible — JS will toggle via max-height */
+    max-height: none;
+    opacity: 1;
   }
 
   /* ===================================================================
@@ -519,7 +562,7 @@ let animIdx = 0;
     display: flex;
     width: 42%;
     max-width: 460px;
-    background: var(--card-bg);
+    background: color-mix(in srgb, var(--card-bg) 45%, transparent);
     border-radius: var(--radius-large);
     overflow: visible;
     text-decoration: none;
@@ -571,10 +614,13 @@ let animIdx = 0;
   .transition-leaving .tl-month-dot,
   .transition-leaving .tl-card-dot,
   .transition-leaving .tl-year-summary,
+  .transition-leaving .tl-year-body,
+  .transition-leaving .tl-cards,
   .transition-leaving .tl::before {
-    animation: none;
-    opacity: 1;
-    transform: none;
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    max-height: none !important;
   }
 
   .tl-card:hover {
@@ -664,12 +710,10 @@ let animIdx = 0;
   }
 
   /* ===================================================================
-     Glassmorphism: timeline cards
+     Semi-transparent: timeline cards
      =================================================================== */
   .tl-card {
     background: color-mix(in srgb, var(--card-bg) 50%, transparent) !important;
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
     border: 1px solid color-mix(in srgb, var(--line-divider) 20%, transparent);
   }
 
@@ -677,6 +721,10 @@ let animIdx = 0;
   .tl-card-body {
     background: transparent !important;
   }
+
+  /* ===================================================================
+     Suppress entrance animation during Swup page-leave
+     =================================================================== */
 
   @media (max-width: 767px) {
     /* Shift the timeline line to the left */
@@ -724,3 +772,64 @@ let animIdx = 0;
     }
   }
 </style>
+
+<script>
+  // ── Timeline toggle with fade animation ──────────────────────────────
+  document.querySelectorAll("[data-tl-toggle]").forEach((group) => {
+    const trigger = group.querySelector("[data-tl-trigger]");
+    const body = group.querySelector("[data-tl-body]");
+    if (!trigger || !body) return;
+
+    // Start expanded
+    group.dataset.tlExpanded = "true";
+
+    trigger.addEventListener("click", () => {
+      const isExpanded = group.dataset.tlExpanded === "true";
+
+      if (isExpanded) {
+        // ── Collapse ──────────────────────────────────────────────
+        // Lock current height first (scrollHeight is valid while expanded)
+        body.style.maxHeight = body.scrollHeight + "px";
+        body.style.opacity = "1";
+        body.offsetHeight; // force reflow so the lock takes effect
+        // In the next frame, animate to 0
+        requestAnimationFrame(() => {
+          body.style.maxHeight = "0px";
+          body.style.opacity = "0";
+        });
+        group.dataset.tlExpanded = "false";
+      } else {
+        // ── Expand ────────────────────────────────────────────────
+        // Step 1: temporarily remove max-height to measure real content height
+        body.style.maxHeight = "none";
+        const realHeight = body.scrollHeight;
+
+        // Step 2: set starting state (0) in this frame
+        body.style.maxHeight = "0px";
+        body.style.opacity = "0";
+        body.offsetHeight; // force reflow so the 0-state is committed
+
+        // Step 3: in the NEXT frame, animate to real height
+        //          (must be a separate frame or the browser merges the two
+        //           maxHeight assignments and skips the transition)
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            body.style.maxHeight = realHeight + "px";
+            body.style.opacity = "1";
+            group.dataset.tlExpanded = "true";
+
+            // Step 4: after transition ends, clear max-height so content can grow
+            const onEnd = () => {
+              if (group.dataset.tlExpanded === "true") {
+                body.style.maxHeight = "none";
+              }
+              body.removeEventListener("transitionend", onEnd);
+            };
+            body.addEventListener("transitionend", onEnd);
+            setTimeout(onEnd, 600); // fallback safety
+          });
+        });
+      }
+    });
+  });
+</script>

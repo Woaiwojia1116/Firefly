@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>方向感知阴影 - Direction-Aware Shadow Demo</title>
+  <style>
+    /* ── Reset & Base ──────────────────────────────────────────────────── */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      color: #2c3e50;
+      margin-bottom: 12px;
+      font-size: 1.8rem;
+    }
+
+    .subtitle {
+      color: #64748b;
+      margin-bottom: 48px;
+      font-size: 0.95rem;
+    }
+
+    /* ── Card Container ────────────────────────────────────────────────── */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 32px;
+      max-width: 1200px;
+      width: 100%;
+      padding: 20px;
+    }
+
+    /* ── Card with Direction-Aware Shadow ───────────────────────────────── */
+    .demo-card {
+      position: relative;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 24px;
+      cursor: pointer;
+      transition: transform 0.3s ease-out;
+      /* Ensure shadow can extend beyond card */
+      isolation: isolate;
+    }
+
+    .demo-card:hover {
+      /* Transform handled by JS for active state */
+    }
+
+    /* Shadow overlay using ::before pseudo-element */
+    .demo-card::before {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      border-radius: 18px;
+      pointer-events: none;
+      background: transparent;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0);
+      opacity: 0;
+      transform: translate(0, 0) scale(0.95);
+      transition:
+        opacity 0.35s ease-out,
+        transform 0.35s ease-out,
+        box-shadow 0.35s ease-out;
+      z-index: -1;
+      will-change: transform, opacity, box-shadow;
+    }
+
+    /* Entry: shadow slides in from the entry direction */
+    .demo-card.shadow-top::before {
+      box-shadow: 0 -8px 16px rgba(0, 0, 0, 0.5);
+      transform: translate(0, -12px) scale(0.92);
+    }
+    .demo-card.shadow-bottom::before {
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+      transform: translate(0, 12px) scale(0.92);
+    }
+    .demo-card.shadow-left::before {
+      box-shadow: -8px 0 16px rgba(0, 0, 0, 0.5);
+      transform: translate(-12px, 0) scale(0.92);
+    }
+    .demo-card.shadow-right::before {
+      box-shadow: 8px 0 16px rgba(0, 0, 0, 0.5);
+      transform: translate(12px, 0) scale(0.92);
+    }
+
+    /* Active: shadow centered and visible, card lifts */
+    .demo-card.shadow-active::before {
+      opacity: 1;
+      transform: translate(0, 0) scale(1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+    }
+
+    .demo-card.shadow-active {
+      transform: translateY(-3px);
+    }
+
+    /* Exit: shadow slides out in exit direction */
+    .demo-card.shadow-exit-top::before {
+      box-shadow: 0 -8px 16px rgba(0, 0, 0, 0.5);
+      transform: translate(0, -12px) scale(0.92);
+      opacity: 0;
+    }
+    .demo-card.shadow-exit-bottom::before {
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+      transform: translate(0, 12px) scale(0.92);
+      opacity: 0;
+    }
+    .demo-card.shadow-exit-left::before {
+      box-shadow: -8px 0 16px rgba(0, 0, 0, 0.5);
+      transform: translate(-12px, 0) scale(0.92);
+      opacity: 0;
+    }
+    .demo-card.shadow-exit-right::before {
+      box-shadow: 8px 0 16px rgba(0, 0, 0, 0.5);
+      transform: translate(12px, 0) scale(0.92);
+      opacity: 0;
+    }
+
+    /* ── Card Content ──────────────────────────────────────────────────── */
+    .demo-card .card-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 16px;
+    }
+
+    .demo-card .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 8px;
+    }
+
+    .demo-card .card-desc {
+      font-size: 0.875rem;
+      color: #64748b;
+      line-height: 1.5;
+    }
+
+    /* Card variants */
+    .demo-card.card-blue .card-icon { background: #dbeafe; color: #3b82f6; }
+    .demo-card.card-green .card-icon { background: #dcfce7; color: #22c55e; }
+    .demo-card.card-purple .card-icon { background: #f3e8ff; color: #a855f7; }
+    .demo-card.card-orange .card-icon { background: #ffedd5; color: #f97316; }
+
+    /* ── Instructions ──────────────────────────────────────────────────── */
+    .instructions {
+      margin-top: 48px;
+      padding: 16px 24px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 12px;
+      color: #475569;
+      font-size: 0.9rem;
+      text-align: center;
+      backdrop-filter: blur(8px);
+    }
+
+    .instructions strong {
+      color: #334155;
+    }
+
+    /* ── Accessibility ─────────────────────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      .demo-card,
+      .demo-card::after {
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>🎯 方向感知阴影</h1>
+  <p class="subtitle">鼠标从不同方向悬停，阴影从对应方向滑入</p>
+
+  <div class="cards-grid">
+    <!-- Card 1 - Blue -->
+    <div class="demo-card card-blue">
+      <div class="card-icon">📦</div>
+      <h3 class="card-title">从上方向进入</h3>
+      <p class="card-desc">将鼠标从卡片顶部边缘移入，观察阴影如何从上方滑入，卡片微微上浮。</p>
+    </div>
+
+    <!-- Card 2 - Green -->
+    <div class="demo-card card-green">
+      <div class="card-icon">🎨</div>
+      <h3 class="card-title">从下方向进入</h3>
+      <p class="card-desc">将鼠标从卡片底部边缘移入，阴影从下方滑入，带有流畅的过渡动画。</p>
+    </div>
+
+    <!-- Card 3 - Purple -->
+    <div class="demo-card card-purple">
+      <div class="card-icon">✨</div>
+      <h3 class="card-title">从左侧进入</h3>
+      <p class="card-desc">从卡片左边缘移入，阴影从左侧滑入。离开时阴影会向离开方向滑出。</p>
+    </div>
+
+    <!-- Card 4 - Orange -->
+    <div class="demo-card card-orange">
+      <div class="card-icon">🚀</div>
+      <h3 class="card-title">从右侧进入</h3>
+      <p class="card-desc">从卡片右边缘移入，阴影从右侧滑入。快速移动鼠标观察方向检测的准确性。</p>
+    </div>
+  </div>
+
+  <div class="instructions">
+    <strong>交互说明：</strong>鼠标从不同方向悬停到卡片上，阴影会从对应方向滑入；
+    鼠标离开时，阴影会从离开方向滑出。桌面端体验最佳。
+  </div>
+
+  <script>
+    /**
+     * Direction-Aware Shadow Effect
+     *
+     * 核心逻辑：
+     * 1. 监听 mouseenter 事件，计算鼠标相对于卡片四边的距离
+     * 2. 判断进入方向（距离最近的一边）
+     * 3. 添加方向类，阴影从对应方向滑入
+     * 4. 监听 mouseleave 事件，计算离开方向
+     * 5. 添加退出类，阴影向离开方向滑出
+     */
+
+    (function () {
+      const DIRECTIONS = ['top', 'right', 'bottom', 'left'];
+      const SHADOW_DURATION = 300; // ms, matches CSS transition
+
+      /**
+       * 计算鼠标事件相对于元素的方向
+       * @param {HTMLElement} element - 目标元素
+       * @param {MouseEvent} event - 鼠标事件
+       * @returns {string} - 'top', 'right', 'bottom', 或 'left'
+       *
+       * 原理：计算鼠标位置到元素四边的距离，返回距离最小的方向
+       */
+      function getDirection(element, event) {
+        const rect = element.getBoundingClientRect();
+        const x = event.clientX - rect.left;           // 鼠标相对于元素左边缘的距离
+        const y = event.clientY - rect.top;            // 鼠标相对于元素上边缘的距离
+        const width = rect.width;
+        const height = rect.height;
+
+        // 计算到四边的距离
+        const distTop = y;                  // 到上边缘
+        const distBottom = height - y;      // 到下边缘
+        const distLeft = x;                 // 到左边缘
+        const distRight = width - x;        // 到右边缘
+
+        // 找到最小距离对应的方向
+        const min = Math.min(distTop, distBottom, distLeft, distRight);
+
+        if (min === distTop) return 'top';
+        if (min === distBottom) return 'bottom';
+        if (min === distLeft) return 'left';
+        return 'right';
+      }
+
+      /**
+       * 初始化单个卡片的方向感知阴影
+       */
+      function initCardShadow(card) {
+        let currentDir = null;
+        let isActive = false;
+        let exitTimeout = null;
+
+        /**
+         * 鼠标进入卡片时的处理
+         */
+        card.addEventListener('mouseenter', function (e) {
+          const dir = getDirection(card, e);
+
+          // 清除之前的退出定时器
+          if (exitTimeout) {
+            clearTimeout(exitTimeout);
+            exitTimeout = null;
+          }
+
+          // 如果已经在同一方向激活，跳过
+          if (isActive && currentDir === dir) return;
+
+          // 移除所有阴影相关类
+          DIRECTIONS.forEach(function (d) {
+            card.classList.remove('shadow-' + d);
+            card.classList.remove('shadow-exit-' + d);
+          });
+          card.classList.remove('shadow-active');
+
+          // 强制重排（reflow）以重置 CSS 过渡
+          void card.offsetWidth;
+
+          // 设置进入方向的初始状态（阴影偏移）
+          currentDir = dir;
+          card.classList.add('shadow-' + dir);
+
+          // 再次强制重排，确保偏移状态生效
+          void card.offsetWidth;
+
+          // 触发入场动画：阴影滑入到中心位置
+          isActive = true;
+          card.classList.add('shadow-active');
+        });
+
+        /**
+         * 鼠标离开卡片时的处理
+         */
+        card.addEventListener('mouseleave', function (e) {
+          if (!isActive) return;
+
+          const dir = getDirection(card, e);
+
+          // 移除进入方向的偏移类
+          DIRECTIONS.forEach(function (d) {
+            card.classList.remove('shadow-' + d);
+          });
+
+          // 强制重排
+          void card.offsetWidth;
+
+          // 移除激活状态，添加退出方向类
+          card.classList.remove('shadow-active');
+          card.classList.add('shadow-exit-' + dir);
+
+          // 退出动画结束后清理所有类
+          exitTimeout = setTimeout(function () {
+            DIRECTIONS.forEach(function (d) {
+              card.classList.remove('shadow-exit-' + d);
+            });
+            currentDir = null;
+            isActive = false;
+            exitTimeout = null;
+          }, SHADOW_DURATION);
+        });
+      }
+
+      /**
+       * 初始化所有卡片
+       */
+      function initAllCards() {
+        const cards = document.querySelectorAll('.demo-card');
+        cards.forEach(initCardShadow);
+      }
+
+      // DOM 加载完成后初始化
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initAllCards);
+      } else {
+        initAllCards();
+      }
+    })();
+  </script>
+</body>
+</html>
