@@ -132,6 +132,11 @@ UI 翻译支持 zh_CN、zh_TW、en、ja、ru。`i18n()` 函数提供翻译功能
 - 邮箱保护
 - 外部链接处理
 
+
+### 暗色模式
+
+使用 `:root.dark` 选择器（非 `html.dark`），在 `variables.styl` 中定义暗色变量。切换主题时 JavaScript 在 `<html>` 上添加/移除 `dark` class。
+
 ### 核心特性
 
 - **页面过渡**：Swup.js 实现流畅的 SPA 风格导航

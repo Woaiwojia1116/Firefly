@@ -107,7 +107,7 @@
 <!-- ==================== 玻璃按钮 ==================== -->
 <button class="friends-glass-btn" onclick={open} type="button">
   <span class="friends-glass-btn-icon">
-    <svg class="w-5 h-5" style="color:#6366f1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg class="w-5 h-5" style="color:#ffb6c1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
     </svg>
   </span>
@@ -141,7 +141,7 @@
         <!-- ====== 区块 1: 站点信息 ====== -->
         <section class="friends-modal-section">
           <h4 class="friends-modal-section-title">
-            <svg class="w-4.5 h-4.5" style="color:#6366f1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4.5 h-4.5" style="color:#ffb6c1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
             站点信息
@@ -164,11 +164,11 @@
           </div>
           <div class="space-y-2.5">
             <div class="rounded-lg bg-black/5 dark:bg-white/5 px-3.5 py-2.5">
-              <p class="text-[0.65rem] text-neutral-400 dark:text-neutral-700 mb-0.5">站点链接</p>
-              <a href={site.url} target="_blank" rel="noopener" class="text-sm font-medium text-(--primary) hover:underline break-all">{site.url}</a>
+              <p class="text-[0.65rem] text-neutral-200 dark:text-neutral-700 mb-0.5">站点链接</p>
+              <a href={site.url} target="_blank" rel="noopener" class="text-sm font-medium text-black dark:text-white hover:underline break-all">{site.url}</a>
             </div>
             <div class="rounded-lg bg-black/5 dark:bg-white/5 px-3.5 py-2.5">
-              <p class="text-[0.65rem] text-neutral-400 dark:text-neutral-700 mb-0.5">联系邮箱</p>
+              <p class="text-[0.65rem] text-neutral-200 dark:text-neutral-700 mb-0.5">联系邮箱</p>
               <p class="text-sm font-medium text-neutral-800 dark:text-neutral-200 break-all">{site.email}</p>
             </div>
           </div>
@@ -179,7 +179,7 @@
         <!-- ====== 区块 2: 注意事项 ====== -->
         <section class="friends-modal-section">
           <h4 class="friends-modal-section-title">
-            <svg class="w-4.5 h-4.5" style="color:#f59e0b" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4.5 h-4.5" style="color:#ffb6c1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
             </svg>
             注意事项
@@ -199,7 +199,7 @@
         <!-- ====== 区块 3: 站点信息列表 ====== -->
         <section class="friends-modal-section">
           <h4 class="friends-modal-section-title">
-            <svg class="w-4.5 h-4.5" style="color:#10b981" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4.5 h-4.5" style="color:#ffb6c1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
             </svg>
             站点信息列表
@@ -360,7 +360,7 @@
     max-height: 85vh;
     overflow-y: auto;
     border-radius: 1.25rem;
-    background: rgba(102, 183, 179, 0.72);
+    background: rgba(142, 172, 196, 0.85);
     backdrop-filter: blur(28px);
     -webkit-backdrop-filter: blur(28px);
     border: 1px solid rgba(255, 255, 255, 0.45);
@@ -368,8 +368,8 @@
     padding: 1.75rem;
   }
 
-  html.dark .friends-modal-panel {
-    background: rgba(22, 22, 32, 0.82);
+  :root.dark .friends-modal-panel {
+    background: rgba(102, 183, 179, 0.72);
     border-color: rgba(255, 255, 255, 0.08);
     box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45), 0 8px 20px rgba(0, 0, 0, 0.25);
   }
@@ -413,7 +413,7 @@
   .friends-modal-section-title {
     font-size: 0.95rem;
     font-weight: 700;
-    color: #db8a8a;
+    color: #ffb6c1;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -422,7 +422,7 @@
   }
 
   html.dark .friends-modal-section-title {
-    color: #e0e0e0;
+    color: #ffb6c1;
   }
 
   .friends-modal-section {
@@ -431,12 +431,12 @@
 
   .friends-modal-divider {
     height: 1px;
-    background: rgba(21, 153, 173, 0.06);
+    background: rgba(255, 182, 193, 0.15);
     margin: 1.25rem 0;
   }
 
   html.dark .friends-modal-divider {
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 182, 193, 0.1);
   }
 
   /* ========== 滚动条 ========== */
