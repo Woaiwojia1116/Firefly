@@ -8,8 +8,6 @@ import FontManager from "@components/features/FontManager.astro";
 import MusicManager from "@components/features/MusicManager.astro";
 import SakuraEffect from "@components/features/SakuraEffect.astro";
 import ConfigCarrier from "@components/layout/ConfigCarrier.astro";
-import mikuAvatar from "@/assets/images/miku.png";
-import WelcomeOverlay from "@components/features/WelcomeOverlay.svelte";
 
 import {
 	backgroundWallpaper,
@@ -239,29 +237,6 @@ const siteLang = lang.replace("_", "-");
       </script>
     )}
 
-    <!-- 页面首次加载时隐藏内容，等待欢迎遮罩动画结束后再显示 -->
-    <script is:inline>
-      if (!window._welcomeOverlayInitialized) {
-        document.documentElement.classList.add('welcome-overlay-active');
-        window._welcomeOverlayInitialized = true;
-      }
-    </script>
-    <style is:global>
-      html.welcome-overlay-active body > :not(.welcome-overlay) {
-        opacity: 0;
-      }
-      /* 时间轴进站动画期间隐藏下方内容，防止闪烁 */
-      html.tl-entrance-active #swup-container,
-      html.tl-entrance-active #banner-overlay-container,
-      html.tl-entrance-active #banner-dim-container,
-      html.tl-entrance-active #left-sidebar-dynamic,
-      html.tl-entrance-active #right-sidebar-dynamic,
-      html.tl-entrance-active #floating-toc-wrapper,
-      html.tl-entrance-active .main-grid-wrap,
-      html.tl-entrance-active nav {
-        opacity: 0 !important;
-      }
-    </style>
 
     <!-- Set the theme before the page is rendered to avoid a flash -->
     <script
@@ -385,12 +360,13 @@ const siteLang = lang.replace("_", "-");
       (function applyWallpaperMode() {
         // 使用 requestAnimationFrame 确保在下一帧之前执行
         requestAnimationFrame(function () {
-          // 根据模式隐藏显示对应元素
-          if (
-            wallpaperMode === WALLPAPER_NONE ||
-            wallpaperMode === WALLPAPER_OVERLAY
-          ) {
-            // 隐藏横幅
+          const isHomePage =
+            window.location.pathname === baseUrl ||
+            (baseUrl !== '/' && window.location.pathname === baseUrl.replace(/\/$/, '')) ||
+            window.location.pathname === "/";
+
+          // 根据模式隐藏显示对应元素（首页也按正常模式处理，CSS 负责全屏效果）
+          if (wallpaperMode === WALLPAPER_OVERLAY || wallpaperMode === WALLPAPER_NONE) {
             if (document.body) {
               document.body.classList.remove("enable-banner");
               document.body.classList.add("no-banner-layout");
@@ -416,12 +392,6 @@ const siteLang = lang.replace("_", "-");
           // 处理wallpaper-wrapper的显示
           const wallpaperWrapper = document.getElementById("wallpaper-wrapper");
 
-          // 检查当前是否为首页
-          const isHomePage =
-            window.location.pathname === baseUrl ||
-            (baseUrl !== '/' && window.location.pathname === baseUrl.replace(/\/$/, '')) ||
-            window.location.pathname === "/";
-
           if (wallpaperMode === WALLPAPER_OVERLAY) {
             // 全屏壁纸透明模式：切换为 overlay 显示
             if (wallpaperWrapper) {
@@ -442,8 +412,6 @@ const siteLang = lang.replace("_", "-");
             if (wallpaperWrapper) {
               wallpaperWrapper.classList.remove("wallpaper-overlay");
               const isMobile = window.innerWidth < 1024;
-              // 移动端非首页时隐藏banner（初始状态直接隐藏，不需要动画）
-              // 桌面端始终显示banner
               if (isMobile && !isHomePage) {
                 wallpaperWrapper.style.display = "none";
                 wallpaperWrapper.classList.add("mobile-hide-banner");
@@ -460,7 +428,6 @@ const siteLang = lang.replace("_", "-");
           );
           if (mainContentWrapper) {
             const isMobile = window.innerWidth < 1024;
-            // 只在移动端非首页时调整主内容位置
             if (isMobile && !isHomePage) {
               mainContentWrapper.classList.add("mobile-main-no-banner");
             } else {
@@ -473,10 +440,7 @@ const siteLang = lang.replace("_", "-");
             "banner-credit-desktop"
           );
           const creditMobile = document.getElementById("banner-credit-mobile");
-          if (
-            wallpaperMode === WALLPAPER_OVERLAY ||
-            wallpaperMode === WALLPAPER_NONE
-          ) {
+          if (wallpaperMode === WALLPAPER_OVERLAY || wallpaperMode === WALLPAPER_NONE) {
             if (creditDesktop) creditDesktop.style.display = "none";
             if (creditMobile) creditMobile.style.display = "none";
           } else {
@@ -489,11 +453,7 @@ const siteLang = lang.replace("_", "-");
             ".banner-home-text-overlay"
           );
           if (bannerTextOverlay) {
-            const isHomePage =
-              window.location.pathname === baseUrl || 
-              (baseUrl !== '/' && window.location.pathname === baseUrl.replace(/\/$/, '')) ||
-              window.location.pathname === "/";
-            if (wallpaperMode === WALLPAPER_BANNER && isHomePage) {
+            if (isHomePage) {
               bannerTextOverlay.classList.remove("hidden");
             } else {
               bannerTextOverlay.classList.add("hidden");
@@ -542,7 +502,7 @@ const siteLang = lang.replace("_", "-");
     class="min-h-screen"
     class:list={[
       {
-        "lg:is-home": isHomePageCheck,
+        "homepage": isHomePageCheck,
         "enable-banner": enableBanner,
         "sticky-navbar": siteConfig.navbar.stickyNavbar ?? false,
         "enable-card-border": siteConfig.card?.border,
@@ -570,11 +530,27 @@ const siteLang = lang.replace("_", "-");
     <!-- Sakura Effect -->
     <SakuraEffect />
 
-    <!-- Welcome Overlay (首次访问欢迎遮罩) -->
-    <WelcomeOverlay client:load avatarSrc={mikuAvatar.src} />
 
     <!-- Fancybox Manager -->
     <FancyboxManager />
+
+    <!-- 首页滚动检测：滚动后显示内容区 -->
+    <script is:inline>
+      (function() {
+        var body = document.body;
+        if (!body.classList.contains('homepage')) return;
+        var scrollHandler = function() {
+          if (window.scrollY > 50) {
+            body.classList.add('has-scrolled');
+          } else {
+            body.classList.remove('has-scrolled');
+          }
+        };
+        window.addEventListener('scroll', scrollHandler, { passive: true });
+        // 初始化检查
+        scrollHandler();
+      })();
+    </script>
   </body>
 </html>
 
@@ -605,6 +581,68 @@ const siteLang = lang.replace("_", "-");
     .enable-banner #top-row {
       height: calc(var(--banner-height-home) - 4.5rem);
       @apply transition-all duration-300;
+    }
+
+    /* 首页全屏背景 — 背景铺满视口 */
+    html body.homepage #wallpaper-wrapper {
+        display: block !important;
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        transform: none !important;
+        z-index: 0 !important;
+        opacity: 1 !important;
+        filter: none !important;
+        pointer-events: auto !important;
+        transition: none !important;
+    }
+    html body.homepage #banner {
+        height: 100% !important;
+    }
+
+    /* 首页：内容区基础样式，显示时过渡动画 */
+    html body.homepage .absolute.w-full.z-30 {
+        transition: opacity 0.8s ease, transform 0.8s ease !important;
+    }
+
+    /* 首页：初始隐藏内容区，隐藏时更快 */
+    html body.homepage:not(.has-scrolled) .absolute.w-full.z-30 {
+        opacity: 0 !important;
+        pointer-events: none !important;
+        transform: translateY(40px) !important;
+        transition: opacity 0.3s ease, transform 0.3s ease !important;
+    }
+
+    /* 首页滚动后：显示内容区 */
+    html body.homepage.has-scrolled .absolute.w-full.z-30 {
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        transform: translateY(0) !important;
+    }
+
+    /* 移动端首页也全屏 */
+    @media (max-width: 1023px) {
+        html body.homepage #wallpaper-wrapper {
+            height: 100% !important;
+            min-height: 100% !important;
+            top: 0 !important;
+        }
+    }
+
+    /* 首页卡片使用主题适配的纯色背景 */
+    html body.homepage .card-base {
+        background: var(--card-bg) !important;
+    }
+
+    /* 首页滚动后隐藏banner标题 */
+    html body.homepage.has-scrolled .banner-home-text-overlay {
+        opacity: 0 !important;
+        pointer-events: none !important;
     }
   }
 
@@ -924,11 +962,37 @@ function disableAnimation() {
         (el as HTMLElement).style.setProperty('animation', 'none', 'important');
       });
 
+      // 重置滚动渐显动画，延迟一帧后重新初始化 IntersectionObserver
+      document.querySelectorAll('.scroll-reveal').forEach(function(el) {
+        (el as HTMLElement).style.setProperty('animation-play-state', 'paused', 'important');
+      });
+      requestAnimationFrame(function() {
+        var postContainer = document.getElementById('post-list-container');
+        if (!postContainer) return;
+        var revealCards = postContainer.querySelectorAll('.scroll-reveal');
+        var revealObserver = new IntersectionObserver(function(entries) {
+          entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+              entry.target.style.animationPlayState = 'running';
+              revealObserver.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+        revealCards.forEach(function(card) { revealObserver.observe(card); });
+      });
+
       // 更新侧边栏组件的可见性（根据新页面的 URL）
       updateSidebarComponentsVisibility();
 
       // 只处理katex元素的容器，使用浏览器原生滚动条
       scheduleContentOverflowEnhancements();
+
+      // 重新初始化首页滚动状态
+      var body = document.body;
+      if (body.classList.contains('homepage')) {
+        body.classList.remove('has-scrolled');
+        if (window.scrollY > 50) body.classList.add('has-scrolled');
+      }
 
       // 重新初始化图标加载器
       import("@/utils/icon-loader").then(({ initIconLoader }) => {
@@ -981,9 +1045,9 @@ function disableAnimation() {
       const isHomePage = pathsEqual(visit.to.url, url("/"));
 
       if (isHomePage) {
-        bodyElement!.classList.add("lg:is-home");
+        bodyElement!.classList.add("lg:is-home", "homepage");
       } else {
-        bodyElement!.classList.remove("lg:is-home");
+        bodyElement!.classList.remove("lg:is-home", "homepage");
       }
 
       // Control banner text visibility based on page

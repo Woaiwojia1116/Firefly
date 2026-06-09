@@ -1,0 +1,58 @@
+---
+const className = Astro.props.class || "";
+---
+
+<div
+  id="scroll-hint"
+  class:list={[
+    "absolute left-1/2 -translate-x-1/2 z-20",
+    "flex flex-col items-center gap-1",
+    "text-white/70 hover:text-white transition-all duration-300",
+    "cursor-pointer select-none",
+    "pointer-events-auto",
+    className,
+  ]}
+  style="bottom: 3rem;"
+  aria-label="向下滚动查看更多"
+  role="button"
+  tabindex="0"
+>
+  <span class="text-xs font-medium tracking-widest uppercase opacity-80">Scroll</span>
+  <svg class="w-5 h-5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+  </svg>
+</div>
+
+<style>
+  @keyframes scroll-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(6px); }
+  }
+  .animate-bounce {
+    animation: scroll-bounce 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-bounce { animation: none; }
+  }
+</style>
+
+<script is:inline>
+  (function() {
+    var hint = document.getElementById('scroll-hint');
+    if (!hint) return;
+    var scrollHandler = function() {
+      hint.style.opacity = window.scrollY > 80 ? '0' : '1';
+      hint.style.pointerEvents = window.scrollY > 80 ? 'none' : 'auto';
+    };
+    window.addEventListener('scroll', scrollHandler, { passive: true });
+    hint.addEventListener('click', function() {
+      window.scrollTo({ top: window.innerHeight * 0.9, behavior: 'smooth' });
+    });
+    hint.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        window.scrollTo({ top: window.innerHeight * 0.9, behavior: 'smooth' });
+      }
+    });
+  })();
+</script>

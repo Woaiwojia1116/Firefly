@@ -8,7 +8,6 @@
   let { avatarSrc }: Props = $props();
 
   let show = $state(true);
-  let visible = $state(false);
   let leaving = $state(false);
 
   const signature = "I'm ysdy Ciallo～ (∠・ω<)⌒☆";
@@ -60,6 +59,10 @@
     const STORAGE_KEY = "firefly-welcome-shown";
     const isTimeline = window.location.pathname.includes("/timeline");
 
+    // 移除 fallback 遮罩层，Svelte 组件已接管
+    const fallback = document.getElementById("welcome-overlay-fallback");
+    if (fallback) fallback.remove();
+
     // 如果已标记过（本次会话内已展示过动画，或曾停留在时间轴页面），直接跳过
     if (sessionStorage.getItem(STORAGE_KEY) === "1") {
       show = false;
@@ -77,10 +80,6 @@
 
     // 标记为已展示，防止后续全页导航重播
     sessionStorage.setItem(STORAGE_KEY, "1");
-
-    requestAnimationFrame(() => {
-      visible = true;
-    });
 
     window.addEventListener("mousemove", handlePointerMove);
     window.addEventListener("touchmove", handlePointerMove, { passive: true });
@@ -100,7 +99,6 @@
 {#if show}
 <div
   class="welcome-overlay"
-  class:active={visible}
   class:fade-out={leaving}
 >
   <!-- 星云背景 -->
@@ -163,20 +161,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0;
-    transition: opacity 0.3s ease-out;
-    pointer-events: none;
+    opacity: 1;
+    pointer-events: auto;
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
-  }
-
-  .welcome-overlay.active {
-    opacity: 1;
   }
 
   .welcome-overlay.fade-out {
     opacity: 0;
     transition: opacity 0.4s ease-in;
+    pointer-events: none;
   }
 
   /* ===== 星云背景 ===== */
@@ -383,6 +377,7 @@
   /* ===== 站点名 + 流光 ===== */
   .site-title {
     position: relative;
+    font-family: 'Zhi Mang Xing', cursive;
     font-size: clamp(2.8rem, 12vw, 5rem);
     font-weight: 700;
     letter-spacing: 0.15em;

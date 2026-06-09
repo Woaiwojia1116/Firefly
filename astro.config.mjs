@@ -255,10 +255,18 @@ export default defineConfig({
 		},
 		resolve: {
 			alias: {
+				"@components": "./src/components",
+				"@assets": "./src/assets",
+				"@constants": "./src/constants",
+				"@utils": "./src/utils",
+				"@i18n": "./src/i18n",
+				"@layouts": "./src/layouts",
+				"@": "./src",
 				"@rehype-callouts-theme": `rehype-callouts/theme/${siteConfig.rehypeCallouts.theme}`,
 			},
 		},
 		build: {
+			sourcemap: false, // 禁用 source map，防止浏览器放大时显示源码注释
 			minify: "esbuild",
 			esbuildOptions: {
 				minify: true,

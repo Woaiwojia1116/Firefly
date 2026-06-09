@@ -50,12 +50,36 @@ const initialLayoutClass =
         pinned={entry.data.pinned}
         password={!!entry.data.password}
         loading={index < 2 ? "eager" : "lazy"}
-        class:list="onload-animation post-card-item"
+        class:list="scroll-reveal post-card-item"
         style={`animation-delay: calc(var(--content-delay) + ${delay++ * interval}ms);`}
       />
     ))
   }
 </div>
+
+<!-- 初始化卡片滚动渐显动画 -->
+<script is:inline>
+  (function() {
+    var container = document.getElementById('post-list-container');
+    if (!container) return;
+    var cards = container.querySelectorAll('.post-card-item');
+    if (!cards.length) return;
+
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          entry.target.style.animationPlayState = 'running';
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+    cards.forEach(function(card) {
+      card.style.animationPlayState = 'paused';
+      observer.observe(card);
+    });
+  })();
+</script>
 
 <!-- 立即执行脚本：防止刷新时的布局闪烁 -->
 <script is:inline define:vars={{ defaultLayout, mobileDefaultLayout, columnWidth }}>

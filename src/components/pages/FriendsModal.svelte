@@ -2,12 +2,8 @@
   /**
    * 友链页面交互组件
    * - 玻璃按钮 → 弹窗（站点信息 / 注意事项 / 站点信息列表）
-   * - 友链卡片（自动从 config 读取）
    * 弹窗通过 Svelte action (use:portal) 挂载到 body，避免被 Swup 容器的 transform 裁剪
    */
-
-  import { getEnabledFriends } from "@/config/friendsConfig";
-  import type { FriendLink } from "@/types/config";
 
   /** 将元素移动到 document.body，销毁时自动移除 */
   function portal(node: HTMLElement) {
@@ -43,8 +39,6 @@
 
   let isOpen = $state(false);
   let panelEl: HTMLDivElement | undefined = $state();
-
-  const friendLinks: FriendLink[] = getEnabledFriends();
 
   const copyFields = [
     { label: "站点名称", value: site.name },
@@ -120,41 +114,6 @@
   <span class="friends-glass-btn-title">查看友链信息</span>
   <span class="friends-glass-btn-sub">站点信息 · 注意事项 · 一键复制</span>
 </button>
-
-<!-- ==================== 友链卡片 ==================== -->
-<div class="friends-links-card">
-  <h3 class="friends-links-card-title">
-    <svg class="w-4.5 h-4.5" style="color:var(--primary)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
-    </svg>
-    友链
-  </h3>
-  {#if friendLinks.length === 0}
-    <p class="friends-links-empty">目前沒有友鏈</p>
-  {:else}
-    <div class="friends-links-grid">
-      {#each friendLinks as friend}
-        <a
-          href={friend.siteurl}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="friends-link-item"
-        >
-          <img
-            src={friend.imgurl}
-            alt={friend.title}
-            class="friends-link-avatar"
-            loading="lazy"
-          />
-          <div class="friends-link-info">
-            <span class="friends-link-name">{friend.title}</span>
-            <span class="friends-link-desc">{friend.desc}</span>
-          </div>
-        </a>
-      {/each}
-    </div>
-  {/if}
-</div>
 
 <!-- ==================== 弹窗（use:portal 挂载到 body 以避免 Swup transform 裁剪） ==================== -->
 {#if isOpen}
@@ -494,107 +453,4 @@
     background: rgba(128, 195, 166, 0.1);
   }
 
-  /* ========== 友链卡片 ========== */
-  .friends-links-card {
-    border-radius: 1rem;
-    border: 1px solid var(--line-divider, rgba(0, 0, 0, 0.08));
-    background: var(--card-bg, transparent);
-    padding: 1.25rem;
-    margin-top: 1rem;
-  }
-
-  .friends-links-card-title {
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: #6db6be;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0 0 0.875rem;
-  }
-
-  html.dark .friends-links-card-title {
-    color: #e0e0e0;
-  }
-
-  .friends-links-empty {
-    text-align: center;
-    color: #999;
-    font-size: 0.85rem;
-    padding: 1.5rem 0;
-    margin: 0;
-  }
-
-  html.dark .friends-links-empty {
-    color: #777;
-  }
-
-  .friends-links-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 0.625rem;
-  }
-
-  .friends-link-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.625rem 0.75rem;
-    border-radius: 0.75rem;
-    text-decoration: none;
-    transition: background 0.2s ease;
-    border: 1px solid transparent;
-  }
-
-  .friends-link-item:hover {
-    background: rgba(0, 0, 0, 0.03);
-    border-color: var(--primary, rgba(99, 102, 241, 0.2));
-  }
-
-  html.dark .friends-link-item:hover {
-    background: rgba(255, 255, 255, 0.04);
-  }
-
-  .friends-link-avatar {
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 0.625rem;
-    object-fit: cover;
-    flex-shrink: 0;
-    background: rgba(0, 0, 0, 0.05);
-  }
-
-  .friends-link-info {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    gap: 0.125rem;
-  }
-
-  .friends-link-name {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #333;
-    line-height: 1.3;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  html.dark .friends-link-name {
-    color: #ddd;
-  }
-
-  .friends-link-desc {
-    font-size: 0.75rem;
-    color: #999;
-    line-height: 1.3;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  html.dark .friends-link-desc {
-    color: #777;
-  }
 </style>

@@ -31,6 +31,41 @@ if (footerConfig.enable) {
 >
 </div>
 
+<!-- 页脚装饰波浪线 -->
+<div class="relative mx-auto max-w-(--page-width) px-4 md:px-8 mb-4">
+  <svg
+    class="w-full h-10 opacity-40 dark:opacity-30"
+    viewBox="0 0 1200 40"
+    preserveAspectRatio="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <defs>
+      <linearGradient id="footer-wave-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" style="stop-color:oklch(0.7 0.14 var(--hue));stop-opacity:0" />
+        <stop offset="20%" style="stop-color:oklch(0.7 0.14 var(--hue));stop-opacity:0.6" />
+        <stop offset="50%" style="stop-color:oklch(0.75 0.14 var(--hue));stop-opacity:1" />
+        <stop offset="80%" style="stop-color:oklch(0.7 0.14 var(--hue));stop-opacity:0.6" />
+        <stop offset="100%" style="stop-color:oklch(0.7 0.14 var(--hue));stop-opacity:0" />
+      </linearGradient>
+    </defs>
+    <path
+      d="M0,20 Q150,5 300,20 T600,20 T900,20 T1200,20"
+      fill="none"
+      stroke="url(#footer-wave-gradient)"
+      stroke-width="1.5"
+      stroke-linecap="round"
+    />
+    <path
+      d="M0,25 Q200,10 400,25 T800,25 T1200,25"
+      fill="none"
+      stroke="url(#footer-wave-gradient)"
+      stroke-width="1"
+      stroke-linecap="round"
+      opacity="0.5"
+    />
+  </svg>
+</div>
+
 <div
   class="transition border-dashed border-[oklch(85%_0.01_var(--hue))] dark:border-white/15 rounded-2xl mb-12 flex flex-col items-center justify-center px-6"
 >

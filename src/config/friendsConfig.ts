@@ -50,6 +50,16 @@ export const friendsConfig: FriendLink[] = [
 	// 	weight: 8,
 	// 	enabled: true,
 	// },
+	{
+		title: "KASUIEの次元",
+		imgurl:
+			"https://kasuie.cc/avatar.webp",
+		desc: "喜欢温柔的人",
+		siteurl: "https://kasuie.cc",
+		tags: ["Blog"],
+		weight: 10, // 权重，数字越大排序越靠前
+		enabled: true, // 是否启用
+	},
 ];
 
 // 获取启用的友链并进行排序

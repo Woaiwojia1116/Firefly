@@ -4,6 +4,7 @@ import Live2DWidget from "@components/features/Live2DWidget.astro";
 import SpineModel from "@components/features/SpineModel.astro";
 import Footer from "@components/layout/Footer.astro";
 import Navbar from "@components/layout/Navbar.astro";
+import ScrollHint from "@components/layout/ScrollHint.astro";
 import SideBar from "@components/layout/SideBar.astro";
 import type { MarkdownHeading } from "astro";
 import { Icon } from "astro-icon/components";
@@ -150,9 +151,9 @@ const getRandomSubtitle = () => {
 };
 const randomSubtitle = getRandomSubtitle();
 
-// 主页横幅文本只在首页且全局开关为 true 时显示，不区分设备
+// 首页横幅文本：首页且全局开关为 true 时显示（不限壁纸模式）
 const homeTextEnable = backgroundWallpaper.banner?.homeText?.enable;
-const showHomeText = isBannerMode && !!homeTextEnable && isHomePageCheck;
+const showHomeText = isHomePageCheck && !!homeTextEnable;
 
 const showBannerPostMeta =
 	isBannerMode &&
@@ -178,10 +179,14 @@ const mainPanelTop =
 		? `calc(${BANNER_HEIGHT}vh - ${MAIN_PANEL_OVERLAPS_BANNER_HEIGHT}rem)`
 		: "5.5rem";
 
-// 当banner模式被禁用时，主内容区域应该始终从顶栏下面开始
-// 非首页在小于1024px时会通过 mobile-main-no-banner CSS类覆盖top值为5.5rem
+// 首页始终从 100vh 开始（全屏 Hero，内容完全在视口下方）
+// 非首页按banner模式计算重叠位置
 const finalMainPanelTop =
-	isBannerMode && isBackgroundEnabled ? mainPanelTop : "5.5rem";
+	isHomePageCheck
+		? "100vh"
+		: isBannerMode && isBackgroundEnabled
+			? mainPanelTop
+			: "5.5rem";
 
 // 获取响应式侧边栏配置
 const sidebarConfig = getResponsiveSidebarConfig();
@@ -344,11 +349,12 @@ const bannerCarouselInterval = Math.max(
     </div>
   </>
 ) : (
-<!-- Wallpaper - 如果允许切换则始终渲染，否则只渲染当前模式 -->
-{(isWallpaperSwitchable || isBannerMode || isOverlayMode) && (
+<!-- Wallpaper - 首页始终渲染（全屏背景），其他页面按模式渲染 -->
+{(isHomePageCheck || isWallpaperSwitchable || isBannerMode || isOverlayMode) && (
 <div id="wallpaper-wrapper" class:list={[
 	`absolute z-10 w-full transition duration-700 overflow-hidden ${mobileNonHomeBannerClass}`,
-	(isOverlayMode && !isWallpaperSwitchable) || (isWallpaperSwitchable && !isBannerMode) ? 'wallpaper-overlay' : ''
+	// 首页不加 wallpaper-overlay 类（CSS 已用 position: fixed 覆盖为全屏）
+	!isHomePageCheck && ((isOverlayMode && !isWallpaperSwitchable) || (isWallpaperSwitchable && !isBannerMode)) ? 'wallpaper-overlay' : ''
 ]} style={
 	isWallpaperSwitchable
 		? `top: -${BANNER_HEIGHT_EXTEND}vh; display: none; --overlay-opacity: ${backgroundWallpaper.overlay?.opacity ?? 0.8}; --overlay-z-index: ${backgroundWallpaper.overlay?.zIndex ?? -1}; --overlay-blur: ${backgroundWallpaper.overlay?.blur ?? 0}px;`
@@ -659,61 +665,67 @@ const bannerCarouselInterval = Math.max(
     </div>
 
     <div id="banner-overlay-container" class="absolute inset-0 z-20 pointer-events-none transition-swup-fade">    <!-- Home page text overlay - 始终渲染以便切换模式时控制显示 -->
-    {homeTextEnable && (
-        <div class={`banner-home-text-overlay absolute inset-0 z-20 flex items-center justify-center ${!showHomeText ? 'hidden' : ''}`}>
-            <div class="w-4/5 lg:w-3/4 text-center mb-0">
-                <div class="flex flex-col">
-                    {backgroundWallpaper.banner?.homeText?.title && (
-                        <div class="banner-title font-bold text-white mb-2 lg:mb-4 leading-tight" style={{ '--banner-title-size': backgroundWallpaper.banner.homeText.titleSize || "3rem" }}>
-                            {backgroundWallpaper.banner.homeText.title}
-                        </div>
-                    )}
-                    {backgroundWallpaper.banner?.homeText?.subtitle && (
-                        <div id="banner-subtitle" class="banner-subtitle text-white/90 leading-snug" style={{ fontSize: backgroundWallpaper.banner.homeText.subtitleSize || "1.5rem" }} data-subtitles={JSON.stringify(backgroundWallpaper.banner.homeText.subtitle)}>
-                            {backgroundWallpaper.banner.homeText.typewriter?.enable ? (
-                                <TypewriterText
-                                    text={backgroundWallpaper.banner.homeText.subtitle}
-                                    speed={backgroundWallpaper.banner.homeText.typewriter.speed}
-                                    deleteSpeed={backgroundWallpaper.banner.homeText.typewriter.deleteSpeed}
-                                    pauseTime={backgroundWallpaper.banner.homeText.typewriter.pauseTime}
-                                />
-                            ) : (
-                                randomSubtitle
-                            )}
-                        </div>
-                    )}
+    {homeTextEnable && (() => {
+        const homeText = backgroundWallpaper.banner?.homeText;
+        return (
+        <div class={`banner-home-text-overlay absolute inset-0 z-20 flex items-center justify-between ${!showHomeText ? 'hidden' : ''}`}>
+            {/* 左侧：主标题竖排 */}
+            {homeText && homeText.title && (
+                <div class="w-1/2 h-full flex items-center justify-start pl-12 lg:pl-24">
+                    <div
+                        class="banner-title-vertical font-bold text-white leading-tight"
+                        style={{ '--banner-title-size': homeText.titleSize || "3rem", fontFamily: "'Zhi Mang Xing', cursive" }}
+                    >
+                        {homeText.title.split('').map((char) => (
+                            <span class="block">{char}</span>
+                        ))}
+                    </div>
                 </div>
-            </div>
+            )}
+            {/* 右侧：副标题竖排 */}
+            {homeText && homeText.subtitle && (
+                <div class="w-1/2 h-full flex items-center justify-end pr-12 lg:pr-24">
+                    <div class="flex flex-col items-end">
+                        {homeText.typewriter?.enable ? (
+                            <div
+                                id="banner-subtitle"
+                                class="banner-subtitle text-white/90 leading-snug flex flex-col items-end"
+                                style={{ '--banner-subtitle-size': homeText.subtitleSize || "2.5rem", fontFamily: "'Zhi Mang Xing', cursive" }}
+                                data-subtitles={JSON.stringify(homeText.subtitle)}
+                            >
+                                <TypewriterText
+                                    text={homeText.subtitle}
+                                    speed={homeText.typewriter.speed}
+                                    deleteSpeed={homeText.typewriter.deleteSpeed}
+                                    pauseTime={homeText.typewriter.pauseTime}
+                                />
+                            </div>
+                        ) : (
+                            <div
+                                class="banner-subtitle text-white/90 leading-snug flex flex-col items-end"
+                                style={{ '--banner-subtitle-size': homeText.subtitleSize || "2.5rem", fontFamily: "'Zhi Mang Xing', cursive" }}
+                            >
+                                {(Array.isArray(homeText.subtitle) ? homeText.subtitle : [homeText.subtitle]).map((text) => (
+                                    <span class="block">{text}</span>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
+        );
+    })()}
+
+    {/* 首页滚动提示箭头 — 始终显示 */}
+    {isHomePageCheck && (
+        <ScrollHint />
     )}
 
     <script is:inline>
-        function setRandomSubtitle() {
-            const subtitleElement = document.getElementById('banner-subtitle');
-            if (!subtitleElement) return;
-
-            const subtitlesData = subtitleElement.dataset.subtitles;
-            if (!subtitlesData) return;
-
-            try {
-                const subtitles = JSON.parse(subtitlesData);
-                // Only randomize if it's an array and typewriter is NOT enabled (check for typewriter class)
-                if (Array.isArray(subtitles) && subtitles.length > 0 && !subtitleElement.querySelector('.typewriter')) {
-                    // Use a global variable to persist the subtitle across Swup navigations
-                    // This variable will be reset on full page reload (F5), meeting the requirement
-                    if (!window.fireflyCachedSubtitle) {
-                        const randomIndex = Math.floor(Math.random() * subtitles.length);
-                        window.fireflyCachedSubtitle = subtitles[randomIndex];
-                    }
-                    subtitleElement.textContent = window.fireflyCachedSubtitle;
-                }
-            } catch (e) {
-                console.error("Failed to parse subtitles", e);
-            }
-        }
-
-        // Run on initial load
-        setRandomSubtitle();
+        // 打字机效果已在右侧显示，此脚本不再需要
+        // 保留为空函数以避免潜在的引用错误
+        function setRandomSubtitle() {}
     </script>
 
     <!-- Non-home non-post page title overlay (desktop only) -->
@@ -833,7 +845,7 @@ const bannerCarouselInterval = Math.max(
 )}
 
 <!-- Main content -->
-<div class={`absolute w-full z-30 pointer-events-none ${mobileNonHomeBannerClass ? 'mobile-main-no-banner' : ''} ${!(isBannerMode && isBackgroundEnabled) ? 'no-banner-layout' : ''}`} style={`top: ${finalMainPanelTop}`}>
+<div class={`absolute w-full z-30 pointer-events-none ${mobileNonHomeBannerClass ? 'mobile-main-no-banner' : ''} ${!isHomePageCheck && !(isBannerMode && isBackgroundEnabled) ? 'no-banner-layout' : ''}`} style={`top: ${finalMainPanelTop}`}>
     <!-- The pointer-events-none here prevent blocking the click event of the TOC -->
     <div class={`relative w-full pointer-events-auto ${hideSidebars ? '' : 'xl:w-[92vw] max-w-(--page-width) mx-auto'}`}>
         <div id="main-grid"

@@ -1,4 +1,5 @@
 import type { BackgroundWallpaperConfig } from "@/types/config";
+import type { transpileModule } from "typescript";
 
 export const backgroundWallpaper: BackgroundWallpaperConfig = {
 	// 壁纸模式："banner" 横幅壁纸，"overlay" 全屏透明，"none" 纯色背景无壁纸
@@ -37,14 +38,11 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 	 */
 	src: {
 		// 桌面背景图片（支持单张或多张随机）
-		// desktop: "assets/images/DesktopWallpaper/d1.avif",
 		desktop: [
-			// "assets/images/DesktopWallpaper/d1.avif",
-			// "assets/images/DesktopWallpaper/d2.avif",
-			// "assets/images/DesktopWallpaper/d3.avif",
-			// "assets/images/DesktopWallpaper/d4.avif",
-			// "assets/images/DesktopWallpaper/d5.avif",
-			// "assets/images/DesktopWallpaper/d6.avif",
+			"assets/images/DesktopWallpaper/d18.png",
+		],
+		// 移动背景图片（支持单张或多张随机）
+		mobile: [
 			"assets/images/DesktopWallpaper/d7.jpg",
 			"assets/images/DesktopWallpaper/d8.jpg",
 			"assets/images/DesktopWallpaper/d10.jpg",
@@ -52,16 +50,6 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 			"assets/images/DesktopWallpaper/d12.png",
 			"assets/images/DesktopWallpaper/d13.jpg",
 			"assets/images/DesktopWallpaper/d14.png",
-		],
-		// 移动背景图片（支持单张或多张随机）
-		// mobile: "assets/images/MobileWallpaper/m1.avif",
-		mobile: [
-			"assets/images/MobileWallpaper/m1.avif",
-			"assets/images/MobileWallpaper/m2.avif",
-			"assets/images/MobileWallpaper/m3.avif",
-			"assets/images/MobileWallpaper/m4.avif",
-			"assets/images/MobileWallpaper/m5.avif",
-			"assets/images/MobileWallpaper/m6.avif",
 		],
 	},
 	// Banner模式特有配置
@@ -80,7 +68,7 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 			// 主页横幅主标题
 			title: "YSDY~BLOG",
 			// 主页横幅主标题字体大小
-			titleSize: "3.4rem",
+			titleSize: "3.6rem",
 			// 主页横幅副标题
 			subtitle: [
 				"生命不止，折腾不息",
@@ -88,7 +76,7 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 				"Less is more, but better",
 			],
 			// 主页横幅副标题字体大小
-			subtitleSize: "2rem",
+			subtitleSize: "3rem",
 			typewriter: {
 				// 是否启用打字机效果
 				// 打字机开启 → 循环显示所有副标题
@@ -103,26 +91,26 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 			},
 		},
 		// 图片来源
-		credit: {
-			enable: {
-				// 桌面端显示横幅图片来源文本
-				desktop: true,
-				// 移动端显示横幅图片来源文本
-				mobile: true,
-			},
-			text: {
-				// 桌面端要显示的来源文本
-				desktop: "Pixiv - 晚晚喵",
-				// 移动端要显示的来源文本
-				mobile: "Pixiv - KiraraShss",
-			},
-			url: {
-				// 桌面端原始艺术品或艺术家页面的 URL 链接
-				desktop: "https://www.pixiv.net/users/108801776",
-				// 移动端原始艺术品或艺术家页面的 URL 链接
-				mobile: "https://www.pixiv.net/users/42715864",
-			},
-		},
+		// credit: {
+		// 	enable: {
+		// 		// 桌面端显示横幅图片来源文本
+		// 		desktop: true,
+		// 		// 移动端显示横幅图片来源文本
+		// 		mobile: true,
+		// 	},
+		// 	text: {
+		// 		// 桌面端要显示的来源文本
+		// 		desktop: "Pixiv - 晚晚喵",
+		// 		// 移动端要显示的来源文本
+		// 		mobile: "Pixiv - KiraraShss",
+		// 	},
+		// 	url: {
+		// 		// 桌面端原始艺术品或艺术家页面的 URL 链接
+		// 		desktop: "https://www.pixiv.net/users/108801776",
+		// 		// 移动端原始艺术品或艺术家页面的 URL 链接
+		// 		mobile: "https://www.pixiv.net/users/42715864",
+		// 	},
+		// },
 		// 横幅导航栏配置
 		navbar: {
 			// 横幅导航栏透明模式："semi" 半透明，"full" 完全透明，"semifull" 动态透明
@@ -171,7 +159,7 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 		// 背景模糊度
 		blur: 10,
 		// 卡片透明度，0-1之间，值越小越透明
-		cardOpacity: 0.5,
+		cardOpacity: 0.2,
 	},
 	// 时间轴页面背景图（可选，留空则不显示）
 	timelineBg: "assets/images/DesktopWallpaper/d17.jpg",

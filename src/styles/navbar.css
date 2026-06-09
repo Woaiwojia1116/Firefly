@@ -357,3 +357,10 @@ body.wallpaper-transparent .float-panel {
     z-index: 40;
     pointer-events: auto;
 }
+
+/* 导航栏使用 Zhi Mang Xing 字体（仅文字元素，不影响图标按钮） */
+#navbar > div > a.navbar-item,
+#navbar .navbar-item a,
+#navbar .navbar-item:not(:has(.icon)) {
+    font-family: 'Zhi Mang Xing', cursive;
+}

@@ -5,15 +5,6 @@ import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import { getPostUrlBySlug } from "@/utils/url-utils";
 
-export let tags: string[] = [];
-export let categories: string[] = [];
-export let sortedPosts: Post[] = [];
-
-const params = new URLSearchParams(window.location.search);
-tags = params.has("tag") ? params.getAll("tag") : [];
-categories = params.has("category") ? params.getAll("category") : [];
-const uncategorized = params.get("uncategorized");
-
 interface Post {
 	id: string;
 	data: {
@@ -22,6 +13,27 @@ interface Post {
 		category?: string | null;
 		published: Date;
 	};
+}
+
+interface Props {
+	tags?: string[];
+	categories?: string[];
+	sortedPosts?: Post[];
+}
+
+let { tags = [], categories = [], sortedPosts = [] }: Props = $props();
+
+// 仅在客户端解析 URL 参数
+let parsedTags = $state<string[]>([]);
+let parsedCategories = $state<string[]>([]);
+let uncategorized = $state<string | null>(null);
+
+if (typeof window !== "undefined") {
+	const params = new URLSearchParams(window.location.search);
+	parsedTags = params.has("tag") ? params.getAll("tag") : [];
+	parsedCategories = params.has("category") ? params.getAll("category") : [];
+	uncategorized = params.get("uncategorized");
+	console.log('[ArchivePanel] URL params parsed:', { parsedTags, parsedCategories, uncategorized });
 }
 
 interface Group {
@@ -34,11 +46,13 @@ interface ActiveFilter {
 	values: string[];
 }
 
-let groups: Group[] = [];
-let activeFilters: ActiveFilter[] = [];
-let primaryFilter: ActiveFilter | null = null;
-let secondaryFilters: ActiveFilter[] = [];
-let filteredPostCount = 0;
+console.log('[ArchivePanel] Component initialized with props:', { tags, categories, sortedPosts });
+
+let groups: Group[] = $state([]);
+let activeFilters: ActiveFilter[] = $state([]);
+let primaryFilter: ActiveFilter | null = $state(null);
+let secondaryFilters: ActiveFilter[] = $state([]);
+let filteredPostCount = $state(0);
 
 function formatDate(date: Date) {
 	const month = (date.getMonth() + 1).toString().padStart(2, "0");
@@ -70,11 +84,21 @@ function formatFilterSummary(filters: ActiveFilter[]) {
 }
 
 onMount(async () => {
-	let filteredPosts: Post[] = sortedPosts;
+	console.log('[ArchivePanel] sortedPosts:', sortedPosts);
+	console.log('[ArchivePanel] sortedPosts length:', sortedPosts.length);
+	// 确保 published 是 Date 对象（从 Astro 传递过来时可能是字符串）
+	let filteredPosts: Post[] = sortedPosts.map(post => ({
+		...post,
+		data: {
+			...post.data,
+			published: post.data.published instanceof Date ? post.data.published : new Date(post.data.published)
+		}
+	}));
+	console.log('[ArchivePanel] filteredPosts:', filteredPosts);
 	const currentFilters: ActiveFilter[] = [];
 
-	if (categories.length > 0) {
-		currentFilters.push({ labelKey: I18nKey.categories, values: categories });
+	if (parsedCategories.length > 0) {
+		currentFilters.push({ labelKey: I18nKey.categories, values: parsedCategories });
 	}
 
 	if (uncategorized) {
@@ -84,8 +108,8 @@ onMount(async () => {
 		});
 	}
 
-	if (tags.length > 0) {
-		currentFilters.push({ labelKey: I18nKey.tags, values: tags });
+	if (parsedTags.length > 0) {
+		currentFilters.push({ labelKey: I18nKey.tags, values: parsedTags });
 	}
 
 	activeFilters = currentFilters;
@@ -94,17 +118,17 @@ onMount(async () => {
 		? activeFilters.filter((filter) => filter !== primaryFilter)
 		: [];
 
-	if (tags.length > 0) {
+	if (parsedTags.length > 0) {
 		filteredPosts = filteredPosts.filter(
 			(post) =>
 				Array.isArray(post.data.tags) &&
-				post.data.tags.some((tag) => tags.includes(tag)),
+				post.data.tags.some((tag) => parsedTags.includes(tag)),
 		);
 	}
 
-	if (categories.length > 0) {
+	if (parsedCategories.length > 0) {
 		filteredPosts = filteredPosts.filter(
-			(post) => post.data.category && categories.includes(post.data.category),
+			(post) => post.data.category && parsedCategories.includes(post.data.category),
 		);
 	}
 
@@ -138,7 +162,9 @@ onMount(async () => {
 
 	groupedPostsArray.sort((a, b) => b.year - a.year);
 
+	console.log('[ArchivePanel] final groups:', groupedPostsArray);
 	groups = groupedPostsArray;
+	console.log('[ArchivePanel] groups assigned:', groups);
 });
 </script>
 
