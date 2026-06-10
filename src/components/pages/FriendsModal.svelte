@@ -44,7 +44,7 @@
     { label: "站点名称", value: site.name },
     { label: "站点描述", value: site.desc },
     { label: "站点链接", value: site.url },
-    { label: "头像链接", value: site.avatar },
+    { label: "头像链接", value: "https://i.stardots.io/366046882645/StarDots-2026061016244768517.webp" },
   ];
 
   function open() {
@@ -149,7 +149,7 @@
           <div class="flex items-center gap-4 mb-4">
             <div class="relative shrink-0">
               <div class="w-14 h-14 rounded-xl overflow-hidden ring-2 ring-(--primary)/20">
-                <img src={site.avatar} alt={site.name} class="w-full h-full object-cover" />
+                <img src="https://i.stardots.io/366046882645/StarDots-2026061016244768517.webp" alt={site.name} class="w-full h-full object-cover" />
               </div>
               <div class="absolute -bottom-1 -right-1 w-4.5 h-4.5 rounded-full bg-(--primary) flex items-center justify-center shadow">
                 <svg class="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">

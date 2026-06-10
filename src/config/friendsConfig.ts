@@ -80,6 +80,16 @@ export const friendsConfig: FriendLink[] = [
 		weight: 10, // 权重，数字越大排序越靠前
 		enabled: true, // 是否启用
 	},
+	{
+		title: "辰渊尘",
+		imgurl:
+			"https://blog.mcxiaochen.top/img/congyu/touxiang.webp",
+		desc: "05后，高中生，内容偏技术向，同时也会更新生活日常，希望能对你有用QwQ",
+		siteurl: "https://blog.mcxiaochen.top",
+		tags: ["Blog"],
+		weight: 10, // 权重，数字越大排序越靠前
+		enabled: true, // 是否启用
+	},
 ];
 
 // 获取启用的友链并进行排序

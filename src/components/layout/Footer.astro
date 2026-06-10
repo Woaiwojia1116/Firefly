@@ -1,7 +1,7 @@
 ---
 import fs from "node:fs";
 import path from "node:path";
-import { footerConfig, profileConfig } from "@/config";
+import { footerConfig, profileConfig, siteConfig } from "@/config";
 import { url } from "@/utils/url-utils";
 
 const currentYear = new Date().getFullYear();
@@ -23,6 +23,9 @@ if (footerConfig.enable) {
 		console.warn("FooterConfig.html文件读取失败:", error.message);
 	}
 }
+
+const siteStartDate = siteConfig.siteStartDate || "2026-05-06";
+const timezone = siteConfig.timezone || "Asia/Shanghai";
 ---
 
 
@@ -73,33 +76,46 @@ if (footerConfig.enable) {
     <div class="mb-2">
       {customFooterHtml && <div set:html={customFooterHtml} />}
     </div>
+    <div class="m-0.5 text-lg font-bold">
+      小破站已降临这个世界：
+      <span id="live-clock" data-start={siteStartDate} data-timezone={timezone}></span>
+    </div>
     <div class="m-0.5">
       &copy; <span id="copyright-year">{currentYear}</span>
       {profileConfig.name}. All Rights Reserved. /
-      <a
-        class="transition link text-(--primary) font-medium"
-        target="_blank"
-        href={url("rss.xml")}>RSS</a
-      > /
-      <a
-        class="transition link text-(--primary) font-medium"
-        target="_blank"
-        href={url("sitemap-index.xml")}>Sitemap</a
-      >
+      <a class="transition link text-(--primary) font-medium" target="_blank" href={url("rss.xml")}>RSS</a> /
+      <a class="transition link text-(--primary) font-medium" target="_blank" href={url("sitemap-index.xml")}>Sitemap</a>
     </div>
     <div class="m-0.5">
       Powered by
-      <a
-        class="transition link text-(--primary) font-medium"
-        target="_blank"
-        href="https://astro.build">Astro</a
-      > &
-      <a
-        class="transition link text-(--primary) font-medium"
-        target="_blank"
-        href="https://github.com/CuteLeaf/Firefly">Firefly</a
-      >
+      <a class="transition link text-(--primary) font-medium" target="_blank" href="https://astro.build">Astro</a> &amp;
+      <a class="transition link text-(--primary) font-medium" target="_blank" href="https://github.com/CuteLeaf/Firefly">Firefly</a>
     </div>
+    <script is:inline>
+      (function() {
+        var el = document.getElementById('live-clock');
+        if (!el) return;
+        var startStr = el.getAttribute('data-start');
+        var tz = el.getAttribute('data-timezone') || 'Asia/Shanghai';
+        var startDate = new Date(startStr + 'T00:00:00');
+        function tick() {
+          var now = new Date();
+          var diff = Math.floor((now - startDate) / 1000);
+          if (diff < 0) diff = 0;
+          var days = Math.floor(diff / 86400);
+          var hours = Math.floor((diff % 86400) / 3600);
+          var minutes = Math.floor((diff % 3600) / 60);
+          var seconds = diff % 60;
+          var pad = function(n) { return n < 10 ? '0' + n : '' + n; };
+          var parts = [];
+          if (days > 0) parts.push(days + '天');
+          parts.push(pad(hours) + '时' + pad(minutes) + '分' + pad(seconds) + '秒');
+          el.textContent = parts.join('');
+        }
+        tick();
+        setInterval(tick, 1000);
+      })();
+    </script>
     <!-- 
       注意：请勿随意修改或删除 "Powered by Astro & Firefly" 部分，这是对开源项目的尊重和支持。
       如果您需要在底部增加内容，请在src/config/footerConfig.ts中修改enable属性为true，然后编辑src/config/FooterConfig.html文件。
