@@ -83,9 +83,19 @@ export const friendsConfig: FriendLink[] = [
 	{
 		title: "辰渊尘",
 		imgurl:
-			"https://blog.mcxiaochen.top/img/congyu/touxiang.webp",
+			"https://blog.mcxiaochen.top/images/congyu/touxiang.webp",
 		desc: "05后，高中生，内容偏技术向，同时也会更新生活日常，希望能对你有用QwQ",
 		siteurl: "https://blog.mcxiaochen.top",
+		tags: ["Blog"],
+		weight: 10, // 权重，数字越大排序越靠前
+		enabled: true, // 是否启用
+	},
+	{
+		title: "MmzMing的知识库",
+		imgurl:
+			"https://i.stardots.io/784774835/StarDots-2026052116374135506.jpg",
+		desc: "哈基米，南北绿豆",
+		siteurl: "https://tblog.mmzhiku.xyz",
 		tags: ["Blog"],
 		weight: 10, // 权重，数字越大排序越靠前
 		enabled: true, // 是否启用
