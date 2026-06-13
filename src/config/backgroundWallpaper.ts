@@ -43,13 +43,7 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 		],
 		// 移动背景图片（支持单张或多张随机）
 		mobile: [
-			"assets/images/DesktopWallpaper/d7.jpg",
-			"assets/images/DesktopWallpaper/d8.jpg",
-			"assets/images/DesktopWallpaper/d10.jpg",
-			"assets/images/DesktopWallpaper/d11.png",
-			"assets/images/DesktopWallpaper/d12.png",
-			"assets/images/DesktopWallpaper/d13.jpg",
-			"assets/images/DesktopWallpaper/d14.png",
+			"assets/images/DesktopWallpaper/d18.png",
 		],
 	},
 	// Banner模式特有配置
