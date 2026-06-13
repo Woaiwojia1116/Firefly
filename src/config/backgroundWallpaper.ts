@@ -150,7 +150,7 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 			// 头像图片 alt 文本
 			imageAlt: "Avatar",
 			// 头像标签文字
-			label: "摆烂中",
+			label: "摆烂中~",
 			// 头像图片位置，支持 CSS object-position 值，如 "center"、"top"、"bottom" 等
 			imagePosition: "center",
 		},
