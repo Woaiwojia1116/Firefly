@@ -3,7 +3,7 @@ import type { transpileModule } from "typescript";
 
 export const backgroundWallpaper: BackgroundWallpaperConfig = {
 	// 壁纸模式："banner" 横幅壁纸，"overlay" 全屏透明，"none" 纯色背景无壁纸
-	mode: "banner",
+	mode: "overlay",
 	// 是否允许用户通过导航栏切换壁纸模式，设为false可提升性能（只渲染当前模式）
 	switchable: true,
 	/**
@@ -57,7 +57,7 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 		// 图片位置
 		// 支持所有CSS object-position值，如: 'top', 'center', 'bottom', 'left top', 'right bottom', '25% 75%', '10px 20px'..
 		// 如果不知道怎么配置百分百之类的配置，推荐直接使用：'center'居中，'top'顶部居中，'bottom' 底部居中，'left'左侧居中，'right'右侧居中
-		position: "0% 20%",
+		position: "center 30%",
 
 		// 主页横幅文字
 		homeText: {
@@ -68,7 +68,7 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 			// 主页横幅主标题
 			title: "YSDY~BLOG",
 			// 主页横幅主标题字体大小
-			titleSize: "3.6rem",
+			titleSize: "4rem",
 			// 主页横幅副标题
 			subtitle: [
 				"生命不止，折腾不息",
@@ -114,11 +114,11 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 		// 横幅导航栏配置
 		navbar: {
 			// 横幅导航栏透明模式："semi" 半透明，"full" 完全透明，"semifull" 动态透明
-			transparentMode: "semi",
+			transparentMode: "full",
 			// 是否开启毛玻璃模糊效果，开启可能会影响页面性能，如果不开启则是半透明，请根据自己的喜好开启
 			enableBlur: true,
 			// 毛玻璃模糊度
-			blur: 5,
+			blur: 12,
 		},
 		// 横幅图片轮播配置，仅在当配置多张图片时生效
 		carousel: {
@@ -136,12 +136,23 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 		waves: {
 			enable: {
 				// 桌面端是否启用水波纹动画效果
-				desktop: true,
+				desktop: false,
 				// 移动端是否启用水波纹动画效果
-				mobile: true,
+				mobile: false,
 			},
 			// 是否允许用户通过控制面板切换水波纹动画
 			switchable: true,
+		},
+		// 右上角头像配置
+		avatar: {
+			// 头像图片路径，支持 public 目录（以 "/" 开头）、src 目录或远程 URL
+			imageSrc: "assets/images/123.png",
+			// 头像图片 alt 文本
+			imageAlt: "Avatar",
+			// 头像标签文字
+			label: "摆烂中",
+			// 头像图片位置，支持 CSS object-position 值，如 "center"、"top"、"bottom" 等
+			imagePosition: "center",
 		},
 	},
 	// 全屏透明覆盖模式特有配置
@@ -155,11 +166,11 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 		// 层级，确保壁纸在背景层
 		zIndex: -1,
 		// 壁纸透明度
-		opacity: 0.8,
+		opacity: 0.9,
 		// 背景模糊度
-		blur: 10,
+		blur: 8,
 		// 卡片透明度，0-1之间，值越小越透明
-		cardOpacity: 0.2,
+		cardOpacity: 0.15,
 	},
 	// 时间轴页面背景图（可选，留空则不显示）
 	timelineBg: "assets/images/DesktopWallpaper/d17.jpg",

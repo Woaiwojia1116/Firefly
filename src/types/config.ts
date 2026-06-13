@@ -543,6 +543,13 @@ export type Live2DModelConfig = {
 	};
 };
 
+export type AvatarConfig = {
+	imageSrc?: string; // 头像图片路径
+	imageAlt?: string; // 头像图片 alt 文本
+	label?: string; // 头像标签文字
+	imagePosition?: string; // 头像图片位置，支持 CSS object-position 值
+};
+
 export type BackgroundWallpaperConfig = {
 	mode: "banner" | "overlay" | "none"; // 壁纸模式：banner横幅模式、overlay全屏透明覆盖模式或none纯色背景
 	switchable?: boolean; // 是否允许用户通过导航栏切换壁纸模式，默认true
@@ -629,6 +636,8 @@ export type BackgroundWallpaperConfig = {
 				  }; // 是否启用水波纹动画效果，支持布尔值或分别设置桌面端和移动端
 			switchable?: boolean; // 是否允许用户通过控制面板切换水波纹动画
 		};
+		// 头像配置
+		avatar?: AvatarConfig;
 	};
 	// 全屏透明覆盖模式特有配置
 	overlay?: {

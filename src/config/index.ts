@@ -4,6 +4,7 @@
 // 类型导出
 export type {
 	AnnouncementConfig,
+	AvatarConfig,
 	BackgroundWallpaperConfig,
 	CommentConfig,
 	CoverImageConfig,

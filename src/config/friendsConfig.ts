@@ -83,7 +83,7 @@ export const friendsConfig: FriendLink[] = [
 	{
 		title: "辰渊尘",
 		imgurl:
-			"https://blog.mcxiaochen.top/images/congyu/touxiang.webp",
+			"https://blog.mcxiaochen.top/img/congyu/touxiang.webp",
 		desc: "05后，高中生，内容偏技术向，同时也会更新生活日常，希望能对你有用QwQ",
 		siteurl: "https://blog.mcxiaochen.top",
 		tags: ["Blog"],

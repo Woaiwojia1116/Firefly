@@ -1,0 +1,417 @@
+/* ===== 樱花主题增强样式 ===== */
+
+/* 樱花画布 */
+.sakura-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0.85;
+  transition: opacity 0.3s ease;
+}
+
+:root.dark .sakura-canvas {
+  opacity: 0.5;
+}
+
+/* 首页增强效果 */
+body.homepage {
+  overflow-x: hidden;
+}
+
+/* 导航栏玻璃态增强 */
+#navbar-wrapper {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.4) 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 240, 245, 0.3) 100%
+  ) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow:
+    0 8px 32px rgba(255, 182, 193, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7) !important;
+}
+
+:root.dark #navbar-wrapper {
+  background: linear-gradient(
+    135deg,
+    rgba(40, 35, 50, 0.5) 0%,
+    rgba(35, 30, 45, 0.4) 50%,
+    rgba(45, 35, 55, 0.4) 100%
+  ) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+/* 卡片玻璃态效果增强 */
+.card-base {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 240, 245, 0.4) 100%
+  );
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 8px 24px rgba(255, 182, 193, 0.2),
+    0 2px 8px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transition: all 0.3s ease;
+}
+
+.card-base:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 12px 32px rgba(255, 182, 193, 0.3),
+    0 4px 12px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+:root.dark .card-base {
+  background: linear-gradient(
+    135deg,
+    rgba(40, 35, 50, 0.6) 0%,
+    rgba(35, 30, 45, 0.5) 50%,
+    rgba(45, 35, 55, 0.5) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* 渐变文字效果 */
+.gradient-text {
+  background: linear-gradient(
+    135deg,
+    #000000 0%,
+    #333333 50%,
+    #000000 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+}
+
+:root.dark .gradient-text {
+  background: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    #cccccc 50%,
+    #ffffff 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* 樱花装饰线 */
+.sakura-line {
+  position: relative;
+  display: inline-block;
+}
+
+.sakura-line::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    #000000 20%,
+    #333333 50%,
+    #000000 80%,
+    transparent 100%
+  );
+  border-radius: 1px;
+}
+
+/* 光晕效果 */
+.sakura-glow {
+  position: relative;
+}
+
+.sakura-glow::before {
+  content: '';
+  position: absolute;
+  inset: -20px;
+  background: radial-gradient(
+    circle,
+    rgba(255, 182, 193, 0.3) 0%,
+    rgba(255, 210, 220, 0.1) 40%,
+    transparent 70%
+  );
+  border-radius: inherit;
+  filter: blur(15px);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* 浮动动画 */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.float-animation {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* 呼吸光效 */
+@keyframes glow-pulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+.glow-pulse {
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+/* 字符逐个显示动画 */
+@keyframes char-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.char-animate {
+  display: inline-block;
+  animation: char-reveal 0.5s ease-out forwards;
+}
+
+/* 淡入动画 */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fade-in-up 0.8s ease-out forwards;
+}
+
+/* 侧边栏玻璃态增强 */
+#sidebar-sticky,
+#left-sidebar-sticky,
+#right-sidebar-sticky {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.35) 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 240, 245, 0.25) 100%
+  );
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow:
+    0 8px 24px rgba(255, 182, 193, 0.2),
+    0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+:root.dark #sidebar-sticky,
+:root.dark #left-sidebar-sticky,
+:root.dark #right-sidebar-sticky {
+  background: linear-gradient(
+    135deg,
+    rgba(40, 35, 50, 0.5) 0%,
+    rgba(35, 30, 45, 0.4) 50%,
+    rgba(45, 35, 55, 0.4) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* 页脚玻璃态 */
+footer {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.3) 0%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 240, 245, 0.2) 100%
+  );
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  border-top: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+:root.dark footer {
+  background: linear-gradient(
+    135deg,
+    rgba(40, 35, 50, 0.4) 0%,
+    rgba(35, 30, 45, 0.3) 50%,
+    rgba(45, 35, 55, 0.3) 100%
+  );
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 搜索面板玻璃态 */
+.search-panel {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 240, 245, 0.4) 100%
+  );
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 16px 48px rgba(255, 182, 193, 0.3),
+    0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+:root.dark .search-panel {
+  background: linear-gradient(
+    135deg,
+    rgba(40, 35, 50, 0.6) 0%,
+    rgba(35, 30, 45, 0.5) 50%,
+    rgba(45, 35, 55, 0.5) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.5),
+    0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* 按钮悬停效果增强 */
+.btn-primary,
+button[type="submit"] {
+  background: linear-gradient(
+    135deg,
+    #333333 0%,
+    #000000 50%,
+    #333333 100%
+  );
+  border: none;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover,
+button[type="submit"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* 链接颜色 */
+a {
+  color: #000000;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: #333333;
+}
+
+:root.dark a {
+  color: #ffffff;
+}
+
+:root.dark a:hover {
+  color: #cccccc;
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    #333333 0%,
+    #666666 100%
+  );
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    #000000 0%,
+    #333333 100%
+  );
+}
+
+/* 选中文字颜色 */
+::selection {
+  background: rgba(0, 0, 0, 0.2);
+  color: #333333;
+}
+
+::-moz-selection {
+  background: rgba(0, 0, 0, 0.2);
+  color: #333333;
+}
+
+:root.dark ::selection {
+  background: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+}
+
+/* 响应式调整 */
+@media (max-width: 1023px) {
+  .sakura-canvas {
+    opacity: 0.6;
+  }
+
+  :root.dark .sakura-canvas {
+    opacity: 0.3;
+  }
+}
+
+/* 减少动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

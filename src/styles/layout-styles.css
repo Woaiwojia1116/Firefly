@@ -28,7 +28,11 @@ html.is-page-transitioning .banner-home-text-overlay {
 }
 
 .banner-title-vertical {
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+    text-shadow:
+      2px 2px 4px rgba(0, 0, 0, 0.7),
+      0 0 12px rgba(255, 105, 180, 0.9),
+      0 0 28px rgba(255, 105, 180, 0.6),
+      0 0 56px rgba(255, 105, 180, 0.35);
     animation: banner-fadeInUp 0.3s ease-out;
     font-weight: bold;
     /* 竖排文字样式 - 从上到下 */
@@ -38,7 +42,11 @@ html.is-page-transitioning .banner-home-text-overlay {
 }
 
 .banner-subtitle {
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6);
+    text-shadow:
+      1px 1px 2px rgba(0, 0, 0, 0.6),
+      0 0 12px rgba(255, 105, 180, 0.9),
+      0 0 28px rgba(255, 105, 180, 0.6),
+      0 0 56px rgba(255, 105, 180, 0.35);
     animation: banner-fadeInUp 0.3s ease-out 0.3s both;
     /* 竖排文字样式 - 从上到下 */
     letter-spacing: 0.1em;
@@ -326,14 +334,14 @@ html.is-page-transitioning .banner-home-text-overlay {
 
     /* 桌面端竖排文字优化 */
     .banner-title-vertical {
-        font-size: min(var(--banner-title-size, 3rem), 5vw) !important;
+        font-size: var(--banner-title-size, 4rem) !important;
         letter-spacing: 0.2em !important;
         font-family: 'Zhi Mang Xing', cursive;
     }
 
     .banner-subtitle {
-        font-size: min(var(--banner-subtitle-size, 2.5rem), 3vw) !important;
-        letter-spacing: 0.2em !important;
+        font-size: var(--banner-subtitle-size, 3rem) !important;
+        letter-spacing: 0.15em !important;
         font-family: 'Zhi Mang Xing', cursive;
     }
     

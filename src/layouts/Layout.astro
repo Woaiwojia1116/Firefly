@@ -8,6 +8,7 @@ import FontManager from "@components/features/FontManager.astro";
 import MusicManager from "@components/features/MusicManager.astro";
 import SakuraEffect from "@components/features/SakuraEffect.astro";
 import ConfigCarrier from "@components/layout/ConfigCarrier.astro";
+import Avatar from "@components/layout/Avatar.astro";
 
 import {
 	backgroundWallpaper,
@@ -27,6 +28,7 @@ import { getDefaultBackground, isHomePage } from "@/utils/layout-utils";
 import { url } from "@/utils/url-utils";
 
 import "@/styles/main.css";
+import "@/styles/sakura-theme.css";
 import "@/styles/variables.styl";
 import "@/styles/markdown-extend.styl";
 import "@rehype-callouts-theme";
@@ -523,6 +525,17 @@ const siteLang = lang.replace("_", "-");
     {shouldShowTopHighlight && <div class="top-gradient-highlight" />}
     <ConfigCarrier />
     <MusicManager />
+
+    <!-- 首页头像组件 - 樱花主题 -->
+    <div class="homepage-avatar">
+      <Avatar
+        imageSrc={backgroundWallpaper.banner?.avatar?.imageSrc || "/assets/images/default-avatar.png"}
+        imageAlt={backgroundWallpaper.banner?.avatar?.imageAlt || "Avatar"}
+        label={backgroundWallpaper.banner?.avatar?.label || "文字"}
+        imagePosition={backgroundWallpaper.banner?.avatar?.imagePosition || "center"}
+      />
+    </div>
+
     <slot />
 
 
@@ -643,6 +656,22 @@ const siteLang = lang.replace("_", "-");
     html body.homepage.has-scrolled .banner-home-text-overlay {
         opacity: 0 !important;
         pointer-events: none !important;
+    }
+
+    /* 头像容器 - 默认隐藏 */
+    .homepage-avatar {
+        display: none;
+    }
+
+    /* 只在首页显示头像 */
+    body.homepage .homepage-avatar {
+        display: block;
+    }
+
+    /* 非首页或无壁纸模式时隐藏头像 */
+    body:not(.homepage) .homepage-avatar,
+    html[data-wallpaper-mode="none"] .homepage-avatar {
+        display: none !important;
     }
   }
 

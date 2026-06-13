@@ -1,7 +1,11 @@
 /* 横幅文字阴影 - 更柔和的扩散效果 */
 .banner-title {
     font-family: 'Zhi Mang Xing', cursive;
-    text-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+    text-shadow:
+      0 4px 24px rgba(0, 0, 0, 0.6),
+      0 0 12px rgba(255, 105, 180, 0.9),
+      0 0 28px rgba(255, 105, 180, 0.6),
+      0 0 56px rgba(255, 105, 180, 0.35);
     /* 防止大字体标题溢出容器 */
     overflow-wrap: break-word;
     word-break: break-word;
@@ -11,7 +15,11 @@
 }
 
 .banner-subtitle {
-    text-shadow: 0 2px 16px rgba(0, 0, 0, 0.6);
+    text-shadow:
+      0 2px 16px rgba(0, 0, 0, 0.6),
+      0 0 12px rgba(255, 105, 180, 0.9),
+      0 0 28px rgba(255, 105, 180, 0.6),
+      0 0 56px rgba(255, 105, 180, 0.35);
 }
 
 /* 横幅背景暗层透明度 */

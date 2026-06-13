@@ -5,6 +5,9 @@ const config = sakuraConfig;
 ---
 
 {sakuraConfig?.enable && (
+	<!-- 樱花飘落画布 -->
+	<canvas id="sakura-canvas" class="sakura-canvas"></canvas>
+
 	<script is:inline define:vars={{ sakuraConfig: config }}>
 		let windowWidth = window.innerWidth;
 		let windowHeight = window.innerHeight;
@@ -194,12 +197,16 @@ const config = sakuraConfig;
 
 			// 创建画布
 			createCanvas() {
-				this.canvas = document.createElement('canvas');
+				// 复用已有的画布元素
+				this.canvas = document.getElementById('sakura-canvas');
+				if (!this.canvas) {
+					this.canvas = document.createElement('canvas');
+					this.canvas.setAttribute('id', 'sakura-canvas');
+					document.body.appendChild(this.canvas);
+				}
 				this.canvas.height = windowHeight;
 				this.canvas.width = windowWidth;
-				this.canvas.setAttribute('style', `position: fixed; left: 0; top: 0; pointer-events: none; z-index: ${this.config.zIndex}; transform: translateZ(0);`);
-				this.canvas.setAttribute('id', 'canvas_sakura');
-				document.body.appendChild(this.canvas);
+				this.canvas.setAttribute('style', `position: fixed; left: 0; top: 0; pointer-events: none; z-index: ${this.config.zIndex}; transform: translateZ(0); opacity: 0.85;`);
 				this.ctx = this.canvas.getContext('2d');
 
 				// 监听窗口大小变化
@@ -337,6 +344,21 @@ const config = sakuraConfig;
 			if (window.sakuraInitialized) {
 				return;
 			}
+
+			// 添加暗色主题监听
+			const updateCanvasOpacity = () => {
+				const canvas = document.getElementById('sakura-canvas');
+				if (canvas) {
+					canvas.style.opacity = document.documentElement.classList.contains('dark') ? '0.5' : '0.85';
+				}
+			};
+
+			// 监听主题变化
+			const observer = new MutationObserver(updateCanvasOpacity);
+			observer.observe(document.documentElement, {
+				attributes: true,
+				attributeFilter: ['class']
+			});
 			
 			// 初始化樱花特效的函数
 			const setupSakura = () => {
