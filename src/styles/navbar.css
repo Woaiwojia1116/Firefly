@@ -346,7 +346,6 @@ body.wallpaper-transparent .float-panel {
 #wallpaper-wrapper~* #navbar-wrapper,
 body:has(#wallpaper-wrapper) #navbar-wrapper {
     border-radius: 2.5rem !important;
-    overflow: hidden;
 }
 
 /* ============================================
