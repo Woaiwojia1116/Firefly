@@ -348,6 +348,12 @@ body:has(#wallpaper-wrapper) #navbar-wrapper {
     border-radius: 2.5rem !important;
 }
 
+/* Banner 模式下内部 div 继承外层圆角，避免双层圆角叠加 */
+#wallpaper-wrapper~* #navbar-wrapper #navbar>div,
+body:has(#wallpaper-wrapper) #navbar-wrapper #navbar>div {
+    border-radius: inherit !important;
+}
+
 /* ============================================
  * 小于1280px时隐藏导航栏菜单图标
  * ============================================ */
