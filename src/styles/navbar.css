@@ -34,7 +34,6 @@
  * ============================================ */
 #navbar>div {
     background-color: var(--card-bg);
-    border: 1px solid transparent;
     border-radius: 0 0 0.75rem 0.75rem;
     @apply navbar-surface-transition;
 }
@@ -61,13 +60,16 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
  * ============================================ */
 @media (min-width: 1024px) {
 
-    /* "semi" */
+        /* "semi" */
     #wallpaper-wrapper~* #navbar[data-transparent-mode="semi"]>div,
     body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semi"]>div {
         backdrop-filter: blur(var(--navbar-glass-blur, 20px)) !important;
         background: rgba(255, 255, 255, var(--opacity-55)) !important;
-        border-radius: 0 0 0.75rem 0.75rem !important;
         box-shadow: var(--shadow-navbar) !important;
+    }
+    #wallpaper-wrapper~* #navbar[data-transparent-mode="semi"],
+    body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semi"] {
+        border-radius: 2.5rem !important;
     }
 
     /* "full" */
@@ -76,8 +78,11 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
         backdrop-filter: none !important;
         background: transparent !important;
         border: none !important;
-        border-radius: 0 !important;
         box-shadow: none !important;
+    }
+    #wallpaper-wrapper~* #navbar[data-transparent-mode="full"],
+    body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="full"] {
+        border-radius: 2.5rem !important;
     }
 
     /* "semifull" (static) */
@@ -86,8 +91,11 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
         backdrop-filter: none !important;
         background: transparent !important;
         border: none !important;
-        border-radius: 0 0 0.75rem 0.75rem !important;
         box-shadow: none !important;
+    }
+    #wallpaper-wrapper~* #navbar[data-transparent-mode="semifull"],
+    body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"] {
+        border-radius: 2.5rem !important;
     }
 
     /* "semifull" (scrolled) */
@@ -95,8 +103,11 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
     body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"].scrolled>div {
         backdrop-filter: blur(var(--navbar-glass-blur, 20px)) !important;
         background: rgba(255, 255, 255, var(--opacity-55)) !important;
-        border-radius: 0 0 0.75rem 0.75rem !important;
         box-shadow: var(--shadow-navbar) !important;
+    }
+    #wallpaper-wrapper~* #navbar[data-transparent-mode="semifull"].scrolled,
+    body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"].scrolled {
+        border-radius: 2.5rem !important;
     }
 }
 
@@ -111,8 +122,11 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
     body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semi"][data-is-home="true"]>div {
         backdrop-filter: blur(var(--navbar-glass-blur, 20px)) !important;
         background: rgba(255, 255, 255, var(--opacity-55)) !important;
-        border-radius: 0 0 0.75rem 0.75rem !important;
         box-shadow: var(--shadow-navbar) !important;
+    }
+    #wallpaper-wrapper~* #navbar[data-transparent-mode="semi"][data-is-home="true"],
+    body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semi"][data-is-home="true"] {
+        border-radius: 2.5rem !important;
     }
 
     /* "full" */
@@ -121,8 +135,11 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
         backdrop-filter: none !important;
         background: transparent !important;
         border: none !important;
-        border-radius: 0 !important;
         box-shadow: none !important;
+    }
+    #wallpaper-wrapper~* #navbar[data-transparent-mode="full"][data-is-home="true"],
+    body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="full"][data-is-home="true"] {
+        border-radius: 2.5rem !important;
     }
 
     /* "semifull" (static) */
@@ -131,8 +148,11 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
         backdrop-filter: none !important;
         background: transparent !important;
         border: none !important;
-        border-radius: 0 0 0.75rem 0.75rem !important;
         box-shadow: none !important;
+    }
+    #wallpaper-wrapper~* #navbar[data-transparent-mode="semifull"][data-is-home="true"],
+    body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"][data-is-home="true"] {
+        border-radius: 2.5rem !important;
     }
 
     /* "semifull" (scrolled) */
@@ -140,8 +160,11 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
     body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"][data-is-home="true"].scrolled>div {
         backdrop-filter: blur(var(--navbar-glass-blur, 20px)) !important;
         background: rgba(255, 255, 255, var(--opacity-55)) !important;
-        border-radius: 0 0 0.75rem 0.75rem !important;
         box-shadow: var(--shadow-navbar) !important;
+    }
+    #wallpaper-wrapper~* #navbar[data-transparent-mode="semifull"][data-is-home="true"].scrolled,
+    body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"][data-is-home="true"].scrolled {
+        border-radius: 2.5rem !important;
     }
 }
 
@@ -155,6 +178,10 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
     :root.dark body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semi"]>div {
         background: rgba(0, 0, 0, var(--opacity-55)) !important;
         box-shadow: var(--shadow-navbar-dark) !important;
+    }
+    :root.dark #wallpaper-wrapper~* #navbar[data-transparent-mode="semi"],
+    :root.dark body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semi"] {
+        border-radius: 2.5rem !important;
     }
 
     /* "full" */
@@ -172,12 +199,20 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
         border: none !important;
         box-shadow: none !important;
     }
+    :root.dark #wallpaper-wrapper~* #navbar[data-transparent-mode="semifull"],
+    :root.dark body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"] {
+        border-radius: 2.5rem !important;
+    }
 
     /* "semifull" (scrolled) */
     :root.dark #wallpaper-wrapper~* #navbar[data-transparent-mode="semifull"].scrolled>div,
     :root.dark body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"].scrolled>div {
         background: rgba(0, 0, 0, var(--opacity-55)) !important;
         box-shadow: var(--shadow-navbar-dark) !important;
+    }
+    :root.dark #wallpaper-wrapper~* #navbar[data-transparent-mode="semifull"].scrolled,
+    :root.dark body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"].scrolled {
+        border-radius: 2.5rem !important;
     }
 }
 
@@ -191,6 +226,10 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
     :root.dark body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semi"][data-is-home="true"]>div {
         background: rgba(0, 0, 0, var(--opacity-55)) !important;
         box-shadow: var(--shadow-navbar-dark) !important;
+    }
+    :root.dark #wallpaper-wrapper~* #navbar[data-transparent-mode="semi"][data-is-home="true"],
+    :root.dark body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semi"][data-is-home="true"] {
+        border-radius: 2.5rem !important;
     }
 
     /* "full" */
@@ -208,12 +247,20 @@ body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"]:not(.scro
         border: none !important;
         box-shadow: none !important;
     }
+    :root.dark #wallpaper-wrapper~* #navbar[data-transparent-mode="semifull"][data-is-home="true"],
+    :root.dark body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"][data-is-home="true"] {
+        border-radius: 2.5rem !important;
+    }
 
     /* "semifull" (scrolled) */
     :root.dark #wallpaper-wrapper~* #navbar[data-transparent-mode="semifull"][data-is-home="true"].scrolled>div,
     :root.dark body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"][data-is-home="true"].scrolled>div {
         background: rgba(0, 0, 0, var(--opacity-55)) !important;
         box-shadow: var(--shadow-navbar-dark) !important;
+    }
+    :root.dark #wallpaper-wrapper~* #navbar[data-transparent-mode="semifull"][data-is-home="true"].scrolled,
+    :root.dark body:has(#wallpaper-wrapper) #navbar[data-transparent-mode="semifull"][data-is-home="true"].scrolled {
+        border-radius: 2.5rem !important;
     }
 }
 
@@ -293,6 +340,16 @@ body.wallpaper-transparent .float-panel {
 }
 
 /* ============================================
+ * Banner 模式导航栏圆角
+ * 作用于 #navbar-wrapper（带背景/边框/阴影的最外层）
+ * ============================================ */
+#wallpaper-wrapper~* #navbar-wrapper,
+body:has(#wallpaper-wrapper) #navbar-wrapper {
+    border-radius: 2.5rem !important;
+    overflow: hidden;
+}
+
+/* ============================================
  * 小于1280px时隐藏导航栏菜单图标
  * ============================================ */
 @media (max-width: 1279px) {
@@ -318,6 +375,38 @@ body.wallpaper-transparent .float-panel {
     opacity: 1 !important;
     transform: translateY(-100%) !important;
     transition: transform 0.25s ease-out;
+    pointer-events: none !important;
+}
+
+/* 导航栏隐藏时完全移除背景和边框 - 最高优先级 */
+#navbar.navbar-hidden,
+#navbar.navbar-hidden>div {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    transition: none !important;
+}
+
+/* 针对不同壁纸模式和主题确保覆盖 */
+body:has(#wallpaper-wrapper) #navbar.navbar-hidden>div,
+#wallpaper-wrapper~* #navbar.navbar-hidden>div,
+:root.dark #navbar.navbar-hidden>div,
+:root.dark body:has(#wallpaper-wrapper) #navbar.navbar-hidden>div,
+:root.dark #wallpaper-wrapper~* #navbar.navbar-hidden>div,
+body:has(#wallpaper-wrapper) #navbar.navbar-hidden[data-transparent-mode]>div,
+#wallpaper-wrapper~* #navbar.navbar-hidden[data-transparent-mode]>div,
+:root.dark #navbar.navbar-hidden[data-transparent-mode]>div {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
 
 /* 子项：默认可见，不做任何 opacity/transform 限制 */
