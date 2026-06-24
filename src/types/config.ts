@@ -238,6 +238,19 @@ export type CommentConfig = {
 		region?: string;
 		lang?: string;
 		visitorCount?: boolean;
+		/** 博主评论标签：匹配昵称或邮箱的评论者将显示该标签 */
+		masterTag?: {
+			/** 博主昵称（匹配评论时填写的昵称，推荐使用此方式） */
+			nickname: string;
+			/** 博主邮箱（备选：匹配评论时填写的邮箱，需 Twikoo 前端显示邮箱） */
+			email?: string;
+			/** 标签文字，如 "小破站代理人" */
+			label: string;
+			/** 标签背景色，默认 #ff6b6b */
+			bgColor?: string;
+			/** 标签文字颜色，默认 #fff */
+			textColor?: string;
+		};
 	};
 	waline?: {
 		serverURL: string;

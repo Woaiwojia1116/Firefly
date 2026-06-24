@@ -31,7 +31,7 @@ import FriendsModal from "../../components/pages/FriendsModal.svelte";
 <div class="not-prose my-4">
   {/* ======== 玻璃按钮 → 弹窗（Svelte 交互组件） ======== */}
   <div class="mb-4">
-    <FriendsModal client:load site={site} notes={notes} />
+    <FriendsModal client:only="svelte" site={site} notes={notes} />
   </div>
 
   {/* ======== 申请友链 ======== */}

@@ -5,12 +5,16 @@
    * 弹窗通过 Svelte action (use:portal) 挂载到 body，避免被 Swup 容器的 transform 裁剪
    */
 
-  /** 将元素移动到 document.body，销毁时自动移除 */
+  import { onMount } from "svelte";
+
+  /** 将元素移动到 document.body，销毁时自动移除（SSR 安全） */
   function portal(node: HTMLElement) {
-    document.body.appendChild(node);
+    if (typeof document !== "undefined" && document.body) {
+      document.body.appendChild(node);
+    }
     return {
       destroy() {
-        if (node.parentElement === document.body) {
+        if (typeof document !== "undefined" && node.parentElement === document.body) {
           document.body.removeChild(node);
         }
       },
@@ -39,6 +43,11 @@
 
   let isOpen = $state(false);
   let panelEl: HTMLDivElement | undefined = $state();
+  let isMounted = $state(false);
+
+  onMount(() => {
+    isMounted = true;
+  });
 
   const copyFields = [
     { label: "站点名称", value: site.name },
@@ -116,7 +125,7 @@
 </button>
 
 <!-- ==================== 弹窗（use:portal 挂载到 body 以避免 Swup transform 裁剪） ==================== -->
-{#if isOpen}
+{#if isOpen && isMounted}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="friends-modal-overlay"

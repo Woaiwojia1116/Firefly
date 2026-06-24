@@ -140,7 +140,7 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 		// 右上角头像配置
 		avatar: {
 			// 头像图片路径，支持 public 目录（以 "/" 开头）、src 目录或远程 URL
-			imageSrc: "assets/images/123.avif",
+			imageSrc: "/assets/images/123.avif",
 			// 头像图片 alt 文本
 			imageAlt: "Avatar",
 			// 头像标签文字
