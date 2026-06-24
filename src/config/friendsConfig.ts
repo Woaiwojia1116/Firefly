@@ -100,6 +100,26 @@ export const friendsConfig: FriendLink[] = [
 		weight: 10, // 权重，数字越大排序越靠前
 		enabled: true, // 是否启用
 	},
+	{
+		title: "团子和蛋糕",
+		imgurl:
+			"https://re.tsh520.cn/zl/tx.webp",
+		desc: "如果你喜欢那么欢迎来到我的世界！",
+		siteurl: "https://blog.tsh520.cn/",
+		tags: ["Blog"],
+		weight: 10, // 权重，数字越大排序越靠前
+		enabled: true, // 是否启用
+	},
+	{
+		title: "Luquiesceneの小屋",
+		imgurl:
+			"https://luq-blog.xyz/avatar.webp",
+		desc: "To be or not to be: that is the question.",
+		siteurl: "https://luq-blog.xyz/",
+		tags: ["Blog"],
+		weight: 10, // 权重，数字越大排序越靠前
+		enabled: true, // 是否启用
+	},
 ];
 
 // 获取启用的友链并进行排序
