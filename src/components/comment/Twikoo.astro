@@ -38,20 +38,13 @@ interface Props {
     if (typeof twikoo !== "undefined") {
       const commentEl = document.getElementById("tcomment");
       if (commentEl) {
-        commentEl.innerHTML = "";
-
         const dynamicConfig = createTwikooConfig();
-        console.log("[Twikoo] 初始化配置:", dynamicConfig);
 
         twikoo
           .init(dynamicConfig)
           .then(() => {
-            console.log("[Twikoo] 初始化完成");
-            // 延迟执行，等待 Twikoo 渲染评论
-            setTimeout(applyMasterTag, 500);
-            // 再次延迟，确保异步评论加载完成
-            setTimeout(applyMasterTag, 1500);
-            setTimeout(applyMasterTag, 3000);
+            // 兜底：初始渲染可能用 innerHTML 批量写入，observer 补标签
+            observeComments();
           })
           .catch((error) => {
             console.error("[Twikoo] 初始化失败:", error);
@@ -63,116 +56,129 @@ interface Props {
     }
   }
 
-  // 给博主评论添加标签
-  function applyMasterTag() {
-    console.log("[Twikoo] applyMasterTag 执行, masterTag:", masterTag);
-    if (!masterTag || !masterTag.label) {
-      console.log("[Twikoo] masterTag 配置缺失，跳过");
-      return;
-    }
+  // 给单条评论添加标签（在元素插入 DOM 前调用）
+  function addTagToComment(comment) {
+    if (!masterTag || !masterTag.label) return;
+    if (comment.querySelector(".firefly-master-tag")) return;
 
-    const comments = document.querySelectorAll(".tk-comment");
-    console.log("[Twikoo] 找到评论数量:", comments.length);
-    if (comments.length === 0) return;
+    let isMaster = false;
 
-    // 打印第一个评论的 HTML 结构，帮助调试
-    if (comments[0]) {
-      console.log("[Twikoo] 第一个评论 HTML:", comments[0].innerHTML.substring(0, 500));
-    }
-
-    comments.forEach((comment) => {
-      let isMaster = false;
-      let matchedBy = "";
-
-      // 优先匹配昵称（始终可见，推荐）
-      if (masterTag.nickname) {
-        const nickEl = comment.querySelector(".tk-nick-link");
-        if (nickEl) {
-          const nick = nickEl.textContent?.trim();
-          console.log("[Twikoo] 找到昵称:", nick, "期望:", masterTag.nickname);
-          if (nick === masterTag.nickname) {
-            isMaster = true;
-            matchedBy = "nickname";
-          }
-        } else {
-          // 尝试其他可能的选择器
-          const altNickEl = comment.querySelector(".tk-nick");
-          if (altNickEl) {
-            const nick = altNickEl.textContent?.trim();
-            console.log("[Twikoo] 找到昵称(.tk-nick):", nick);
-            if (nick === masterTag.nickname) {
-              isMaster = true;
-              matchedBy = "nickname-alt";
-            }
-          }
-        }
-      }
-
-      // 备选：匹配邮箱（需 Twikoo 前端显示邮箱）
-      if (!isMaster && masterTag.email) {
-        const emailEl = comment.querySelector(".tk-email");
-        if (emailEl) {
-          const email = emailEl.textContent?.trim().toLowerCase();
-          if (email === masterTag.email.toLowerCase()) {
-            isMaster = true;
-            matchedBy = "email";
-          }
-        }
-      }
-
-      if (!isMaster) return;
-
-      console.log("[Twikoo] 匹配到博主评论，匹配方式:", matchedBy);
-
-      // 避免重复添加
-      if (comment.querySelector(".firefly-master-tag")) return;
-
+    if (masterTag.nickname) {
       const nickEl = comment.querySelector(".tk-nick-link") || comment.querySelector(".tk-nick");
-      if (!nickEl) return;
+      if (nickEl && nickEl.textContent.trim() === masterTag.nickname) {
+        isMaster = true;
+      }
+    }
 
-      const tag = document.createElement("span");
-      tag.className = "firefly-master-tag";
-      tag.textContent = masterTag.label;
-      tag.style.cssText = `
-        display: inline-block;
-        margin-left: 6px;
-        padding: 1px 6px;
-        font-size: 11px;
-        font-weight: 500;
-        line-height: 1.4;
-        border-radius: 4px;
-        background-color: ${masterTag.bgColor || "#ff6b6b"};
-        color: ${masterTag.textColor || "#fff"};
-        vertical-align: middle;
-        white-space: nowrap;
-      `;
+    if (!isMaster && masterTag.email) {
+      const emailEl = comment.querySelector(".tk-email");
+      if (emailEl && emailEl.textContent.trim().toLowerCase() === masterTag.email.toLowerCase()) {
+        isMaster = true;
+      }
+    }
 
-      nickEl.parentNode?.insertBefore(tag, nickEl.nextSibling);
-      console.log("[Twikoo] 标签已添加");
-    });
+    if (!isMaster) return;
+
+    const nickEl = comment.querySelector(".tk-nick-link") || comment.querySelector(".tk-nick");
+    if (!nickEl) return;
+
+    const tag = document.createElement("span");
+    tag.className = "firefly-master-tag";
+    tag.textContent = masterTag.label;
+    tag.style.cssText = `
+      display: inline-block;
+      margin-left: 6px;
+      padding: 1px 6px;
+      font-size: 11px;
+      font-weight: 500;
+      line-height: 1.4;
+      border-radius: 4px;
+      background-color: ${masterTag.bgColor || "#ff6b6b"};
+      color: ${masterTag.textColor || "#fff"};
+      vertical-align: middle;
+      white-space: nowrap;
+    `;
+
+    nickEl.parentNode?.insertBefore(tag, nickEl.nextSibling);
+  }
+
+  // 给博主评论添加标签（批量，用于 observer 回调）
+  function applyMasterTag() {
+    const comments = document.querySelectorAll(".tk-comment:not(.firefly-master-tag)");
+    comments.forEach(addTagToComment);
+  }
+
+  // 拦截容器 DOM 插入方法，在评论插入前同步加标签
+  function patchCommentContainer() {
+    const container = document.getElementById("tcomment");
+    if (!container || container.__fireflyPatched) return;
+
+    const methods = ["appendChild", "insertBefore", "append", "prepend"];
+
+    for (const method of methods) {
+      const original = container[method];
+      if (!original) continue;
+
+      container[method] = function (...args) {
+        const nodes = args[0] instanceof NodeList ? Array.from(args[0]) : [args[0]];
+
+        for (const node of nodes) {
+          if (node.nodeType !== Node.ELEMENT_NODE) continue;
+          const comments = node.classList?.contains("tk-comment")
+            ? [node]
+            : node.querySelectorAll?.(".tk-comment") || [];
+          comments.forEach(addTagToComment);
+        }
+
+        return original.apply(this, args);
+      };
+    }
+
+    container.__fireflyPatched = true;
   }
 
   // 监听评论加载完成（Twikoo 异步渲染评论）
   function observeComments() {
     if (!masterTag || (!masterTag.nickname && !masterTag.email)) return;
 
-    const observer = new MutationObserver(() => {
-      applyMasterTag();
-    });
+    // 拦截 DOM 插入，标签和评论同步出现
+    patchCommentContainer();
 
-    const commentContainer = document.querySelector(".tk-comments");
-    if (commentContainer) {
-      observer.observe(commentContainer, { childList: true, subtree: true });
-      console.log("[Twikoo] MutationObserver 已启动");
-    } else {
-      console.log("[Twikoo] 未找到 .tk-comments 容器");
+    // 立即执行一次，处理 init 已完成后的初始渲染
+    applyMasterTag();
+
+    // 用 rAF 合并同帧内的多次 DOM 变更，作为兜底
+    let rafId = null;
+    const scheduleApply = () => {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        applyMasterTag();
+      });
+    };
+
+    const observer = new MutationObserver(scheduleApply);
+
+    const target = document.querySelector("#tcomment");
+    if (target) {
+      observer.observe(target, { childList: true, subtree: true });
     }
+
+    // 定时轮询兜底：30 秒后自动停止
+    let elapsed = 0;
+    const fallback = setInterval(() => {
+      elapsed += 1000;
+      if (elapsed >= 30000) {
+        clearInterval(fallback);
+        return;
+      }
+      scheduleApply();
+    }, 1000);
   }
 
   // 页面加载时初始化
   document.addEventListener("DOMContentLoaded", () => {
     initTwikoo();
-    observeComments();
   });
 
   // Swup 页面切换后重新初始化
@@ -180,7 +186,6 @@ interface Props {
     window.swup.hooks.on("content:replace", function () {
       setTimeout(() => {
         initTwikoo();
-        observeComments();
       }, 200);
     });
   } else {
@@ -189,7 +194,6 @@ interface Props {
         window.swup.hooks.on("content:replace", function () {
           setTimeout(() => {
             initTwikoo();
-            observeComments();
           }, 200);
         });
       }
@@ -202,7 +206,6 @@ interface Props {
     if (commentEl) {
       console.log("[Twikoo] 通过自定义事件重新初始化");
       initTwikoo();
-      observeComments();
     }
   });
 </script>
