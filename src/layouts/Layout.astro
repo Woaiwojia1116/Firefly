@@ -564,6 +564,205 @@ const siteLang = lang.replace("_", "-");
         scrollHandler();
       })();
     </script>
+
+    <!-- 代码块展开弹窗（可拖拽，不遮挡周围） -->
+    <script is:inline>
+      (function() {
+        "use strict";
+
+        /* ---- 样式 ---- */
+        var SID = "cb-modal-styles";
+        if (!document.getElementById(SID)) {
+          var s = document.createElement("style");
+          s.id = SID;
+          s.textContent =
+            /* 展开按钮 */
+            ".cb-expand-btn{position:absolute;top:.4rem;right:.4rem;z-index:5;padding:.35rem .75rem;font-size:.72rem;font-weight:500;font-family:inherit;border:1px solid rgba(120,120,120,.25);border-radius:9999px;background:rgba(255,255,255,.7);color:#666;cursor:pointer;opacity:.45;transition:opacity .2s,background .2s,color .2s,border-color .2s;-webkit-tap-highlight-color:transparent;user-select:none;line-height:1.4}" +
+            ".cb-expand-btn:hover{opacity:1;background:rgba(255,255,255,.95);color:#333;border-color:rgba(120,120,120,.5)}" +
+            ":root.dark .cb-expand-btn{background:rgba(40,40,45,.7);color:#aaa;border-color:rgba(255,255,255,.15)}" +
+            ":root.dark .cb-expand-btn:hover{background:rgba(50,50,60,.95);color:#eee;border-color:rgba(255,255,255,.3)}" +
+            /* 弹窗面板（无遮罩，直接浮在页面上） */
+            ".cb-panel{position:fixed;top:50%;left:50%;z-index:99999;width:80vw;max-width:900px;max-height:80vh;border-radius:1rem;background:#fff;border:1px solid #ddd;box-shadow:0 8px 30px rgba(0,0,0,.18);display:flex;flex-direction:column;will-change:transform;transform:translate(-50%,-50%);opacity:0;transition:opacity .15s ease}" +
+            ".cb-panel.cb-in{opacity:1}" +
+            ":root.dark .cb-panel{background:#1e1e24;color:#ddd;border-color:#333;box-shadow:0 8px 30px rgba(0,0,0,.5)}" +
+            /* 顶部栏（拖拽手柄） */
+            ".cb-hdr{display:flex;align-items:center;justify-content:flex-end;padding:.5rem .75rem;border-bottom:1px solid #eee;cursor:grab;user-select:none;-webkit-user-select:none;border-radius:1rem 1rem 0 0;flex-shrink:0}" +
+            ".cb-hdr:active{cursor:grabbing}" +
+            ":root.dark .cb-hdr{border-bottom-color:#333}" +
+            ".cb-close{width:1.75rem;height:1.75rem;border-radius:.375rem;display:flex;align-items:center;justify-content:center;background:transparent;border:none;cursor:pointer;color:#999;transition:background .15s,color .15s;-webkit-tap-highlight-color:transparent}" +
+            ".cb-close:hover{background:rgba(0,0,0,.07);color:#333}" +
+            ":root.dark .cb-close:hover{background:rgba(255,255,255,.08);color:#eee}" +
+            /* 缩放手柄 */
+            ".cb-resize{position:absolute;right:0;bottom:0;width:1.25rem;height:1.25rem;cursor:nwse-resize;user-select:none;-webkit-user-select:none;z-index:2}" +
+            ".cb-resize::after{content:'';position:absolute;right:3px;bottom:3px;width:8px;height:8px;border-right:2px solid rgba(120,120,120,.4);border-bottom:2px solid rgba(120,120,120,.4);border-radius:0 0 3px 0}" +
+            ".cb-resize:hover::after{border-color:rgba(120,120,120,.7)}" +
+            ":root.dark .cb-resize::after{border-color:rgba(255,255,255,.25)}" +
+            ":root.dark .cb-resize:hover::after{border-color:rgba(255,255,255,.5)}" +
+            ".cb-resize-tip{margin-right:auto;padding:.2rem .5rem;font-size:.65rem;font-weight:400;color:#999;white-space:nowrap;opacity:.7;transition:opacity .2s}" +
+            ".cb-hdr:hover .cb-resize-tip{opacity:1}" +
+            ":root.dark .cb-resize-tip{color:#888}" +
+            /* 代码区域 */
+            ".cb-body{flex:1;overflow:auto;padding:.5rem .75rem;user-select:text;min-height:0}" +
+            ".cb-pre{margin:0;padding:.75rem;border-radius:.5rem;font-family:'JetBrains Mono Variable',ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono','Courier New',monospace;font-size:.85rem;line-height:1.6;background:rgba(0,0,0,.03);white-space:pre;word-wrap:normal}" +
+            ":root.dark .cb-pre{color:#ddd;background:rgba(0,0,0,.2)}" +
+            ".cb-body::-webkit-scrollbar{width:7px;height:7px}" +
+            ".cb-body::-webkit-scrollbar-thumb{background:rgba(0,0,0,.2);border-radius:3px}" +
+            ".cb-body::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.35)}" +
+            ":root.dark .cb-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2)}" +
+            ":root.dark .cb-body::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.35)}" +
+            "@media(max-width:768px){.cb-panel{width:95vw;max-height:90vh}}";
+          document.head.appendChild(s);
+        }
+
+        /* ---- 状态 ---- */
+        var panel, hdr, drag;
+
+        function open(html) {
+          close();
+          panel = document.createElement("div");
+          panel.className = "cb-panel";
+          hdr = document.createElement("div");
+          hdr.className = "cb-hdr";
+          var closeBtn = document.createElement("button");
+          closeBtn.className = "cb-close";
+          closeBtn.type = "button";
+          closeBtn.setAttribute("aria-label", "关闭");
+          closeBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+          closeBtn.onclick = close;
+          hdr.appendChild(closeBtn);
+          var body = document.createElement("div");
+          body.className = "cb-body";
+          var pre = document.createElement("pre");
+          pre.className = "cb-pre";
+          /* 移除行号列（expressive-code 用 div.ln 渲染行号） */
+          var cleaned = html.replace(/<div[^>]*class="[^"]*\bln\b[^"]*"[^>]*>[^<]*<\/div>/gi, "");
+          cleaned = cleaned.replace(/<div[^>]*class="[^"]*line[^"]*"[^>]*>[^<]*<\/div>/gi, "");
+          cleaned = cleaned.replace(/<span[^>]*class="[^"]*line[^"]*"[^>]*>[^<]*<\/span>/gi, "");
+          /* 移除折叠区域（collapsible-sections 插件生成的 details/summary） */
+          cleaned = cleaned.replace(/<details[^>]*>[\s\S]*?<\/details>/gi, "");
+          cleaned = cleaned.replace(/<summary[^>]*>[\s\S]*?<\/summary>/gi, "");
+          /* 移除代码块上的"独立查看"按钮 */
+          cleaned = cleaned.replace(/<button[^>]*class="[^"]*cb-expand-btn[^"]*"[^>]*>[\s\S]*?<\/button>/gi, "");
+          /* 移除 collapsible 插件的展开收起按钮和渐变遮罩 */
+          cleaned = cleaned.replace(/<button[^>]*class="[^"]*ec-collapse__toggle[^"]*"[^>]*>[\s\S]*?<\/button>/gi, "");
+          cleaned = cleaned.replace(/<div[^>]*class="[^"]*ec-collapse__gradient[^"]*"[^>]*><\/div>/g, "");
+          /* 解除折叠限制，让代码完整展示 */
+          cleaned = cleaned.replace(/ec-collapse--collapsed/g, "ec-collapse--expanded");
+          pre.innerHTML = cleaned;
+          body.appendChild(pre);
+          var resizeHandle = document.createElement("div");
+          resizeHandle.className = "cb-resize";
+          var resizeTip = document.createElement("span");
+          resizeTip.className = "cb-resize-tip";
+          resizeTip.textContent = "拖动右下角缩放";
+          hdr.appendChild(resizeTip);
+          panel.appendChild(hdr);
+          panel.appendChild(body);
+          panel.appendChild(resizeHandle);
+          document.body.appendChild(panel);
+          requestAnimationFrame(function() { panel.classList.add("cb-in"); });
+          hdr.addEventListener("pointerdown", onDown);
+          resizeHandle.addEventListener("pointerdown", onResizeDown);
+        }
+
+        function close() {
+          if (panel) { panel.remove(); panel = hdr = null; }
+          document.removeEventListener("pointermove", onMove);
+          document.removeEventListener("pointerup", onUp);
+          document.removeEventListener("pointermove", onResizeMove);
+          document.removeEventListener("pointerup", onResizeUp);
+          drag = null;
+          resize = null;
+        }
+
+        function onDown(e) {
+          if (e.target.closest(".cb-close")) return;
+          if (!panel) return;
+          var rect = panel.getBoundingClientRect();
+          panel.style.transform = "none";
+          panel.style.left = rect.left + "px";
+          panel.style.top = rect.top + "px";
+          drag = { sx: e.clientX, sy: e.clientY, ox: rect.left, oy: rect.top };
+          document.addEventListener("pointermove", onMove);
+          document.addEventListener("pointerup", onUp);
+        }
+
+        function onMove(e) {
+          if (!drag || !panel) return;
+          var nx = drag.ox + (e.clientX - drag.sx);
+          var ny = drag.oy + (e.clientY - drag.sy);
+          var r = panel.getBoundingClientRect();
+          var margin = 20;
+          nx = Math.max(margin - r.width, Math.min(window.innerWidth - margin, nx));
+          ny = Math.max(margin - r.height, Math.min(window.innerHeight - margin, ny));
+          panel.style.left = nx + "px";
+          panel.style.top = ny + "px";
+        }
+
+        function onUp() {
+          document.removeEventListener("pointermove", onMove);
+          document.removeEventListener("pointerup", onUp);
+          drag = null;
+        }
+
+        /* ---- 缩放 ---- */
+        var resize = null;
+
+        function onResizeDown(e) {
+          e.preventDefault();
+          if (!panel) return;
+          var rect = panel.getBoundingClientRect();
+          resize = { sx: e.clientX, sy: e.clientY, ow: rect.width, oh: rect.height };
+          document.addEventListener("pointermove", onResizeMove);
+          document.addEventListener("pointerup", onResizeUp);
+        }
+
+        function onResizeMove(e) {
+          if (!resize || !panel) return;
+          var nw = resize.ow + (e.clientX - resize.sx);
+          var nh = resize.oh + (e.clientY - resize.sy);
+          var minW = 320, minH = 200;
+          var maxW = window.innerWidth - 40, maxH = window.innerHeight - 40;
+          nw = Math.max(minW, Math.min(maxW, nw));
+          nh = Math.max(minH, Math.min(maxH, nh));
+          panel.style.width = nw + "px";
+          panel.style.height = nh + "px";
+          panel.style.maxWidth = "none";
+          panel.style.maxHeight = "none";
+        }
+
+        function onResizeUp() {
+          document.removeEventListener("pointermove", onResizeMove);
+          document.removeEventListener("pointerup", onResizeUp);
+          resize = null;
+        }
+
+        /* ---- 按钮 ---- */
+        function addBtn(block) {
+          if (block.querySelector(".cb-expand-btn")) return;
+          var btn = document.createElement("button");
+          btn.className = "cb-expand-btn";
+          btn.type = "button";
+          btn.textContent = "⛶ 独立查看";
+          btn.setAttribute("aria-label", "独立查看代码");
+          btn.addEventListener("click", function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            open(block.innerHTML);
+          });
+          block.style.position = "relative";
+          block.appendChild(btn);
+        }
+
+        function scan() {
+          document.querySelectorAll(".expressive-code").forEach(addBtn);
+        }
+
+        if (document.readyState === "loading") { document.addEventListener("DOMContentLoaded", scan); } else { scan(); }
+        if (window.swup?.hooks) { window.swup.hooks.on("content:replace", scan); }
+        document.addEventListener("keydown", function(e) { if (e.key === "Escape") close(); });
+      })();
+    </script>
   </body>
 </html>
 

@@ -120,6 +120,16 @@ export const friendsConfig: FriendLink[] = [
 		weight: 10, // 权重，数字越大排序越靠前
 		enabled: true, // 是否启用
 	},
+	{
+		title: "雪萌の小窝",
+		imgurl:
+			"https://xuemeng.work/wp-content/uploads/2026/02/icon.jpg",
+		desc: "一个喜欢嵌入式的杂鱼大学生的博客～",
+		siteurl: "https://xuemeng.work",
+		tags: ["Blog"],
+		weight: 10, // 权重，数字越大排序越靠前
+		enabled: true, // 是否启用
+	},
 ];
 
 // 获取启用的友链并进行排序
