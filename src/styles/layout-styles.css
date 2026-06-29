@@ -365,33 +365,25 @@ html.is-page-transitioning .banner-home-text-overlay {
     #wallpaper-wrapper {
         transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease-out;
         transform-origin: top center;
-        /* 硬件加速优化 */
-        will-change: transform, opacity;
-        backface-visibility: hidden;
-        -webkit-backface-visibility: hidden;
-        transform: translateZ(0);
-        -webkit-transform: translateZ(0);
+        /* 仅在动画期间启用硬件加速，避免持续占用 GPU 层 */
+        will-change: auto;
+        contain: layout style paint;
     }
-    
+
     .mobile-hide-banner {
-        transform: translateY(-100%) translateZ(0) !important;
+        transform: translateY(-100%) !important;
         opacity: 0 !important;
         pointer-events: none !important;
         /* 快速消失 */
         transition: transform 0.3s ease-in, opacity 0.2s ease-in !important;
     }
-    
+
     /* 手机端非首页时主内容区域从顶部开始 - 延迟出现的动画 */
     .absolute.w-full.z-30 {
         transition: top 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.1s;
-        /* 硬件加速优化 */
-        will-change: top;
-        /* 禁用transform以保证back to top 按钮可以显示
-        transform: translateZ(0);
-        -webkit-transform: translateZ(0);
-        */
+        will-change: auto;
     }
-    
+
     .absolute.w-full.z-30.mobile-main-no-banner {
         top: 5.5rem !important;
         min-height: calc(100vh - 5.5rem) !important;
@@ -403,13 +395,9 @@ html.is-page-transitioning .banner-home-text-overlay {
 /* 移动端banner性能优化 */
 @media (max-width: 1023px) {
     .banner-container {
-        /* 启用硬件加速 */
-        transform: translateZ(0);
-        -webkit-transform: translateZ(0);
-        will-change: transform, opacity;
-        
-        /* 优化渲染性能 */
+        /* 使用 contain 替代 will-change 减少持续 GPU 层占用 */
         contain: layout style paint;
+        will-change: auto;
         
         /* 减少重绘 */
         backface-visibility: hidden;
@@ -417,11 +405,10 @@ html.is-page-transitioning .banner-home-text-overlay {
     }
 
     .carousel-item {
-        /* 硬件加速 */
-        transform: translateZ(0);
-        -webkit-transform: translateZ(0);
-        will-change: transform, opacity;
-        
+        /* 使用 contain 替代持续 GPU 层 */
+        contain: layout style;
+        will-change: auto;
+
         /* 优化触摸响应 */
         touch-action: pan-y;
         -webkit-touch-callout: none;
@@ -684,13 +671,15 @@ html.is-page-transitioning .banner-home-text-overlay {
     transition: opacity 0.6s ease !important;
 }
 
-/* Overlay 模式下图片模糊效果 */
+/* Overlay 模式下图片模糊效果（使用较小的 blur 值减少 GPU 负载） */
 #wallpaper-wrapper.wallpaper-overlay img {
     width: 100% !important;
     height: 100% !important;
     object-fit: cover !important;
     object-position: center !important;
     filter: blur(var(--overlay-blur, 0px));
+    /* 提示浏览器此元素会变化，但不过度创建合成层 */
+    will-change: auto;
 }
 
 /* Overlay 模式隐藏 Banner 专属元素 */

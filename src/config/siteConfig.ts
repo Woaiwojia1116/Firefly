@@ -16,8 +16,7 @@ export const siteConfig: SiteConfig = {
 	site_url: "https://ysdyblog.ccwu.cc",
 
 	// 站点描述
-	description:
-		"个人小站",
+	description: "个人小站",
 
 	// 站点关键词
 	keywords: [
@@ -90,12 +89,12 @@ export const siteConfig: SiteConfig = {
 		stickyNavbar: true,
 		// 导航栏自动隐藏配置
 		autoHide: {
-			enable: true,           // 是否启用自动隐藏
-			threshold: 100,          // 滚动阈值(px)，默认100
-			hideOnScrollDown: true,  // 向下滚动时隐藏
-			showOnScrollUp: true,    // 向上滚动时显示
-			enableHoverZone: true,   // 是否启用顶部悬停区域
-			hoverZoneHeight: 60,     // 悬停区域高度(px)，默认60
+			enable: true, // 是否启用自动隐藏
+			threshold: 100, // 滚动阈值(px)，默认100
+			hideOnScrollDown: true, // 向下滚动时隐藏
+			showOnScrollUp: true, // 向上滚动时显示
+			enableHoverZone: true, // 是否启用顶部悬停区域
+			hoverZoneHeight: 60, // 悬停区域高度(px)，默认60
 		},
 	},
 

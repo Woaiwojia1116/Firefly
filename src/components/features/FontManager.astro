@@ -154,20 +154,26 @@ const fontFamilyStyle = generateFontFamilyStyle();
       });
   }
 
-  // 字体加载性能监控
+  // 字体加载性能监控（可选，仅在需要时启用）
+  // 注意：此观察器当前未输出任何内容，仅为保留占位
+  // 如需启用 uncomment 以下代码并添加 disconnect 逻辑
+  /*
   if (typeof PerformanceObserver !== "undefined") {
     const observer = new PerformanceObserver((list) => {
       list.getEntries().forEach((entry) => {
         if (entry.entryType === "resource") {
-          // console.log(`Font resource loaded: ${entry.name} (${entry.duration.toFixed(2)}ms)`);
+          console.log(`Font resource loaded: ${entry.name} (${entry.duration.toFixed(2)}ms)`);
         }
       });
     });
 
     try {
       observer.observe({ entryTypes: ["resource"] });
+      // 页面卸载时清理
+      window.addEventListener("beforeunload", () => observer.disconnect());
     } catch (e) {
       // 浏览器不支持时静默失败
     }
   }
+  */
 </script>

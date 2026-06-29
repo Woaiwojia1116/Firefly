@@ -1,678 +1,751 @@
 <script lang="ts">
-  import { onMount, tick } from "svelte";
+import { onMount, tick } from "svelte";
 
-  /* ================================================================
+/* ================================================================
      Swup 类型
      ================================================================ */
-  interface SwupHooks {
-    on(event: string, cb: (...args: any[]) => void): void;
-    off(event: string, cb: (...args: any[]) => void): void;
-  }
+interface SwupHooks {
+	on(event: string, cb: (...args: any[]) => void): void;
+	off(event: string, cb: (...args: any[]) => void): void;
+}
 
-  /* ================================================================
+/* ================================================================
      状态 —— Svelte 5 $state runes
      ================================================================ */
-  // 覆盖层立即显示（opacity: 1），仅通过 leaving 触发淡出
-  let show = $state(false);
-  let leaving = $state(false);
+// 覆盖层立即显示（opacity: 1），仅通过 leaving 触发淡出
+let show = $state(false);
+let leaving = $state(false);
 
-  // ── 阶段状态 ──
-  let spinnerVisible = $state(true);
-  let riverActive = $state(false);
-  let lineExtending = $state(false);
-  let lineFading = $state(false);
-  let charExpandActive = $state(false);
-  let yearAnimating = $state(false);
-  let currentYear = $state(2000);
-  let yearStr = $state("2000");
+// ── 阶段状态 ──
+let spinnerVisible = $state(true);
+let riverActive = $state(false);
+let lineExtending = $state(false);
+let lineFading = $state(false);
+let charExpandActive = $state(false);
+let yearAnimating = $state(false);
+let currentYear = $state(2000);
+let yearStr = $state("2000");
 
-  // 字符拆分：预计算每个位置的字号（1.8rem ~ 3.2rem 随机，动画期间不变）
-  let charSizes: number[] = $state([]);
-  function rollCharSizes(len: number) {
-    charSizes = Array.from({ length: len }, () => 2.0 + Math.random() * 0.6);
-  }
+// 字符拆分：预计算每个位置的字号（1.8rem ~ 3.2rem 随机，动画期间不变）
+let charSizes: number[] = $state([]);
+function rollCharSizes(len: number) {
+	charSizes = Array.from({ length: len }, () => 2.0 + Math.random() * 0.6);
+}
 
-  const START_YEAR = 2000;
-  const END_YEAR = new Date().getFullYear();
+const START_YEAR = 2000;
+const END_YEAR = new Date().getFullYear();
 
-  // 翻页钟
-  let clockVisible = $state(false);
-  let digits = $state(["0", "0", ":", "0", "0", ":", "0", "0"]);
-  let beat = $state(false);
-  let colonBlink = $state(false);
+// 翻页钟
+let clockVisible = $state(false);
+let digits = $state(["0", "0", ":", "0", "0", ":", "0", "0"]);
+let beat = $state(false);
+let colonBlink = $state(false);
 
-  /* ================================================================
+/* ================================================================
      定时器 & sleep
      ================================================================ */
-  let timers: ReturnType<typeof setTimeout>[] = [];
+let timers: ReturnType<typeof setTimeout>[] = [];
 
-  function schedule(ms: number, fn: () => void) {
-    const id = setTimeout(fn, ms);
-    timers.push(id);
-    return id;
-  }
+function schedule(ms: number, fn: () => void) {
+	const id = setTimeout(fn, ms);
+	timers.push(id);
+	return id;
+}
 
-  function clearTimers() {
-    for (const id of timers) clearTimeout(id);
-    timers = [];
-  }
+function clearTimers() {
+	for (const id of timers) clearTimeout(id);
+	timers = [];
+}
 
-  const sleep = (ms: number) => new Promise<void>(r => schedule(ms, r));
+const sleep = (ms: number) => new Promise<void>((r) => schedule(ms, r));
 
-  /* ================================================================
+/* ================================================================
      共享尺寸
      ================================================================ */
-  let W = 0;
-  let H = 0;
+let W = 0;
+let H = 0;
 
-  function updateSize() {
-    W = window.innerWidth;
-    H = window.innerHeight;
-  }
+function updateSize() {
+	W = window.innerWidth;
+	H = window.innerHeight;
+}
 
-  /* ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
      Canvas 1 —— 连续渐变旋涡 Spinner（530 粒子）
      ═══════════════════════════════════════════════════════════════ */
-  let vortexCanvas: HTMLCanvasElement | undefined;
-  let vortexCtx: CanvasRenderingContext2D | null = null;
-  let vortexRaf: number | null = null;
-  let vortexAlpha = $state(1);
+let vortexCanvas: HTMLCanvasElement | undefined;
+let vortexCtx: CanvasRenderingContext2D | null = null;
+let vortexRaf: number | null = null;
+let vortexAlpha = $state(1);
 
-  // ── 统一旋涡粒子：所有属性按半径连续插值 ──
-  interface VortexParticle {
-    angle: number;
-    radius: number;
-    angularSpeed: number;
-    radialSpeed: number;
-    radialPhase: number;
-    size: number;
-    color: string;
-    alpha: number;
-    trail: { x: number; y: number }[];
-    maxTrail: number;
-    spiralStrength: number;
-  }
+// ── 统一旋涡粒子：所有属性按半径连续插值 ──
+interface VortexParticle {
+	angle: number;
+	radius: number;
+	angularSpeed: number;
+	radialSpeed: number;
+	radialPhase: number;
+	size: number;
+	color: string;
+	alpha: number;
+	trail: { x: number; y: number }[];
+	maxTrail: number;
+	spiralStrength: number;
+}
 
-  // ── 外围雾状粒子 ──
-  interface MistParticle {
-    angle: number;
-    radius: number;
-    angularSpeed: number;
-    size: number;
-    color: string;
-    alpha: number;
-  }
+// ── 外围雾状粒子 ──
+interface MistParticle {
+	angle: number;
+	radius: number;
+	angularSpeed: number;
+	size: number;
+	color: string;
+	alpha: number;
+}
 
-  let vortexParticles: VortexParticle[] = [];
-  let mistParticles: MistParticle[] = [];
+let vortexParticles: VortexParticle[] = [];
+let mistParticles: MistParticle[] = [];
 
-  const VORTEX_COUNT = 380;
-  const MIST_COUNT   = 150;
-  const VORTEX_ARMS  = 3;
+const VORTEX_COUNT = 380;
+const MIST_COUNT = 150;
+const VORTEX_ARMS = 3;
 
-  // 径向颜色加权选取（nr = 归一化半径，0=中心 1=边缘）
-  function pickColor(nr: number): string {
-    const r = Math.random();
-    if (nr < 0.15) {
-      // 中心：金/白为主
-      return r < 0.40 ? "#FCD34D" : r < 0.60 ? "#FFFFFF" : r < 0.75 ? "#FDE68A" : r < 0.90 ? "#FBBF24" : "#38BDF8";
-    } else if (nr < 0.40) {
-      // 过渡带：金/青蓝/银白均匀混合
-      return r < 0.25 ? "#38BDF8" : r < 0.45 ? "#FCD34D" : r < 0.65 ? "#E2E8F0" : r < 0.80 ? "#FDE68A" : "#7DD3FC";
-    } else if (nr < 0.70) {
-      // 旋臂区：青蓝/银白为主，少量金/紫
-      return r < 0.30 ? "#38BDF8" : r < 0.50 ? "#7DD3FC" : r < 0.65 ? "#E2E8F0" : r < 0.80 ? "#0EA5E9" : r < 0.92 ? "#FCD34D" : "#C4B5FD";
-    } else {
-      // 外围：青蓝/淡紫为主，少量银白/金
-      return r < 0.30 ? "#7DD3FC" : r < 0.50 ? "#BAE6FD" : r < 0.65 ? "#C4B5FD" : r < 0.80 ? "#38BDF8" : r < 0.92 ? "#E2E8F0" : "#FDE68A";
-    }
-  }
+// 径向颜色加权选取（nr = 归一化半径，0=中心 1=边缘）
+function pickColor(nr: number): string {
+	const r = Math.random();
+	if (nr < 0.15) {
+		// 中心：金/白为主
+		return r < 0.4
+			? "#FCD34D"
+			: r < 0.6
+				? "#FFFFFF"
+				: r < 0.75
+					? "#FDE68A"
+					: r < 0.9
+						? "#FBBF24"
+						: "#38BDF8";
+	}
+	if (nr < 0.4) {
+		// 过渡带：金/青蓝/银白均匀混合
+		return r < 0.25
+			? "#38BDF8"
+			: r < 0.45
+				? "#FCD34D"
+				: r < 0.65
+					? "#E2E8F0"
+					: r < 0.8
+						? "#FDE68A"
+						: "#7DD3FC";
+	}
+	if (nr < 0.7) {
+		// 旋臂区：青蓝/银白为主，少量金/紫
+		return r < 0.3
+			? "#38BDF8"
+			: r < 0.5
+				? "#7DD3FC"
+				: r < 0.65
+					? "#E2E8F0"
+					: r < 0.8
+						? "#0EA5E9"
+						: r < 0.92
+							? "#FCD34D"
+							: "#C4B5FD";
+	}
+	// 外围：青蓝/淡紫为主，少量银白/金
+	return r < 0.3
+		? "#7DD3FC"
+		: r < 0.5
+			? "#BAE6FD"
+			: r < 0.65
+				? "#C4B5FD"
+				: r < 0.8
+					? "#38BDF8"
+					: r < 0.92
+						? "#E2E8F0"
+						: "#FDE68A";
+}
 
-  function initVortexParticles() {
-    vortexParticles = [];
-    mistParticles = [];
-    const maxR = Math.min(W, H) * 0.32;
+function initVortexParticles() {
+	vortexParticles = [];
+	mistParticles = [];
+	const maxR = Math.min(W, H) * 0.32;
 
-    // ═══════════════════════════════════════════════════════════
-    // 统一旋涡粒子（0 ~ maxR*0.65）：密度指数衰减，属性连续插值
-    // ═══════════════════════════════════════════════════════════
-    for (let i = 0; i < VORTEX_COUNT; i++) {
-      // 密度指数衰减：越靠近中心粒子越密
-      const nr = 1 - Math.pow(Math.random(), 0.35);
+	// ═══════════════════════════════════════════════════════════
+	// 统一旋涡粒子（0 ~ maxR*0.65）：密度指数衰减，属性连续插值
+	// ═══════════════════════════════════════════════════════════
+	for (let i = 0; i < VORTEX_COUNT; i++) {
+		// 密度指数衰减：越靠近中心粒子越密
+		const nr = 1 - Math.random() ** 0.35;
 
-      // 螺旋结构强度：中心弱（无旋臂），中间强，外围弱
-      const spiralStrength = nr < 0.12 ? nr / 0.12 * 0.15
-                           : nr < 0.6  ? 0.15 + (nr - 0.12) / 0.48 * 0.85
-                           : 1.0 - (nr - 0.6) / 0.4 * 0.6;
+		// 螺旋结构强度：中心弱（无旋臂），中间强，外围弱
+		const spiralStrength =
+			nr < 0.12
+				? (nr / 0.12) * 0.15
+				: nr < 0.6
+					? 0.15 + ((nr - 0.12) / 0.48) * 0.85
+					: 1.0 - ((nr - 0.6) / 0.4) * 0.6;
 
-      // 螺旋角度偏移
-      const armBase = (i % VORTEX_ARMS) / VORTEX_ARMS * Math.PI * 2;
-      const twist = nr * Math.PI * 3.0 * spiralStrength;
-      const scatter = (1 - spiralStrength) * (Math.random() - 0.5) * Math.PI * 1.5;
-      const angle = armBase + twist + scatter;
+		// 螺旋角度偏移
+		const armBase = ((i % VORTEX_ARMS) / VORTEX_ARMS) * Math.PI * 2;
+		const twist = nr * Math.PI * 3.0 * spiralStrength;
+		const scatter =
+			(1 - spiralStrength) * (Math.random() - 0.5) * Math.PI * 1.5;
+		const angle = armBase + twist + scatter;
 
-      const r = nr * maxR * 0.65;
+		const r = nr * maxR * 0.65;
 
-      // 角速度：中心快 → 边缘慢
-      const angularSpeed = 0.05 * (1 - nr) + 0.01 * nr;
+		// 角速度：中心快 → 边缘慢
+		const angularSpeed = 0.05 * (1 - nr) + 0.01 * nr;
 
-      // 径向速度：中心呼吸式微动，外围向外扩散
-      const radialSpeed = nr < 0.15
-        ? 0
-        : 0.05 + nr * 0.7;
+		// 径向速度：中心呼吸式微动，外围向外扩散
+		const radialSpeed = nr < 0.15 ? 0 : 0.05 + nr * 0.7;
 
-      // 尺寸：中心较大 → 中段较小 → 边缘较大（U 形）
-      const size = nr < 0.2
-        ? 1.3 - nr * 2.5
-        : 0.6 + nr * 0.7;
+		// 尺寸：中心较大 → 中段较小 → 边缘较大（U 形）
+		const size = nr < 0.2 ? 1.3 - nr * 2.5 : 0.6 + nr * 0.7;
 
-      // 透明度：中心亮 → 边缘暗
-      const alpha = 0.85 - nr * 0.6;
+		// 透明度：中心亮 → 边缘暗
+		const alpha = 0.85 - nr * 0.6;
 
-      // 拖尾长度：中心无 → 中段短 → 边缘长
-      const maxTrail = nr < 0.1 ? 0
-                     : nr < 0.3 ? 3
-                     : nr < 0.5 ? 5
-                     : 7;
+		// 拖尾长度：中心无 → 中段短 → 边缘长
+		const maxTrail = nr < 0.1 ? 0 : nr < 0.3 ? 3 : nr < 0.5 ? 5 : 7;
 
-      vortexParticles.push({
-        angle,
-        radius: r,
-        angularSpeed,
-        radialSpeed,
-        radialPhase: Math.random() * Math.PI * 2,
-        size,
-        color: pickColor(nr),
-        alpha: alpha * (0.6 + Math.random() * 0.4),
-        trail: [],
-        maxTrail,
-        spiralStrength,
-      });
-    }
+		vortexParticles.push({
+			angle,
+			radius: r,
+			angularSpeed,
+			radialSpeed,
+			radialPhase: Math.random() * Math.PI * 2,
+			size,
+			color: pickColor(nr),
+			alpha: alpha * (0.6 + Math.random() * 0.4),
+			trail: [],
+			maxTrail,
+			spiralStrength,
+		});
+	}
 
-    // ═══════════════════════════════════════════════════════════
-    // 外围雾状粒子（maxR*0.45 ~ maxR）
-    // ═══════════════════════════════════════════════════════════
-    const mistMin = maxR * 0.45;
-    for (let i = 0; i < MIST_COUNT; i++) {
-      const r = mistMin + Math.random() * (maxR - mistMin);
-      const nr = r / maxR;
-      mistParticles.push({
-        angle: Math.random() * Math.PI * 2,
-        radius: r,
-        angularSpeed: 0.004 + Math.random() * 0.01,
-        size: 1.0 + Math.random() * 1.5,
-        color: pickColor(nr),
-        alpha: 0.08 + Math.random() * 0.12,
-      });
-    }
-  }
+	// ═══════════════════════════════════════════════════════════
+	// 外围雾状粒子（maxR*0.45 ~ maxR）
+	// ═══════════════════════════════════════════════════════════
+	const mistMin = maxR * 0.45;
+	for (let i = 0; i < MIST_COUNT; i++) {
+		const r = mistMin + Math.random() * (maxR - mistMin);
+		const nr = r / maxR;
+		mistParticles.push({
+			angle: Math.random() * Math.PI * 2,
+			radius: r,
+			angularSpeed: 0.004 + Math.random() * 0.01,
+			size: 1.0 + Math.random() * 1.5,
+			color: pickColor(nr),
+			alpha: 0.08 + Math.random() * 0.12,
+		});
+	}
+}
 
-  function drawVortexFrame() {
-    if (!vortexCtx || !vortexCanvas) return;
+function drawVortexFrame() {
+	if (!vortexCtx || !vortexCanvas) return;
 
-    vortexCtx.fillStyle = "rgba(6, 4, 16, 0.12)";
-    vortexCtx.fillRect(0, 0, W, H);
+	vortexCtx.fillStyle = "rgba(6, 4, 16, 0.12)";
+	vortexCtx.fillRect(0, 0, W, H);
 
-    const cx = W * 0.5;
-    const cy = H * 0.5;
-    const maxR = Math.min(W, H) * 0.32;
+	const cx = W * 0.5;
+	const cy = H * 0.5;
+	const maxR = Math.min(W, H) * 0.32;
 
-    // ═══════════════════════════════════════════════════════════
-    // 统一旋涡粒子：按半径降序排列（外→内），单遍渲染，无缝过渡
-    // ═══════════════════════════════════════════════════════════
-    const sorted = [...vortexParticles].sort((a, b) => b.radius - a.radius);
+	// ═══════════════════════════════════════════════════════════
+	// 统一旋涡粒子：按半径降序排列（外→内），单遍渲染，无缝过渡
+	// ═══════════════════════════════════════════════════════════
+	const sorted = [...vortexParticles].sort((a, b) => b.radius - a.radius);
 
-    for (const p of sorted) {
-      const nr = Math.max(0, Math.min(1, p.radius / (maxR * 0.65)));
+	for (const p of sorted) {
+		const nr = Math.max(0, Math.min(1, p.radius / (maxR * 0.65)));
 
-      // ── 运动更新 ──
-      p.angle += p.angularSpeed;
+		// ── 运动更新 ──
+		p.angle += p.angularSpeed;
 
-      if (nr < 0.15) {
-        // 中心区：径向呼吸
-        p.radialPhase += 0.04;
-        const breathe = 1 + Math.sin(p.radialPhase) * 0.06;
-        const baseR = p.radius / breathe; // 反推基准半径
-        p.radius = (baseR || p.radius) * breathe;
-      } else {
-        // 外围区：向外螺旋扩散
-        p.radius += p.radialSpeed;
-      }
+		if (nr < 0.15) {
+			// 中心区：径向呼吸
+			p.radialPhase += 0.04;
+			const breathe = 1 + Math.sin(p.radialPhase) * 0.06;
+			const baseR = p.radius / breathe; // 反推基准半径
+			p.radius = (baseR || p.radius) * breathe;
+		} else {
+			// 外围区：向外螺旋扩散
+			p.radius += p.radialSpeed;
+		}
 
-      // 边界重生
-      const vMax = maxR * 0.65;
-      if (p.radius > vMax || p.radius < 0.5) {
-        const newNr = Math.pow(Math.random(), 0.35);
-        p.radius = (1 - newNr) * vMax * 0.02 + newNr * vMax;
-        p.angle = Math.random() * Math.PI * 2;
-        p.trail = [];
-      }
+		// 边界重生
+		const vMax = maxR * 0.65;
+		if (p.radius > vMax || p.radius < 0.5) {
+			const newNr = Math.random() ** 0.35;
+			p.radius = (1 - newNr) * vMax * 0.02 + newNr * vMax;
+			p.angle = Math.random() * Math.PI * 2;
+			p.trail = [];
+		}
 
-      const x = cx + Math.cos(p.angle) * p.radius;
-      const y = cy + Math.sin(p.angle) * p.radius * 0.55;
+		const x = cx + Math.cos(p.angle) * p.radius;
+		const y = cy + Math.sin(p.angle) * p.radius * 0.55;
 
-      // ── 拖尾 ──
-      if (p.maxTrail > 0) {
-        p.trail.push({ x, y });
-        if (p.trail.length > p.maxTrail) p.trail.shift();
-      }
+		// ── 拖尾 ──
+		if (p.maxTrail > 0) {
+			p.trail.push({ x, y });
+			if (p.trail.length > p.maxTrail) p.trail.shift();
+		}
 
-      // ── alpha：中心亮 → 边缘暗（连续渐变）──
-      const edgeFade = nr < 0.75 ? 1 : Math.max(0, 1 - (nr - 0.75) / 0.25);
-      const alpha = p.alpha * edgeFade * vortexAlpha;
-      if (alpha < 0.008) continue;
+		// ── alpha：中心亮 → 边缘暗（连续渐变）──
+		const edgeFade = nr < 0.75 ? 1 : Math.max(0, 1 - (nr - 0.75) / 0.25);
+		const alpha = p.alpha * edgeFade * vortexAlpha;
+		if (alpha < 0.008) continue;
 
-      // ── 拖尾渲染 ──
-      if (p.trail.length > 2) {
-        vortexCtx.beginPath();
-        vortexCtx.moveTo(p.trail[0].x, p.trail[0].y);
-        for (let j = 1; j < p.trail.length; j++) {
-          vortexCtx.lineTo(p.trail[j].x, p.trail[j].y);
-        }
-        vortexCtx.strokeStyle = p.color;
-        vortexCtx.lineWidth = p.size * 0.4;
-        vortexCtx.globalAlpha = alpha * 0.28;
-        vortexCtx.lineCap = "round";
-        vortexCtx.stroke();
-      }
+		// ── 拖尾渲染 ──
+		if (p.trail.length > 2) {
+			vortexCtx.beginPath();
+			vortexCtx.moveTo(p.trail[0].x, p.trail[0].y);
+			for (let j = 1; j < p.trail.length; j++) {
+				vortexCtx.lineTo(p.trail[j].x, p.trail[j].y);
+			}
+			vortexCtx.strokeStyle = p.color;
+			vortexCtx.lineWidth = p.size * 0.4;
+			vortexCtx.globalAlpha = alpha * 0.28;
+			vortexCtx.lineCap = "round";
+			vortexCtx.stroke();
+		}
 
-      // ── 辉光（靠近中心更亮）──
-      const glowMult = 3.0 - nr * 1.5;
-      vortexCtx.globalAlpha = alpha * (0.35 - nr * 0.2);
-      vortexCtx.fillStyle = p.color;
-      vortexCtx.beginPath();
-      vortexCtx.arc(x, y, p.size * glowMult, 0, Math.PI * 2);
-      vortexCtx.fill();
+		// ── 辉光（靠近中心更亮）──
+		const glowMult = 3.0 - nr * 1.5;
+		vortexCtx.globalAlpha = alpha * (0.35 - nr * 0.2);
+		vortexCtx.fillStyle = p.color;
+		vortexCtx.beginPath();
+		vortexCtx.arc(x, y, p.size * glowMult, 0, Math.PI * 2);
+		vortexCtx.fill();
 
-      // ── 核心 ──
-      vortexCtx.globalAlpha = alpha;
-      vortexCtx.beginPath();
-      vortexCtx.arc(x, y, p.size, 0, Math.PI * 2);
-      vortexCtx.fill();
-    }
+		// ── 核心 ──
+		vortexCtx.globalAlpha = alpha;
+		vortexCtx.beginPath();
+		vortexCtx.arc(x, y, p.size, 0, Math.PI * 2);
+		vortexCtx.fill();
+	}
 
-    // ═══════════════════════════════════════════════════════════
-    // 外围雾状粒子（笼罩光晕）
-    // ═══════════════════════════════════════════════════════════
-    for (const m of mistParticles) {
-      m.angle += m.angularSpeed;
-      const mx = cx + Math.cos(m.angle) * m.radius;
-      const my = cy + Math.sin(m.angle) * m.radius * 0.55;
-      vortexCtx.globalAlpha = m.alpha * vortexAlpha;
-      vortexCtx.fillStyle = m.color;
-      vortexCtx.beginPath();
-      vortexCtx.arc(mx, my, m.size, 0, Math.PI * 2);
-      vortexCtx.fill();
-      vortexCtx.globalAlpha = m.alpha * 0.35 * vortexAlpha;
-      vortexCtx.beginPath();
-      vortexCtx.arc(mx, my, m.size * 2.5, 0, Math.PI * 2);
-      vortexCtx.fill();
-    }
+	// ═══════════════════════════════════════════════════════════
+	// 外围雾状粒子（笼罩光晕）
+	// ═══════════════════════════════════════════════════════════
+	for (const m of mistParticles) {
+		m.angle += m.angularSpeed;
+		const mx = cx + Math.cos(m.angle) * m.radius;
+		const my = cy + Math.sin(m.angle) * m.radius * 0.55;
+		vortexCtx.globalAlpha = m.alpha * vortexAlpha;
+		vortexCtx.fillStyle = m.color;
+		vortexCtx.beginPath();
+		vortexCtx.arc(mx, my, m.size, 0, Math.PI * 2);
+		vortexCtx.fill();
+		vortexCtx.globalAlpha = m.alpha * 0.35 * vortexAlpha;
+		vortexCtx.beginPath();
+		vortexCtx.arc(mx, my, m.size * 2.5, 0, Math.PI * 2);
+		vortexCtx.fill();
+	}
 
-    // ═══════════════════════════════════════════════════════════
-    // 中心核：多层同心圆渐变（亮白 → 淡金 → 青蓝）
-    // ═══════════════════════════════════════════════════════════
-    const coreLayers = [
-      { r: 5,  color: "rgba(255, 255, 255, 0.8)" },
-      { r: 10, color: "rgba(255, 250, 230, 0.5)" },
-      { r: 20, color: "rgba(252, 211, 77, 0.3)" },
-      { r: 35, color: "rgba(56, 189, 248, 0.12)" },
-      { r: 55, color: "rgba(56, 189, 248, 0.05)" },
-    ];
-    for (const layer of coreLayers) {
-      const g = vortexCtx.createRadialGradient(cx, cy, 0, cx, cy, layer.r);
-      g.addColorStop(0, layer.color);
-      g.addColorStop(1, "rgba(6, 4, 16, 0)");
-      vortexCtx.fillStyle = g;
-      vortexCtx.fillRect(cx - layer.r, cy - layer.r, layer.r * 2, layer.r * 2);
-    }
+	// ═══════════════════════════════════════════════════════════
+	// 中心核：多层同心圆渐变（亮白 → 淡金 → 青蓝）
+	// ═══════════════════════════════════════════════════════════
+	const coreLayers = [
+		{ r: 5, color: "rgba(255, 255, 255, 0.8)" },
+		{ r: 10, color: "rgba(255, 250, 230, 0.5)" },
+		{ r: 20, color: "rgba(252, 211, 77, 0.3)" },
+		{ r: 35, color: "rgba(56, 189, 248, 0.12)" },
+		{ r: 55, color: "rgba(56, 189, 248, 0.05)" },
+	];
+	for (const layer of coreLayers) {
+		const g = vortexCtx.createRadialGradient(cx, cy, 0, cx, cy, layer.r);
+		g.addColorStop(0, layer.color);
+		g.addColorStop(1, "rgba(6, 4, 16, 0)");
+		vortexCtx.fillStyle = g;
+		vortexCtx.fillRect(cx - layer.r, cy - layer.r, layer.r * 2, layer.r * 2);
+	}
 
-    vortexCtx.globalAlpha = 1;
-    vortexRaf = requestAnimationFrame(drawVortexFrame);
-  }
+	vortexCtx.globalAlpha = 1;
+	vortexRaf = requestAnimationFrame(drawVortexFrame);
+}
 
-  /* ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
      Canvas 2 —— 银河河流（1200 粒子，纯水平流动）
      ═══════════════════════════════════════════════════════════════ */
-  let riverCanvas: HTMLCanvasElement | undefined;
-  let riverCtx: CanvasRenderingContext2D | null = null;
-  let riverRaf: number | null = null;
-  let riverFadeIn = 0; // 0→1，河流渐显
+let riverCanvas: HTMLCanvasElement | undefined;
+let riverCtx: CanvasRenderingContext2D | null = null;
+let riverRaf: number | null = null;
+let riverFadeIn = 0; // 0→1，河流渐显
 
-  interface RiverParticle {
-    x: number;
-    y: number;
-    originY: number;
-    size: number;
-    color: string;
-    baseAlpha: number;
-    trail: { x: number; y: number }[];
-  }
+interface RiverParticle {
+	x: number;
+	y: number;
+	originY: number;
+	size: number;
+	color: string;
+	baseAlpha: number;
+	trail: { x: number; y: number }[];
+}
 
-  let riverParticles: RiverParticle[] = [];
-  const RIVER_COUNT = 1200;
-  const MAX_TRAIL = 40;
+let riverParticles: RiverParticle[] = [];
+const RIVER_COUNT = 1200;
+const MAX_TRAIL = 40;
 
-  // 中心区颜色：淡金+青蓝为主；边缘区：银白+淡青蓝
-  const RIVER_COLORS_CENTER = ["#38BDF8", "#0EA5E9", "#FCD34D", "#FDE68A", "#FBBF24", "#7DD3FC"];
-  const RIVER_COLORS_EDGE   = ["#E2E8F0", "#F1F5F9", "#CBD5E1", "#7DD3FC", "#38BDF8"];
+// 中心区颜色：淡金+青蓝为主；边缘区：银白+淡青蓝
+const RIVER_COLORS_CENTER = [
+	"#38BDF8",
+	"#0EA5E9",
+	"#FCD34D",
+	"#FDE68A",
+	"#FBBF24",
+	"#7DD3FC",
+];
+const RIVER_COLORS_EDGE = [
+	"#E2E8F0",
+	"#F1F5F9",
+	"#CBD5E1",
+	"#7DD3FC",
+	"#38BDF8",
+];
 
-  function initRiverParticles() {
-    riverParticles = [];
-    for (let i = 0; i < RIVER_COUNT; i++) {
-      // 高斯分布：中心 H*0.5，集中在 30% ~ 70% 高度
-      const gauss = (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
-      const rawY = H * 0.5 + gauss * H * 0.20;
-      const y = Math.max(H * 0.30, Math.min(H * 0.70, rawY));
-      const originY = y / H;
+function initRiverParticles() {
+	riverParticles = [];
+	for (let i = 0; i < RIVER_COUNT; i++) {
+		// 高斯分布：中心 H*0.5，集中在 30% ~ 70% 高度
+		const gauss = (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
+		const rawY = H * 0.5 + gauss * H * 0.2;
+		const y = Math.max(H * 0.3, Math.min(H * 0.7, rawY));
+		const originY = y / H;
 
-      // Y 轴位置归一化（0=30%边, 0.5=中心, 1=70%边）
-      const ny = (originY - 0.30) / 0.40;
-      const distFromCenter = Math.abs(ny - 0.5) * 2; // 0=中心, 1=边缘
+		// Y 轴位置归一化（0=30%边, 0.5=中心, 1=70%边）
+		const ny = (originY - 0.3) / 0.4;
+		const distFromCenter = Math.abs(ny - 0.5) * 2; // 0=中心, 1=边缘
 
-      // 密度梯度：中心区域粒子更大更亮，边缘更小更暗
-      const isCenter = distFromCenter < 0.5;
-      const sizeMin = isCenter ? 0.6 : 0.3;
-      const sizeMax = isCenter ? 1.2 : 0.7;
-      const alphaMin = isCenter ? 0.3 : 0.15;
-      const alphaMax = isCenter ? 0.55 : 0.35;
+		// 密度梯度：中心区域粒子更大更亮，边缘更小更暗
+		const isCenter = distFromCenter < 0.5;
+		const sizeMin = isCenter ? 0.6 : 0.3;
+		const sizeMax = isCenter ? 1.2 : 0.7;
+		const alphaMin = isCenter ? 0.3 : 0.15;
+		const alphaMax = isCenter ? 0.55 : 0.35;
 
-      // 颜色按 Y 轴渐变
-      const colorPool = isCenter ? RIVER_COLORS_CENTER : RIVER_COLORS_EDGE;
+		// 颜色按 Y 轴渐变
+		const colorPool = isCenter ? RIVER_COLORS_CENTER : RIVER_COLORS_EDGE;
 
-      const x = Math.random() * (W + 80) - 40;
+		const x = Math.random() * (W + 80) - 40;
 
-      riverParticles.push({
-        x,
-        y,
-        originY,
-        size: sizeMin + Math.random() * (sizeMax - sizeMin),
-        color: colorPool[Math.floor(Math.random() * colorPool.length)],
-        baseAlpha: alphaMin + Math.random() * (alphaMax - alphaMin),
-        trail: [],
-      });
-    }
-  }
+		riverParticles.push({
+			x,
+			y,
+			originY,
+			size: sizeMin + Math.random() * (sizeMax - sizeMin),
+			color: colorPool[Math.floor(Math.random() * colorPool.length)],
+			baseAlpha: alphaMin + Math.random() * (alphaMax - alphaMin),
+			trail: [],
+		});
+	}
+}
 
-  function drawRiverFrame() {
-    if (!riverCtx || !riverCanvas) return;
+function drawRiverFrame() {
+	if (!riverCtx || !riverCanvas) return;
 
-    // 长拖尾清除
-    riverCtx.fillStyle = "rgba(6, 4, 16, 0.055)";
-    riverCtx.fillRect(0, 0, W, H);
+	// 长拖尾清除
+	riverCtx.fillStyle = "rgba(6, 4, 16, 0.055)";
+	riverCtx.fillRect(0, 0, W, H);
 
-    // 河流渐显
-    if (riverFadeIn < 1) {
-      riverFadeIn = Math.min(1, riverFadeIn + 0.025);
-    }
+	// 河流渐显
+	if (riverFadeIn < 1) {
+		riverFadeIn = Math.min(1, riverFadeIn + 0.025);
+	}
 
-    // 银河盘面星云
-    riverCtx.save();
-    riverCtx.translate(W * 0.5, H * 0.5);
-    riverCtx.rotate(Math.PI / 7);
-    riverCtx.scale(1, 0.35);
-    const nebR = Math.max(W, H) * 0.55;
-    const nebGrad = riverCtx.createRadialGradient(0, 0, 0, 0, 0, nebR);
-    nebGrad.addColorStop(0, "rgba(56, 189, 248, 0.035)");
-    nebGrad.addColorStop(0.5, "rgba(30, 27, 75, 0.018)");
-    nebGrad.addColorStop(0.85, "rgba(20, 15, 50, 0.005)");
-    nebGrad.addColorStop(1, "rgba(6, 4, 16, 0)");
-    riverCtx.fillStyle = nebGrad;
-    riverCtx.fillRect(-W, -H, W * 2, H * 2);
-    riverCtx.restore();
+	// 银河盘面星云
+	riverCtx.save();
+	riverCtx.translate(W * 0.5, H * 0.5);
+	riverCtx.rotate(Math.PI / 7);
+	riverCtx.scale(1, 0.35);
+	const nebR = Math.max(W, H) * 0.55;
+	const nebGrad = riverCtx.createRadialGradient(0, 0, 0, 0, 0, nebR);
+	nebGrad.addColorStop(0, "rgba(56, 189, 248, 0.035)");
+	nebGrad.addColorStop(0.5, "rgba(30, 27, 75, 0.018)");
+	nebGrad.addColorStop(0.85, "rgba(20, 15, 50, 0.005)");
+	nebGrad.addColorStop(1, "rgba(6, 4, 16, 0)");
+	riverCtx.fillStyle = nebGrad;
+	riverCtx.fillRect(-W, -H, W * 2, H * 2);
+	riverCtx.restore();
 
-    // 粒子
-    for (const p of riverParticles) {
-      p.trail.push({ x: p.x, y: p.y });
-      if (p.trail.length > MAX_TRAIL) p.trail.shift();
+	// 粒子
+	for (const p of riverParticles) {
+		p.trail.push({ x: p.x, y: p.y });
+		if (p.trail.length > MAX_TRAIL) p.trail.shift();
 
-      const nx = Math.max(0, Math.min(1, p.x / W));
-      const speedMultiplier = 0.02 + nx * 14.0;
+		const nx = Math.max(0, Math.min(1, p.x / W));
+		const speedMultiplier = 0.02 + nx * 14.0;
 
-      p.x += 0.08 * speedMultiplier;
+		p.x += 0.08 * speedMultiplier;
 
-      if (p.x > W + 50) {
-        p.x = -35;
-        p.y = p.originY * H;
-        p.trail = [];
-      }
+		if (p.x > W + 50) {
+			p.x = -35;
+			p.y = p.originY * H;
+			p.trail = [];
+		}
 
-      const leftBrightness = 1.0 - nx * 0.45;
+		const leftBrightness = 1.0 - nx * 0.45;
 
-      // 拖尾
-      if (p.trail.length > 4) {
-        const tStart = Math.max(0, p.trail.length - MAX_TRAIL);
-        riverCtx.beginPath();
-        riverCtx.moveTo(p.trail[tStart].x, p.trail[tStart].y);
-        for (let j = tStart + 1; j < p.trail.length; j++) {
-          riverCtx.lineTo(p.trail[j].x, p.trail[j].y);
-        }
-        riverCtx.lineTo(p.x, p.y);
+		// 拖尾
+		if (p.trail.length > 4) {
+			const tStart = Math.max(0, p.trail.length - MAX_TRAIL);
+			riverCtx.beginPath();
+			riverCtx.moveTo(p.trail[tStart].x, p.trail[tStart].y);
+			for (let j = tStart + 1; j < p.trail.length; j++) {
+				riverCtx.lineTo(p.trail[j].x, p.trail[j].y);
+			}
+			riverCtx.lineTo(p.x, p.y);
 
-        const trailAlpha = p.baseAlpha * 0.18 * leftBrightness * riverFadeIn;
-        riverCtx.strokeStyle = p.color;
-        riverCtx.lineWidth = p.size * 0.4;
-        riverCtx.globalAlpha = trailAlpha;
-        riverCtx.lineCap = "round";
-        riverCtx.lineJoin = "round";
-        riverCtx.stroke();
-      }
+			const trailAlpha = p.baseAlpha * 0.18 * leftBrightness * riverFadeIn;
+			riverCtx.strokeStyle = p.color;
+			riverCtx.lineWidth = p.size * 0.4;
+			riverCtx.globalAlpha = trailAlpha;
+			riverCtx.lineCap = "round";
+			riverCtx.lineJoin = "round";
+			riverCtx.stroke();
+		}
 
-      // 核心
-      const alpha = p.baseAlpha * leftBrightness * riverFadeIn;
-      riverCtx.globalAlpha = alpha;
-      riverCtx.fillStyle = p.color;
-      riverCtx.beginPath();
-      riverCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      riverCtx.fill();
-    }
-    riverCtx.globalAlpha = 1;
+		// 核心
+		const alpha = p.baseAlpha * leftBrightness * riverFadeIn;
+		riverCtx.globalAlpha = alpha;
+		riverCtx.fillStyle = p.color;
+		riverCtx.beginPath();
+		riverCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+		riverCtx.fill();
+	}
+	riverCtx.globalAlpha = 1;
 
-    // Vignette
-    const vig = riverCtx.createRadialGradient(
-      W * 0.5, H * 0.5, Math.min(W, H) * 0.35,
-      W * 0.5, H * 0.5, Math.max(W, H) * 0.8,
-    );
-    vig.addColorStop(0, "rgba(0, 0, 0, 0)");
-    vig.addColorStop(0.55, "rgba(4, 3, 10, 0.04)");
-    vig.addColorStop(0.82, "rgba(4, 3, 10, 0.2)");
-    vig.addColorStop(1, "rgba(2, 1, 6, 0.55)");
-    riverCtx.fillStyle = vig;
-    riverCtx.fillRect(0, 0, W, H);
+	// Vignette
+	const vig = riverCtx.createRadialGradient(
+		W * 0.5,
+		H * 0.5,
+		Math.min(W, H) * 0.35,
+		W * 0.5,
+		H * 0.5,
+		Math.max(W, H) * 0.8,
+	);
+	vig.addColorStop(0, "rgba(0, 0, 0, 0)");
+	vig.addColorStop(0.55, "rgba(4, 3, 10, 0.04)");
+	vig.addColorStop(0.82, "rgba(4, 3, 10, 0.2)");
+	vig.addColorStop(1, "rgba(2, 1, 6, 0.55)");
+	riverCtx.fillStyle = vig;
+	riverCtx.fillRect(0, 0, W, H);
 
-    riverRaf = requestAnimationFrame(drawRiverFrame);
-  }
+	riverRaf = requestAnimationFrame(drawRiverFrame);
+}
 
-  /* ================================================================
+/* ================================================================
      Canvas resize
      ================================================================ */
-  function resizeCanvases() {
-    updateSize();
-    if (vortexCanvas) {
-      vortexCanvas.width = W;
-      vortexCanvas.height = H;
-    }
-    if (riverCanvas) {
-      riverCanvas.width = W;
-      riverCanvas.height = H;
-    }
-  }
+function resizeCanvases() {
+	updateSize();
+	if (vortexCanvas) {
+		vortexCanvas.width = W;
+		vortexCanvas.height = H;
+	}
+	if (riverCanvas) {
+		riverCanvas.width = W;
+		riverCanvas.height = H;
+	}
+}
 
-  /* ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
      主动画序列
      ═══════════════════════════════════════════════════════════════ */
-  async function playAnimation() {
-    // 清理前次
-    clearTimers();
-    if (vortexRaf !== null) { cancelAnimationFrame(vortexRaf); vortexRaf = null; }
-    if (riverRaf !== null) { cancelAnimationFrame(riverRaf); riverRaf = null; }
+async function playAnimation() {
+	// 清理前次
+	clearTimers();
+	if (vortexRaf !== null) {
+		cancelAnimationFrame(vortexRaf);
+		vortexRaf = null;
+	}
+	if (riverRaf !== null) {
+		cancelAnimationFrame(riverRaf);
+		riverRaf = null;
+	}
 
-    // 覆盖层立即全屏显示（CSS 默认 opacity: 1）
-    show = true;
-    leaving = false;
-    // 隐藏下方页面内容，防止闪烁
-    document.documentElement.classList.add("tl-entrance-active");
-    spinnerVisible = true;
-    riverActive = false;
-    riverFadeIn = 0;
-    vortexAlpha = 1;
-    lineExtending = false;
-    lineFading = false;
-    charExpandActive = false;
-    yearAnimating = false;
-    currentYear = START_YEAR;
-    yearStr = String(START_YEAR);
-    rollCharSizes(yearStr.length);
-    clockVisible = false;
-    colonBlink = false;
-    digits = ["0", "0", ":", "0", "0", ":", "0", "0"];
+	// 覆盖层立即全屏显示（CSS 默认 opacity: 1）
+	show = true;
+	leaving = false;
+	// 隐藏下方页面内容，防止闪烁
+	document.documentElement.classList.add("tl-entrance-active");
+	spinnerVisible = true;
+	riverActive = false;
+	riverFadeIn = 0;
+	vortexAlpha = 1;
+	lineExtending = false;
+	lineFading = false;
+	charExpandActive = false;
+	yearAnimating = false;
+	currentYear = START_YEAR;
+	yearStr = String(START_YEAR);
+	rollCharSizes(yearStr.length);
+	clockVisible = false;
+	colonBlink = false;
+	digits = ["0", "0", ":", "0", "0", ":", "0", "0"];
 
-    await tick();
+	await tick();
 
-    // 初始化尺寸
-    resizeCanvases();
+	// 初始化尺寸
+	resizeCanvases();
 
-    // 初始化旋涡
-    if (vortexCanvas) {
-      vortexCtx = vortexCanvas.getContext("2d");
-      if (vortexCtx) {
-        vortexCtx.clearRect(0, 0, W, H);
-        initVortexParticles();
-      }
-    }
+	// 初始化旋涡
+	if (vortexCanvas) {
+		vortexCtx = vortexCanvas.getContext("2d");
+		if (vortexCtx) {
+			vortexCtx.clearRect(0, 0, W, H);
+			initVortexParticles();
+		}
+	}
 
-    // ── 阶段 1：旋涡立即开始（覆盖层已完全不透明）──
-    vortexRaf = requestAnimationFrame(drawVortexFrame);
+	// ── 阶段 1：旋涡立即开始（覆盖层已完全不透明）──
+	vortexRaf = requestAnimationFrame(drawVortexFrame);
 
-    // ── 阶段 2：1.5s 后旋涡收缩淡出 ──
-    await sleep(1500);
-    spinnerVisible = false;
+	// ── 阶段 2：1.5s 后旋涡收缩淡出 ──
+	await sleep(1500);
+	spinnerVisible = false;
 
-    // 等待 CSS 过渡完成
-    await sleep(350);
+	// 等待 CSS 过渡完成
+	await sleep(350);
 
-    // 停止旋涡 Canvas
-    if (vortexRaf !== null) { cancelAnimationFrame(vortexRaf); vortexRaf = null; }
+	// 停止旋涡 Canvas
+	if (vortexRaf !== null) {
+		cancelAnimationFrame(vortexRaf);
+		vortexRaf = null;
+	}
 
-    // ── 阶段 3：1.6s（相对），粒子河流开始 ──
-    // 初始化河流粒子（全部从左侧出发）
-    if (riverCanvas) {
-      riverCtx = riverCanvas.getContext("2d");
-      if (riverCtx) {
-        riverCtx.clearRect(0, 0, W, H);
-        initRiverParticles();
-      }
-    }
-    riverActive = true;
-    riverRaf = requestAnimationFrame(drawRiverFrame);
+	// ── 阶段 3：1.6s（相对），粒子河流开始 ──
+	// 初始化河流粒子（全部从左侧出发）
+	if (riverCanvas) {
+		riverCtx = riverCanvas.getContext("2d");
+		if (riverCtx) {
+			riverCtx.clearRect(0, 0, W, H);
+			initRiverParticles();
+		}
+	}
+	riverActive = true;
+	riverRaf = requestAnimationFrame(drawRiverFrame);
 
-    // ── 阶段 4：竖线延展（0.4s）──
-    await sleep(200);
-    lineExtending = true;
-    await sleep(400);
+	// ── 阶段 4：竖线延展（0.4s）──
+	await sleep(200);
+	lineExtending = true;
+	await sleep(400);
 
-    // ── 阶段 5：字符从竖线中心"分裂"出来（0.4s），竖线同时渐隐 ──
-    charExpandActive = true;
-    lineFading = true;
-    await sleep(400);
+	// ── 阶段 5：字符从竖线中心"分裂"出来（0.4s），竖线同时渐隐 ──
+	charExpandActive = true;
+	lineFading = true;
+	await sleep(400);
 
-    // ── 阶段 6：竖线收缩消失（0.35s），完成后年份开始跳动 ──
-    lineExtending = false;
-    lineFading = false;
-    charExpandActive = false;
-    yearAnimating = true;
+	// ── 阶段 6：竖线收缩消失（0.35s），完成后年份开始跳动 ──
+	lineExtending = false;
+	lineFading = false;
+	charExpandActive = false;
+	yearAnimating = true;
 
-    // 年份跳动 2000 → 当前年（120ms/跳）
-    for (let y = START_YEAR + 1; y <= END_YEAR; y++) {
-      await sleep(120);
-      currentYear = y;
-      yearStr = String(y);
-    }
+	// 年份跳动 2000 → 当前年（120ms/跳）
+	for (let y = START_YEAR + 1; y <= END_YEAR; y++) {
+		await sleep(120);
+		currentYear = y;
+		yearStr = String(y);
+	}
 
-    // ── 翻页钟 ──
-    clockVisible = true;
-    colonBlink = true;
+	// ── 翻页钟 ──
+	clockVisible = true;
+	colonBlink = true;
 
-    const now = new Date();
-    const timeStr = now.toTimeString().slice(0, 8);
-    for (let i = 0; i < timeStr.length; i++) {
-      schedule(i * 80, () => { digits[i] = timeStr[i]; });
-    }
-    schedule(timeStr.length * 80 + 100, () => {
-      beat = true;
-      schedule(200, () => { beat = false; });
-    });
+	const now = new Date();
+	const timeStr = now.toTimeString().slice(0, 8);
+	for (let i = 0; i < timeStr.length; i++) {
+		schedule(i * 80, () => {
+			digits[i] = timeStr[i];
+		});
+	}
+	schedule(timeStr.length * 80 + 100, () => {
+		beat = true;
+		schedule(200, () => {
+			beat = false;
+		});
+	});
 
-    // ── 停留后整体淡出 ──
-    await sleep(600);
-    leaving = true;
+	// ── 停留后整体淡出 ──
+	await sleep(600);
+	leaving = true;
 
-    await sleep(900);
-    show = false;
-    document.documentElement.classList.remove("tl-entrance-active");
-    if (riverRaf !== null) { cancelAnimationFrame(riverRaf); riverRaf = null; }
-    colonBlink = false;
-  }
+	await sleep(900);
+	show = false;
+	document.documentElement.classList.remove("tl-entrance-active");
+	if (riverRaf !== null) {
+		cancelAnimationFrame(riverRaf);
+		riverRaf = null;
+	}
+	colonBlink = false;
+}
 
-  function stopAnimation() {
-    clearTimers();
-    if (vortexRaf !== null) { cancelAnimationFrame(vortexRaf); vortexRaf = null; }
-    if (riverRaf !== null) { cancelAnimationFrame(riverRaf); riverRaf = null; }
-    colonBlink = false;
-    if (!show) return;
-    leaving = true;
-    // 快速退出：0.4s 淡出 + 微缩放
-    schedule(400, () => {
-      show = false;
-      leaving = false;
-      document.documentElement.classList.remove("tl-entrance-active");
-    });
-  }
+function stopAnimation() {
+	clearTimers();
+	if (vortexRaf !== null) {
+		cancelAnimationFrame(vortexRaf);
+		vortexRaf = null;
+	}
+	if (riverRaf !== null) {
+		cancelAnimationFrame(riverRaf);
+		riverRaf = null;
+	}
+	colonBlink = false;
+	if (!show) return;
+	leaving = true;
+	// 快速退出：0.4s 淡出 + 微缩放
+	schedule(400, () => {
+		show = false;
+		leaving = false;
+		document.documentElement.classList.remove("tl-entrance-active");
+	});
+}
 
-  /* ================================================================
+/* ================================================================
      生命周期 + Swup
      ================================================================ */
-  onMount(() => {
-    if (window.location.pathname.includes("/timeline")) {
-      playAnimation();
-    }
+onMount(() => {
+	if (window.location.pathname.includes("/timeline")) {
+		playAnimation();
+	}
 
-    const swup = (window as any).swup;
+	const swup = (window as any).swup;
 
-    // Swup 即将离开当前页面时：立即触发退出动画 + 进度条
-    const onVisitStart = () => {
-      if (show && !leaving) {
-        stopAnimation();
-      }
-    };
+	// Swup 即将离开当前页面时：立即触发退出动画 + 进度条
+	const onVisitStart = () => {
+		if (show && !leaving) {
+			stopAnimation();
+		}
+	};
 
-    const onPageView = () => {
-      if (window.location.pathname.includes("/timeline")) {
-        playAnimation();
-      } else {
-        stopAnimation();
-      }
-    };
+	const onPageView = () => {
+		if (window.location.pathname.includes("/timeline")) {
+			playAnimation();
+		} else {
+			stopAnimation();
+		}
+	};
 
-    if (swup?.hooks) {
-      swup.hooks.on("visit:start", onVisitStart);
-      swup.hooks.on("page:view", onPageView);
-    }
+	if (swup?.hooks) {
+		swup.hooks.on("visit:start", onVisitStart);
+		swup.hooks.on("page:view", onPageView);
+	}
 
-    window.addEventListener("resize", resizeCanvases);
+	window.addEventListener("resize", resizeCanvases);
 
-    return () => {
-      if (swup?.hooks) {
-        swup.hooks.off("visit:start", onVisitStart);
-        swup.hooks.off("page:view", onPageView);
-      }
-      window.removeEventListener("resize", resizeCanvases);
-      clearTimers();
-      if (vortexRaf !== null) cancelAnimationFrame(vortexRaf);
-      if (riverRaf !== null) cancelAnimationFrame(riverRaf);
-    };
-  });
+	return () => {
+		if (swup?.hooks) {
+			swup.hooks.off("visit:start", onVisitStart);
+			swup.hooks.off("page:view", onPageView);
+		}
+		window.removeEventListener("resize", resizeCanvases);
+		clearTimers();
+		if (vortexRaf !== null) cancelAnimationFrame(vortexRaf);
+		if (riverRaf !== null) cancelAnimationFrame(riverRaf);
+	};
+});
 </script>
 
 {#if show}

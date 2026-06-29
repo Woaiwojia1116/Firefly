@@ -20,38 +20,35 @@ html[data-waves-enabled="true"] #header-waves {
     isolation: isolate;
     contain: layout style;
     margin-bottom: -1px;
-    will-change: transform;
-    transform: translate3d(0, 0, 0);
-    backface-visibility: hidden;
+    /* 不使用持续 will-change，改为 auto 减少 GPU 层占用 */
+    will-change: auto;
 }
 
 .waves {
     overflow: visible;
     z-index: 5;
-    transform: translateZ(0);
-    will-change: transform;
     contain: layout style;
+    will-change: auto;
 }
 
 .waves svg {
     width: 100%;
     height: 100%;
     display: block;
-    transform: translateZ(0);
-    backface-visibility: hidden;
 }
 
 /* --------------------------------------------------------------------------
    3. 波浪动画
    -------------------------------------------------------------------------- */
 .waves > .parallax {
+    /* 动画元素使用 promote 提示，但不过度创建层 */
     will-change: transform;
-    transform: translateZ(0);
-    backface-visibility: hidden;
 }
 
 .waves > .parallax use {
     animation: wave 25s cubic-bezier(0.5, 0.5, 0.45, 0.5) infinite;
+    /* 动画中的元素需要 GPU 层，但仅在有动画时 */
+    will-change: transform;
 }
 
 .waves > .parallax use:nth-child(1) {
@@ -97,21 +94,17 @@ html.is-page-transitioning #header-waves {
 .theme-changing #header-waves svg,
 .theme-changing #header-waves use {
     will-change: auto;
-    transform: translateZ(0);
-    backface-visibility: hidden;
 }
 
 .is-theme-transitioning #header-waves {
     color: var(--page-bg);
     isolation: isolate;
     contain: layout style paint;
-    transform: translateZ(0);
     background: transparent;
 }
 
 .is-theme-transitioning #header-waves use {
     will-change: transform;
-    transform: translateZ(0);
 }
 
 /* --------------------------------------------------------------------------

@@ -258,8 +258,20 @@ const config = sakuraConfig;
 			startAnimation() {
 				if (!this.ctx || !this.canvas || !this.sakuraList) return;
 
+				// 页面不可见时暂停动画，节省 CPU
+				const onVisibilityChange = () => {
+					if (document.hidden) {
+						this.pauseAnimation();
+					} else if (this.isRunning) {
+						this.resumeAnimation();
+					}
+				};
+				document.addEventListener('visibilitychange', onVisibilityChange);
+				this._visibilityHandler = onVisibilityChange;
+
 				const animate = () => {
 					if (!this.ctx || !this.canvas || !this.sakuraList) return;
+					if (this._paused) return;
 
 					this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 					this.sakuraList.update();
@@ -267,6 +279,27 @@ const config = sakuraConfig;
 					this.animationId = requestAnimationFrame(animate);
 				};
 
+				this.animationId = requestAnimationFrame(animate);
+			}
+
+			pauseAnimation() {
+				this._paused = true;
+				if (this.animationId) {
+					cancelAnimationFrame(this.animationId);
+					this.animationId = null;
+				}
+			}
+
+			resumeAnimation() {
+				if (!this._paused || !this.ctx || !this.canvas || !this.sakuraList) return;
+				this._paused = false;
+				const animate = () => {
+					if (!this.ctx || !this.canvas || !this.sakuraList || this._paused) return;
+					this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+					this.sakuraList.update();
+					this.sakuraList.draw(this.ctx);
+					this.animationId = requestAnimationFrame(animate);
+				};
 				this.animationId = requestAnimationFrame(animate);
 			}
 
@@ -287,6 +320,11 @@ const config = sakuraConfig;
 					this.animationId = null;
 				}
 
+				if (this._visibilityHandler) {
+					document.removeEventListener('visibilitychange', this._visibilityHandler);
+					this._visibilityHandler = null;
+				}
+
 				if (this.canvas) {
 					document.body.removeChild(this.canvas);
 					this.canvas = null;
@@ -294,6 +332,7 @@ const config = sakuraConfig;
 
 				window.removeEventListener('resize', this.handleResize.bind(this));
 				this.isRunning = false;
+				this._paused = false;
 			}
 
 			// 切换樱花特效

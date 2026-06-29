@@ -1,99 +1,103 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+import { onMount } from "svelte";
 
-  interface Props {
-    avatarSrc: string;
-  }
+interface Props {
+	avatarSrc: string;
+}
 
-  let { avatarSrc }: Props = $props();
+let { avatarSrc }: Props = $props();
 
-  let show = $state(true);
-  let leaving = $state(false);
+let show = $state(true);
+let leaving = $state(false);
 
-  const signature = "I'm ysdy Ciallo～ (∠・ω<)⌒☆";
-  const welcomeMsg = "欢迎来到我的小站 ✨";
+const signature = "I'm ysdy Ciallo～ (∠・ω<)⌒☆";
+const welcomeMsg = "欢迎来到我的小站 ✨";
 
-  let rafId: number | null = null;
-  let mx = 50, my = 50;
-  let cx = 50, cy = 50;
+let rafId: number | null = null;
+let mx = 50,
+	my = 50;
+let cx = 50,
+	cy = 50;
 
-  function handlePointerMove(e: MouseEvent | TouchEvent) {
-    let px: number, py: number;
-    if ("touches" in e && e.touches.length > 0) {
-      px = e.touches[0].clientX;
-      py = e.touches[0].clientY;
-    } else if ("clientX" in e) {
-      px = e.clientX;
-      py = e.clientY;
-    } else return;
+function handlePointerMove(e: MouseEvent | TouchEvent) {
+	let px: number, py: number;
+	if ("touches" in e && e.touches.length > 0) {
+		px = e.touches[0].clientX;
+		py = e.touches[0].clientY;
+	} else if ("clientX" in e) {
+		px = e.clientX;
+		py = e.clientY;
+	} else return;
 
-    mx = (px / window.innerWidth) * 100;
-    my = (py / window.innerHeight) * 100;
-  }
+	mx = (px / window.innerWidth) * 100;
+	my = (py / window.innerHeight) * 100;
+}
 
-  function tickSpotlight() {
-    cx += (mx - cx) * 0.08;
-    cy += (my - cy) * 0.08;
+function tickSpotlight() {
+	cx += (mx - cx) * 0.08;
+	cy += (my - cy) * 0.08;
 
-    const overlay = document.querySelector(".welcome-overlay") as HTMLElement | null;
-    if (overlay) {
-      overlay.style.setProperty("--spotlight-x", `${cx}%`);
-      overlay.style.setProperty("--spotlight-y", `${cy}%`);
-    }
+	const overlay = document.querySelector(
+		".welcome-overlay",
+	) as HTMLElement | null;
+	if (overlay) {
+		overlay.style.setProperty("--spotlight-x", `${cx}%`);
+		overlay.style.setProperty("--spotlight-y", `${cy}%`);
+	}
 
-    rafId = requestAnimationFrame(tickSpotlight);
-  }
+	rafId = requestAnimationFrame(tickSpotlight);
+}
 
-  function dismiss() {
-    document.documentElement.classList.remove("welcome-overlay-active");
-  }
+function dismiss() {
+	document.documentElement.classList.remove("welcome-overlay-active");
+}
 
-  function cleanup() {
-    window.removeEventListener("mousemove", handlePointerMove);
-    window.removeEventListener("touchmove", handlePointerMove);
-    if (rafId !== null) cancelAnimationFrame(rafId);
-    rafId = null;
-  }
+function cleanup() {
+	window.removeEventListener("mousemove", handlePointerMove);
+	window.removeEventListener("touchmove", handlePointerMove);
+	if (rafId !== null) cancelAnimationFrame(rafId);
+	rafId = null;
+}
 
-  onMount(() => {
-    const STORAGE_KEY = "firefly-welcome-shown";
-    const isTimeline = window.location.pathname.includes("/timeline");
+onMount(() => {
+	const STORAGE_KEY = "firefly-welcome-shown";
+	const isTimeline = window.location.pathname.includes("/timeline");
 
-    // 移除 fallback 遮罩层，Svelte 组件已接管
-    const fallback = document.getElementById("welcome-overlay-fallback");
-    if (fallback) fallback.remove();
+	// 移除 fallback 遮罩层，Svelte 组件已接管
+	const fallback = document.getElementById("welcome-overlay-fallback");
+	if (fallback) fallback.remove();
 
-    // 如果已标记过（本次会话内已展示过动画，或曾停留在时间轴页面），直接跳过
-    if (sessionStorage.getItem(STORAGE_KEY) === "1") {
-      show = false;
-      dismiss();
-      return;
-    }
+	// 如果已标记过（本次会话内已展示过动画，或曾停留在时间轴页面），直接跳过
+	if (sessionStorage.getItem(STORAGE_KEY) === "1") {
+		show = false;
+		dismiss();
+		return;
+	}
 
-    // 时间轴页面：跳过动画并标记，这样从时间轴跳转到其他页面时全页加载也不会重播
-    if (isTimeline) {
-      sessionStorage.setItem(STORAGE_KEY, "1");
-      show = false;
-      dismiss();
-      return;
-    }
+	// 时间轴页面：跳过动画并标记，这样从时间轴跳转到其他页面时全页加载也不会重播
+	if (isTimeline) {
+		sessionStorage.setItem(STORAGE_KEY, "1");
+		show = false;
+		dismiss();
+		return;
+	}
 
-    // 标记为已展示，防止后续全页导航重播
-    sessionStorage.setItem(STORAGE_KEY, "1");
+	// 标记为已展示，防止后续全页导航重播
+	sessionStorage.setItem(STORAGE_KEY, "1");
 
-    window.addEventListener("mousemove", handlePointerMove);
-    window.addEventListener("touchmove", handlePointerMove, { passive: true });
-    rafId = requestAnimationFrame(tickSpotlight);
+	window.addEventListener("mousemove", handlePointerMove);
+	window.addEventListener("touchmove", handlePointerMove, { passive: true });
+	rafId = requestAnimationFrame(tickSpotlight);
 
-    setTimeout(() => {
-      leaving = true;
-      setTimeout(() => {
-        show = false;
-        cleanup();
-        dismiss();
-      }, 400);
-    }, 2200);
-  });
+	setTimeout(() => {
+		leaving = true;
+		setTimeout(() => {
+			show = false;
+			cleanup();
+			dismiss();
+		}, 400);
+	}, 2200);
+});
 </script>
 
 {#if show}

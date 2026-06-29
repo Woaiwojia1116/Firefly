@@ -202,6 +202,8 @@ export class SakuraManager {
 	private animationId: number | null = null;
 	private img: HTMLImageElement | null = null;
 	private isRunning = false;
+	private paused = false;
+	private visibilityHandler: (() => void) | null = null;
 
 	constructor(config: SakuraConfig) {
 		this.config = config;
@@ -243,7 +245,8 @@ export class SakuraManager {
 		);
 		this.canvas.setAttribute("id", "canvas_sakura");
 		document.body.appendChild(this.canvas);
-		this.ctx = this.canvas.getContext("2d");
+		// 使用 desynchronized 减少 GPU 同步等待，降低延迟
+		this.ctx = this.canvas.getContext("2d", { desynchronized: true });
 
 		// 监听窗口大小变化
 		window.addEventListener("resize", this.handleResize.bind(this));
@@ -292,19 +295,64 @@ export class SakuraManager {
 		}
 	}
 
-	// 开始动画
+	// 开始动画（30fps 以降低 GPU 负载）
+	private static readonly FRAME_INTERVAL = 1000 / 30; // 30fps
+
 	private startAnimation(): void {
 		if (!this.ctx || !this.canvas || !this.sakuraList) return;
 
-		const animate = () => {
-			if (!this.ctx || !this.canvas || !this.sakuraList) return;
+		// 页面不可见时暂停动画，节省 CPU/GPU
+		this.visibilityHandler = () => {
+			if (document.hidden) {
+				this.pauseAnimation();
+			} else if (this.isRunning) {
+				this.resumeAnimation();
+			}
+		};
+		document.addEventListener("visibilitychange", this.visibilityHandler);
 
-			this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-			this.sakuraList.update();
-			this.sakuraList.draw(this.ctx);
+		let lastFrameTime = 0;
+		const animate = (timestamp: number) => {
+			if (!this.ctx || !this.canvas || !this.sakuraList || this.paused) return;
+
+			// 帧率控制：只在上帧间隔超过阈值时重绘
+			const elapsed = timestamp - lastFrameTime;
+			if (elapsed >= SakuraManager.FRAME_INTERVAL) {
+				lastFrameTime = timestamp - (elapsed % SakuraManager.FRAME_INTERVAL);
+				this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+				this.sakuraList.update();
+				this.sakuraList.draw(this.ctx);
+			}
 			this.animationId = requestAnimationFrame(animate);
 		};
 
+		this.animationId = requestAnimationFrame(animate);
+	}
+
+	private pauseAnimation(): void {
+		this.paused = true;
+		if (this.animationId) {
+			cancelAnimationFrame(this.animationId);
+			this.animationId = null;
+		}
+	}
+
+	private resumeAnimation(): void {
+		if (!this.paused || !this.ctx || !this.canvas || !this.sakuraList) return;
+		this.paused = false;
+
+		let lastFrameTime = 0;
+		const animate = (timestamp: number) => {
+			if (!this.ctx || !this.canvas || !this.sakuraList || this.paused) return;
+			const elapsed = timestamp - lastFrameTime;
+			if (elapsed >= SakuraManager.FRAME_INTERVAL) {
+				lastFrameTime = timestamp - (elapsed % SakuraManager.FRAME_INTERVAL);
+				this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+				this.sakuraList.update();
+				this.sakuraList.draw(this.ctx);
+			}
+			this.animationId = requestAnimationFrame(animate);
+		};
 		this.animationId = requestAnimationFrame(animate);
 	}
 
@@ -323,6 +371,11 @@ export class SakuraManager {
 			this.animationId = null;
 		}
 
+		if (this.visibilityHandler) {
+			document.removeEventListener("visibilitychange", this.visibilityHandler);
+			this.visibilityHandler = null;
+		}
+
 		if (this.canvas) {
 			document.body.removeChild(this.canvas);
 			this.canvas = null;
@@ -330,6 +383,7 @@ export class SakuraManager {
 
 		window.removeEventListener("resize", this.handleResize.bind(this));
 		this.isRunning = false;
+		this.paused = false;
 	}
 
 	// 切换樱花特效

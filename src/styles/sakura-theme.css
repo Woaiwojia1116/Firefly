@@ -71,7 +71,7 @@ body.homepage {
   transition: none !important;
 }
 
-/* 卡片玻璃态效果增强 */
+/* 卡片玻璃态效果增强（降低 blur 以减少 GPU 负载） */
 .card-base {
   background: linear-gradient(
     135deg,
@@ -79,14 +79,14 @@ body.homepage {
     rgba(255, 255, 255, 0.3) 50%,
     rgba(255, 240, 245, 0.4) 100%
   );
-  backdrop-filter: blur(16px) saturate(150%);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(8px) saturate(130%);
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
   border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow:
     0 8px 24px rgba(255, 182, 193, 0.2),
     0 2px 8px rgba(0, 0, 0, 0.05),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .card-base:hover {
@@ -255,8 +255,8 @@ body.homepage {
     rgba(255, 255, 255, 0.2) 50%,
     rgba(255, 240, 245, 0.25) 100%
   );
-  backdrop-filter: blur(16px) saturate(150%);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(8px) saturate(130%);
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
   border: 1px solid rgba(255, 255, 255, 0.5);
   box-shadow:
     0 8px 24px rgba(255, 182, 193, 0.2),
@@ -286,8 +286,8 @@ footer {
     rgba(255, 255, 255, 0.15) 50%,
     rgba(255, 240, 245, 0.2) 100%
   );
-  backdrop-filter: blur(12px) saturate(120%);
-  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  backdrop-filter: blur(6px) saturate(110%);
+  -webkit-backdrop-filter: blur(6px) saturate(110%);
   border-top: 1px solid rgba(255, 255, 255, 0.4);
 }
 
@@ -309,8 +309,8 @@ footer {
     rgba(255, 255, 255, 0.3) 50%,
     rgba(255, 240, 245, 0.4) 100%
   );
-  backdrop-filter: blur(24px) saturate(200%);
-  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  backdrop-filter: blur(10px) saturate(150%);
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
   border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow:
     0 16px 48px rgba(255, 182, 193, 0.3),

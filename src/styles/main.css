@@ -561,3 +561,17 @@ html {
 .pagination-info {
   @apply text-sm text-(--text-secondary) text-center mb-2;
 }
+
+/* ==========================================================================
+   GPU 性能优化：对高频动画元素限制 transition 属性
+   transition: all 会让浏览器监听所有属性变化，增加不必要的合成开销。
+   对常见 UI 组件限制为只过渡 GPU 友好的属性。
+   ========================================================================== */
+/* 按钮、标签、卡片等高频交互元素 */
+.btn-plain,
+.btn-regular,
+.card-base,
+.category-pill,
+.pagination-info {
+  transition-property: opacity, transform, color, background-color, border-color, box-shadow !important;
+}

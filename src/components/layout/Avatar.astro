@@ -1,12 +1,17 @@
 ---
 interface Props {
-  imageSrc?: string;
-  imageAlt?: string;
-  label?: string;
-  imagePosition?: string;
+	imageSrc?: string;
+	imageAlt?: string;
+	label?: string;
+	imagePosition?: string;
 }
 
-const { imageSrc, imageAlt = "Avatar", label = "文字", imagePosition = "center" } = Astro.props;
+const {
+	imageSrc,
+	imageAlt = "Avatar",
+	label = "文字",
+	imagePosition = "center",
+} = Astro.props;
 ---
 
 <div class="avatar-container">

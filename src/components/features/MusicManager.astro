@@ -307,26 +307,41 @@ const managerConfigStr = JSON.stringify({
     }
 
     // ── Audio events → broadcast ─────────────────────────────
+    // 节流：timeupdate 每秒触发 ~4 次，无需每帧都派发事件
+    var lastTimeUpdate = 0;
+    var TIME_UPDATE_INTERVAL = 200; // ms
     audio.addEventListener('timeupdate', function () {
         if (isNaN(audio.duration)) return;
+        var now = Date.now();
         var ct = audio.currentTime;
         var dur = audio.duration;
         var pct = (ct / dur) * 100;
 
-        emit('fm:time', {
-            currentTime: ct,
-            duration: dur,
-            progress: pct,
-            currentTimeStr: formatTime(ct),
-            durationStr: formatTime(dur)
-        });
+        // 只在超过间隔时派发 time 事件，减少 DOM 更新频率
+        if (now - lastTimeUpdate >= TIME_UPDATE_INTERVAL) {
+            lastTimeUpdate = now;
+            emit('fm:time', {
+                currentTime: ct,
+                duration: dur,
+                progress: pct,
+                currentTimeStr: formatTime(ct),
+                durationStr: formatTime(dur)
+            });
+        }
 
-        // Lyrics sync
+        // Lyrics sync — 使用二分查找替代线性遍历
         if (state.lyrics.length > 0) {
             var idx = -1;
-            for (var i = 0; i < state.lyrics.length; i++) {
-                if (ct >= state.lyrics[i].time) idx = i;
-                else break;
+            var lyrics = state.lyrics;
+            var lo = 0, hi = lyrics.length - 1;
+            while (lo <= hi) {
+                var mid = (lo + hi) >> 1;
+                if (ct >= lyrics[mid].time) {
+                    idx = mid;
+                    lo = mid + 1;
+                } else {
+                    hi = mid - 1;
+                }
             }
             if (idx !== state.currentLrcIndex) {
                 state.currentLrcIndex = idx;

@@ -1,116 +1,123 @@
 <script lang="ts">
-  /**
-   * 友链页面交互组件
-   * - 玻璃按钮 → 弹窗（站点信息 / 注意事项 / 站点信息列表）
-   * 弹窗通过 Svelte action (use:portal) 挂载到 body，避免被 Swup 容器的 transform 裁剪
-   */
+/**
+ * 友链页面交互组件
+ * - 玻璃按钮 → 弹窗（站点信息 / 注意事项 / 站点信息列表）
+ * 弹窗通过 Svelte action (use:portal) 挂载到 body，避免被 Swup 容器的 transform 裁剪
+ */
 
-  import { onMount } from "svelte";
+import { onMount } from "svelte";
 
-  /** 将元素移动到 document.body，销毁时自动移除（SSR 安全） */
-  function portal(node: HTMLElement) {
-    if (typeof document !== "undefined" && document.body) {
-      document.body.appendChild(node);
-    }
-    return {
-      destroy() {
-        if (typeof document !== "undefined" && node.parentElement === document.body) {
-          document.body.removeChild(node);
-        }
-      },
-    };
-  }
+/** 将元素移动到 document.body，销毁时自动移除（SSR 安全） */
+function portal(node: HTMLElement) {
+	if (typeof document !== "undefined" && document.body) {
+		document.body.appendChild(node);
+	}
+	return {
+		destroy() {
+			if (
+				typeof document !== "undefined" &&
+				node.parentElement === document.body
+			) {
+				document.body.removeChild(node);
+			}
+		},
+	};
+}
 
-  interface Site {
-    name: string;
-    desc: string;
-    url: string;
-    avatar: string;
-    email: string;
-  }
+interface Site {
+	name: string;
+	desc: string;
+	url: string;
+	avatar: string;
+	email: string;
+}
 
-  interface Note {
-    title: string;
-    content: string;
-  }
+interface Note {
+	title: string;
+	content: string;
+}
 
-  interface Props {
-    site: Site;
-    notes: Note[];
-  }
+interface Props {
+	site: Site;
+	notes: Note[];
+}
 
-  let { site, notes }: Props = $props();
+let { site, notes }: Props = $props();
 
-  let isOpen = $state(false);
-  let panelEl: HTMLDivElement | undefined = $state();
-  let isMounted = $state(false);
+let isOpen = $state(false);
+let panelEl: HTMLDivElement | undefined = $state();
+let isMounted = $state(false);
 
-  onMount(() => {
-    isMounted = true;
-  });
+onMount(() => {
+	isMounted = true;
+});
 
-  const copyFields = [
-    { label: "站点名称", value: site.name },
-    { label: "站点描述", value: site.desc },
-    { label: "站点链接", value: site.url },
-    { label: "头像链接", value: "https://i.stardots.io/366046882645/StarDots-2026061016244768517.webp" },
-  ];
+const copyFields = [
+	{ label: "站点名称", value: site.name },
+	{ label: "站点描述", value: site.desc },
+	{ label: "站点链接", value: site.url },
+	{
+		label: "头像链接",
+		value:
+			"https://i.stardots.io/366046882645/StarDots-2026061016244768517.webp",
+	},
+];
 
-  function open() {
-    isOpen = true;
-    document.body.style.overflow = "hidden";
-  }
+function open() {
+	isOpen = true;
+	document.body.style.overflow = "hidden";
+}
 
-  function close() {
-    document.body.style.overflow = "";
-    isOpen = false;
-  }
+function close() {
+	document.body.style.overflow = "";
+	isOpen = false;
+}
 
-  // 面板挂载到 body 后播放弹簧入场动画
-  $effect(() => {
-    const el = panelEl;
-    if (!el) return;
-    el.animate(
-      [
-        { transform: "scale(0.8)", opacity: "0" },
-        { transform: "scale(1.05)", opacity: "1", offset: 0.55 },
-        { transform: "scale(0.97)", opacity: "1", offset: 0.75 },
-        { transform: "scale(1.01)", opacity: "1", offset: 0.9 },
-        { transform: "scale(1)", opacity: "1", offset: 1 },
-      ],
-      {
-        duration: 400,
-        easing: "cubic-bezier(0.34, 1.56, 0.64, 1)",
-        fill: "forwards",
-      },
-    );
-  });
+// 面板挂载到 body 后播放弹簧入场动画
+$effect(() => {
+	const el = panelEl;
+	if (!el) return;
+	el.animate(
+		[
+			{ transform: "scale(0.8)", opacity: "0" },
+			{ transform: "scale(1.05)", opacity: "1", offset: 0.55 },
+			{ transform: "scale(0.97)", opacity: "1", offset: 0.75 },
+			{ transform: "scale(1.01)", opacity: "1", offset: 0.9 },
+			{ transform: "scale(1)", opacity: "1", offset: 1 },
+		],
+		{
+			duration: 400,
+			easing: "cubic-bezier(0.34, 1.56, 0.64, 1)",
+			fill: "forwards",
+		},
+	);
+});
 
-  // Escape 关闭
-  $effect(() => {
-    if (!isOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  });
+// Escape 关闭
+$effect(() => {
+	if (!isOpen) return;
+	const handler = (e: KeyboardEvent) => {
+		if (e.key === "Escape") close();
+	};
+	window.addEventListener("keydown", handler);
+	return () => window.removeEventListener("keydown", handler);
+});
 
-  function onOverlayClick(e: MouseEvent) {
-    if (e.target === e.currentTarget) close();
-  }
+function onOverlayClick(e: MouseEvent) {
+	if (e.target === e.currentTarget) close();
+}
 
-  function copyValue(e: MouseEvent, value: string) {
-    navigator.clipboard.writeText(value);
-    const btn = e.currentTarget as HTMLButtonElement;
-    const [copyIcon, checkIcon] = btn.querySelectorAll("svg");
-    copyIcon.style.display = "none";
-    checkIcon.style.display = "";
-    setTimeout(() => {
-      copyIcon.style.display = "";
-      checkIcon.style.display = "none";
-    }, 1500);
-  }
+function copyValue(e: MouseEvent, value: string) {
+	navigator.clipboard.writeText(value);
+	const btn = e.currentTarget as HTMLButtonElement;
+	const [copyIcon, checkIcon] = btn.querySelectorAll("svg");
+	copyIcon.style.display = "none";
+	checkIcon.style.display = "";
+	setTimeout(() => {
+		copyIcon.style.display = "";
+		checkIcon.style.display = "none";
+	}, 1500);
+}
 </script>
 
 <!-- ==================== 玻璃按钮 ==================== -->

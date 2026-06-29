@@ -60,7 +60,8 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 				name: "満ちてゆく",
 				artist: "藤井风",
 				url: "assets/music/満ちてゆく.mp3",
-				cover: "assets/music/cover/c8ea15ce36d3d539b600281115dcfe50352ac75c1a94.webp",
+				cover:
+					"assets/music/cover/c8ea15ce36d3d539b600281115dcfe50352ac75c1a94.webp",
 				lrc: "",
 			},
 			{

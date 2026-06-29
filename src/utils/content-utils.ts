@@ -3,13 +3,25 @@ import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import { getCategoryUrl } from "@utils/url-utils";
 
+// 模块级缓存：避免多个函数重复调用 getCollection("posts")
+let cachedPosts: CollectionEntry<"posts">[] | null = null;
+
+async function getAllPosts(): Promise<CollectionEntry<"posts">[]> {
+	if (cachedPosts) return cachedPosts;
+	cachedPosts = await getCollection("posts", ({ data }) => {
+		return import.meta.env.PROD ? data.draft !== true : true;
+	});
+	return cachedPosts;
+}
+
 // // Retrieve posts and sort them by publication date
 async function getRawSortedPosts(includeTimelineOnly = false) {
-	const allBlogPosts = await getCollection("posts", ({ data }) => {
-		return (import.meta.env.PROD ? data.draft !== true : true) && (includeTimelineOnly || !data.timelineOnly);
-	});
+	const allBlogPosts = await getAllPosts();
+	const filtered = includeTimelineOnly
+		? allBlogPosts
+		: allBlogPosts.filter((p) => !p.data.timelineOnly);
 
-	const sorted = allBlogPosts.sort((a, b) => {
+	const sorted = filtered.sort((a, b) => {
 		// 首先按置顶状态排序，置顶文章在前
 		if (a.data.pinned && !b.data.pinned) return -1;
 		if (!a.data.pinned && b.data.pinned) return 1;
@@ -22,7 +34,9 @@ async function getRawSortedPosts(includeTimelineOnly = false) {
 	return sorted;
 }
 
-export async function getSortedPosts(includeTimelineOnly = false) {
+export async function getSortedPosts(
+	includeTimelineOnly = false,
+): Promise<CollectionEntry<"posts">[]> {
 	const sorted = await getRawSortedPosts(includeTimelineOnly);
 
 	for (let i = 1; i < sorted.length; i++) {
@@ -40,7 +54,9 @@ export type PostForList = {
 	id: string;
 	data: CollectionEntry<"posts">["data"];
 };
-export async function getSortedPostsList(includeTimelineOnly = false): Promise<PostForList[]> {
+export async function getSortedPostsList(
+	includeTimelineOnly = false,
+): Promise<PostForList[]> {
 	const sortedFullPosts = await getRawSortedPosts(includeTimelineOnly);
 
 	// delete post.body
@@ -61,12 +77,11 @@ export async function getPostsForTimeline(): Promise<PostForList[]> {
 }
 
 export async function getTagList(): Promise<Tag[]> {
-	const allBlogPosts = await getCollection<"posts">("posts", ({ data }) => {
-		return (import.meta.env.PROD ? data.draft !== true : true) && !data.timelineOnly;
-	});
+	const allBlogPosts = await getAllPosts();
+	const filtered = allBlogPosts.filter((p) => !p.data.timelineOnly);
 
 	const countMap: { [key: string]: number } = {};
-	allBlogPosts.forEach((post: { data: { tags: string[] } }) => {
+	filtered.forEach((post) => {
 		post.data.tags.forEach((tag: string) => {
 			if (!countMap[tag]) countMap[tag] = 0;
 			countMap[tag]++;
@@ -88,11 +103,10 @@ export type Category = {
 };
 
 export async function getCategoryList(): Promise<Category[]> {
-	const allBlogPosts = await getCollection<"posts">("posts", ({ data }) => {
-		return (import.meta.env.PROD ? data.draft !== true : true) && !data.timelineOnly;
-	});
+	const allBlogPosts = await getAllPosts();
+	const filtered = allBlogPosts.filter((p) => !p.data.timelineOnly);
 	const count: { [key: string]: number } = {};
-	allBlogPosts.forEach((post: { data: { category: string | null } }) => {
+	filtered.forEach((post) => {
 		if (!post.data.category) {
 			const ucKey = i18n(I18nKey.uncategorized);
 			count[ucKey] = count[ucKey] ? count[ucKey] + 1 : 1;
@@ -164,9 +178,7 @@ export async function getRelatedPosts(
 	currentPost: CollectionEntry<"posts">,
 	maxCount = 5,
 ): Promise<PostForList[]> {
-	const allPosts = await getCollection<"posts">("posts", ({ data }) => {
-		return import.meta.env.PROD ? data.draft !== true : true;
-	});
+	const allPosts = await getAllPosts();
 
 	// 排除自身、加密文章和 timelineOnly 文章
 	const candidates = allPosts.filter(

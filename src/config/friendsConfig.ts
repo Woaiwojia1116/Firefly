@@ -52,8 +52,7 @@ export const friendsConfig: FriendLink[] = [
 	// },
 	{
 		title: "KASUIEの次元",
-		imgurl:
-			"https://kasuie.cc/avatar.webp",
+		imgurl: "https://kasuie.cc/avatar.webp",
 		desc: "喜欢温柔的人",
 		siteurl: "https://kasuie.cc",
 		tags: ["Blog"],
@@ -62,8 +61,7 @@ export const friendsConfig: FriendLink[] = [
 	},
 	{
 		title: "番茄主理人",
-		imgurl:
-			"https://q1.qlogo.cn/g?b=qq&nk=20447289&s=640",
+		imgurl: "https://q1.qlogo.cn/g?b=qq&nk=20447289&s=640",
 		desc: "坐而言不如起而行.",
 		siteurl: "https://fqzlr.com/",
 		tags: ["Blog"],
@@ -72,8 +70,7 @@ export const friendsConfig: FriendLink[] = [
 	},
 	{
 		title: "THW’s Blog",
-		imgurl:
-			"https://image.tianhw.top/avatar.webp",
+		imgurl: "https://image.tianhw.top/avatar.webp",
 		desc: "前途似海，来日方长.",
 		siteurl: "https://blog.tianhw.top",
 		tags: ["Blog"],
@@ -82,8 +79,7 @@ export const friendsConfig: FriendLink[] = [
 	},
 	{
 		title: "辰渊尘",
-		imgurl:
-			"https://blog.mcxiaochen.top/img/congyu/touxiang.webp",
+		imgurl: "https://blog.mcxiaochen.top/img/congyu/touxiang.webp",
 		desc: "05后，高中生，内容偏技术向，同时也会更新生活日常，希望能对你有用QwQ",
 		siteurl: "https://blog.mcxiaochen.top",
 		tags: ["Blog"],
@@ -92,8 +88,7 @@ export const friendsConfig: FriendLink[] = [
 	},
 	{
 		title: "MmzMing的知识库",
-		imgurl:
-			"https://i.stardots.io/784774835/StarDots-2026052116374135506.jpg",
+		imgurl: "https://i.stardots.io/784774835/StarDots-2026052116374135506.jpg",
 		desc: "哈基米，南北绿豆",
 		siteurl: "https://tblog.mmzhiku.xyz",
 		tags: ["Blog"],
@@ -102,8 +97,7 @@ export const friendsConfig: FriendLink[] = [
 	},
 	{
 		title: "团子和蛋糕",
-		imgurl:
-			"https://re.tsh520.cn/zl/tx.webp",
+		imgurl: "https://re.tsh520.cn/zl/tx.webp",
 		desc: "如果你喜欢那么欢迎来到我的世界！",
 		siteurl: "https://blog.tsh520.cn/",
 		tags: ["Blog"],
@@ -112,8 +106,7 @@ export const friendsConfig: FriendLink[] = [
 	},
 	{
 		title: "Luquiesceneの小屋",
-		imgurl:
-			"https://luq-blog.xyz/avatar.webp",
+		imgurl: "https://luq-blog.xyz/avatar.webp",
 		desc: "To be or not to be: that is the question.",
 		siteurl: "https://luq-blog.xyz/",
 		tags: ["Blog"],
@@ -122,8 +115,7 @@ export const friendsConfig: FriendLink[] = [
 	},
 	{
 		title: "雪萌の小窝",
-		imgurl:
-			"https://xuemeng.work/wp-content/uploads/2026/02/icon.jpg",
+		imgurl: "https://xuemeng.work/wp-content/uploads/2026/02/icon.jpg",
 		desc: "一个喜欢嵌入式的杂鱼大学生的博客～",
 		siteurl: "https://xuemeng.work",
 		tags: ["Blog"],

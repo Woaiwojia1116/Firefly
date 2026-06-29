@@ -30,7 +30,7 @@ let totalWords = 0;
 for (const post of posts) {
 	if (post.body) {
 		// 移除代码块和内联代码后计算字数
-		let text = post.body
+		const text = post.body
 			.replace(/```[\s\S]*?```/g, "") // 移除代码块
 			.replace(/`[^`]*`/g, "") // 移除内联代码
 			.replace(/\s+/g, " ") // 合并空白

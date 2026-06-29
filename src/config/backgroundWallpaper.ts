@@ -1,5 +1,5 @@
-import type { BackgroundWallpaperConfig } from "@/types/config";
 import type { transpileModule } from "typescript";
+import type { BackgroundWallpaperConfig } from "@/types/config";
 
 export const backgroundWallpaper: BackgroundWallpaperConfig = {
 	// 壁纸模式："banner" 横幅壁纸，"overlay" 全屏透明，"none" 纯色背景无壁纸
@@ -38,13 +38,9 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 	 */
 	src: {
 		// 桌面背景图片（支持单张或多张随机）
-		desktop: [
-			"assets/images/DesktopWallpaper/d18.png",
-		],
+		desktop: ["assets/images/DesktopWallpaper/d18.png"],
 		// 移动背景图片（支持单张或多张随机）
-		mobile: [
-			"assets/images/DesktopWallpaper/d18.png",
-		],
+		mobile: ["assets/images/DesktopWallpaper/d18.png"],
 	},
 	// Banner模式特有配置
 	banner: {
@@ -111,8 +107,8 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 			transparentMode: "full",
 			// 是否开启毛玻璃模糊效果，开启可能会影响页面性能，如果不开启则是半透明，请根据自己的喜好开启
 			enableBlur: true,
-			// 毛玻璃模糊度
-			blur: 12,
+			// 毛玻璃模糊度（注意：blur 值越大 GPU 负担越重，建议不超过 12）
+			blur: 6,
 		},
 		// 横幅图片轮播配置，仅在当配置多张图片时生效
 		carousel: {
@@ -161,8 +157,8 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 		zIndex: -1,
 		// 壁纸透明度
 		opacity: 0.9,
-		// 背景模糊度
-		blur: 8,
+		// 背景模糊度（注意：blur 值越大 GPU 负担越重，建议不超过 8）
+		blur: 4,
 		// 卡片透明度，0-1之间，值越小越透明
 		cardOpacity: 0.15,
 	},

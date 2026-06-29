@@ -181,12 +181,11 @@ const mainPanelTop =
 
 // 首页始终从 100vh 开始（全屏 Hero，内容完全在视口下方）
 // 非首页按banner模式计算重叠位置
-const finalMainPanelTop =
-	isHomePageCheck
-		? "100vh"
-		: isBannerMode && isBackgroundEnabled
-			? mainPanelTop
-			: "5.5rem";
+const finalMainPanelTop = isHomePageCheck
+	? "100vh"
+	: isBannerMode && isBackgroundEnabled
+		? mainPanelTop
+		: "5.5rem";
 
 // 获取响应式侧边栏配置
 const sidebarConfig = getResponsiveSidebarConfig();
@@ -241,7 +240,8 @@ const effectiveGridConfig = hideSidebars
 const { gridCols } = generateGridClasses(effectiveGridConfig);
 const sidebarClass = generateSidebarClasses(effectiveGridConfig);
 const rightSidebarClass =
-	!hideSidebars && (effectiveIsBothSidebars || sidebarLayoutConfig.position === "right")
+	!hideSidebars &&
+	(effectiveIsBothSidebars || sidebarLayoutConfig.position === "right")
 		? generateRightSidebarClasses(effectiveGridConfig)
 		: "";
 const mainContentClass = generateMainContentClasses(effectiveGridConfig);

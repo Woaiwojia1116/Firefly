@@ -93,10 +93,12 @@ const timezone = siteConfig.timezone || "Asia/Shanghai";
     </div>
     <script is:inline>
       (function() {
+        // 防止 Swup 导航时重复创建定时器
+        if (window.__liveClockInterval) return;
+
         var el = document.getElementById('live-clock');
         if (!el) return;
         var startStr = el.getAttribute('data-start');
-        var tz = el.getAttribute('data-timezone') || 'Asia/Shanghai';
         var startDate = new Date(startStr + 'T00:00:00');
         function tick() {
           var now = new Date();
@@ -113,7 +115,7 @@ const timezone = siteConfig.timezone || "Asia/Shanghai";
           el.textContent = parts.join('');
         }
         tick();
-        setInterval(tick, 1000);
+        window.__liveClockInterval = setInterval(tick, 1000);
       })();
     </script>
     <!-- 

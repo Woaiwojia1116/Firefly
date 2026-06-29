@@ -1,12 +1,15 @@
 ---
-import { siteConfig, backgroundWallpaper } from "@/config";
+import { backgroundWallpaper, siteConfig } from "@/config";
 
 interface Props {
-  title?: string;
-  subtitle?: string | string[];
+	title?: string;
+	subtitle?: string | string[];
 }
 
-const { title = siteConfig.title, subtitle = backgroundWallpaper.banner?.homeText?.subtitle || [] } = Astro.props;
+const {
+	title = siteConfig.title,
+	subtitle = backgroundWallpaper.banner?.homeText?.subtitle || [],
+} = Astro.props;
 
 // Ensure subtitle is always an array
 const subtitleArray = Array.isArray(subtitle) ? subtitle : [subtitle];
