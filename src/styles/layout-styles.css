@@ -682,8 +682,7 @@ html.is-page-transitioning .banner-home-text-overlay {
     will-change: auto;
 }
 
-/* Overlay 模式隐藏 Banner 专属元素 */
-#wallpaper-wrapper.wallpaper-overlay .banner-home-text-overlay,
+/* Overlay 模式隐藏 Banner 专属元素（首页 banner 文字由 body.homepage 规则控制） */
 #wallpaper-wrapper.wallpaper-overlay .banner-page-title-overlay,
 #wallpaper-wrapper.wallpaper-overlay .banner-post-meta-overlay {
     display: none !important;

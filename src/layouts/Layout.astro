@@ -730,23 +730,37 @@ const siteLang = lang.replace("_", "-");
         height: 100% !important;
     }
 
+    /* 首页：覆盖子元素 img 的模糊效果 */
+    html body.homepage #wallpaper-wrapper img {
+        filter: none !important;
+    }
+
+    /* 首页：确保 banner 文字可见（覆盖 overlay 模式的隐藏规则） */
+    html body.homepage #wallpaper-wrapper .banner-home-text-overlay {
+        display: flex !important;
+    }
+
     /* 首页：内容区基础样式，显示时过渡动画 */
     html body.homepage .absolute.w-full.z-30 {
-        transition: opacity 0.8s ease, transform 0.8s ease !important;
+        transition: opacity 0.8s ease, transform 0.8s ease, top 0.6s ease !important;
     }
 
     /* 首页：初始隐藏内容区，隐藏时更快 */
     html body.homepage:not(.has-scrolled) .absolute.w-full.z-30 {
         opacity: 0 !important;
         pointer-events: none !important;
-        transform: translateY(40px) !important;
-        transition: opacity 0.3s ease, transform 0.3s ease !important;
+        visibility: hidden !important;
+        top: 100vh !important;
+        transform: translateY(0) !important;
+        transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease, top 0.4s ease !important;
     }
 
-    /* 首页滚动后：显示内容区 */
+    /* 首页滚动后：显示内容区，从视口中部开始 */
     html body.homepage.has-scrolled .absolute.w-full.z-30 {
         opacity: 1 !important;
         pointer-events: auto !important;
+        visibility: visible !important;
+        top: 50vh !important;
         transform: translateY(0) !important;
     }
 
@@ -1132,7 +1146,13 @@ function disableAnimation() {
       var body = document.body;
       if (body.classList.contains('homepage')) {
         body.classList.remove('has-scrolled');
-        if (window.scrollY > 50) body.classList.add('has-scrolled');
+        if (window.scrollY > 50) {
+          body.classList.add('has-scrolled');
+        } else {
+          // 未滚动时重新隐藏 banner 文字（visit:start 中移除了 hidden）
+          var bannerText = document.querySelector(".banner-home-text-overlay");
+          if (bannerText) bannerText.classList.add("hidden");
+        }
       }
 
       // 重新初始化图标加载器

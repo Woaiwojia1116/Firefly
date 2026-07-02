@@ -491,10 +491,15 @@ function showOverlayMode() {
 	if (creditDesktop) creditDesktop.style.display = "none";
 	if (creditMobile) creditMobile.style.display = "none";
 
-	// 隐藏横幅首页文本
+	// 只在非首页时隐藏横幅首页文本
+	const isHomePageOverlay = checkIsHomePage(window.location.pathname);
 	const bannerTextOverlay = document.querySelector(".banner-home-text-overlay");
 	if (bannerTextOverlay) {
-		bannerTextOverlay.classList.add("hidden");
+		if (isHomePageOverlay) {
+			bannerTextOverlay.classList.remove("hidden");
+		} else {
+			bannerTextOverlay.classList.add("hidden");
+		}
 	}
 
 	// 调整主内容透明度
@@ -606,9 +611,13 @@ function adjustMainContentPosition(
 			mainContent.style.top = "calc(var(--banner-height) - 3rem)";
 			break;
 		case "overlay":
-			// Overlay模式：使用紧凑布局，主内容从导航栏下方开始
+			// Overlay模式：首页保持 100vh（由 CSS 控制），非首页从导航栏下方开始
 			mainContent.classList.add("no-banner-layout");
-			mainContent.style.top = "5.5rem";
+			if (checkIsHomePage(window.location.pathname)) {
+				mainContent.style.top = "100vh";
+			} else {
+				mainContent.style.top = "5.5rem";
+			}
 			break;
 		case "none":
 			// 无壁纸模式：主内容从导航栏下方开始
