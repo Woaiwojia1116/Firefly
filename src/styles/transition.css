@@ -178,3 +178,62 @@ html.is-animating .transition-swup-fade {
     opacity: 0;
     transition: opacity 300ms ease-out;
 }
+
+/* --------------------------------------------------------------------------
+   6. Lottie Entry Animation (first-visit full-screen splash)
+   -------------------------------------------------------------------------- */
+
+.lottie-entry-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #ffeef2 0%, #ffffff 50%, #fff5f7 100%);
+    /* sits above the progress bar (9999) and all content */
+}
+
+.lottie-entry-overlay.lottie-fade-out {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 500ms ease-out;
+}
+
+/* --------------------------------------------------------------------------
+   7. Lottie Loading Animation (centered overlay during Swup transitions)
+   -------------------------------------------------------------------------- */
+
+.lottie-loading-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in oklch, var(--page-bg) 80%, transparent);
+    backdrop-filter: blur(6px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms ease-out;
+}
+
+.lottie-loading-overlay.lottie-loading-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.lottie-animation-container {
+    width: min(50vw, 360px);
+    height: min(50vw, 360px);
+    aspect-ratio: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lottie-entry-overlay.lottie-fade-out {
+        transition: none;
+    }
+    .lottie-loading-overlay {
+        transition: none;
+    }
+}

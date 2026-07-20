@@ -1,0 +1,203 @@
+---
+import { siteConfig } from "@/config";
+
+type Mode = "entry" | "loading";
+
+interface Props {
+	mode: Mode;
+}
+
+const { mode } = Astro.props as Props;
+const cfg = siteConfig.lottieAnimation;
+const isEnabled = mode === "entry" ? cfg.entry : cfg.loading;
+const animationId = `lottie-${mode}`;
+const overlayId = `lottie-${mode}-overlay`;
+// Only render (and thus fetch the asset) when the mode is enabled
+const show = isEnabled && !!cfg.animationPath;
+---
+
+{show && (
+	<div
+		id={overlayId}
+		class={`lottie-overlay lottie-${mode}-overlay`}
+		data-lottie-overlay=""
+		data-mode={mode}
+		data-path={cfg.animationPath}
+	>
+		<div
+			class="lottie-animation-container"
+			id={`${animationId}-container`}
+			data-lottie-container=""
+		></div>
+		{mode === "loading" && <span class="sr-only">Loading</span>}
+	</div>
+)}
+
+<script>
+	import type { AnimationItem } from "lottie-web";
+
+	// This script is Vite-processed, so `import("lottie-web")` resolves to a real URL.
+	// It initializes every lottie overlay from its data-* attributes.
+	function initOverlay(overlay: HTMLElement) {
+		var mode = overlay.getAttribute("data-mode");
+		var path = overlay.getAttribute("data-path");
+		var containerEl = overlay.querySelector("[data-lottie-container]") as
+			| HTMLElement
+			| null;
+		// Bail early if anything is missing; the `const` aliases below preserve
+		// the non-null narrowing inside the async closures that follow.
+		if (!containerEl || !path || !mode) return;
+		const container = containerEl;
+		const animPath = path;
+
+		if (mode === "entry") {
+			// ---- Entry animation: full-screen, play once on first visit, then fade out ----
+			var STORAGE_KEY = "lottie-entry-played";
+			var reduced = window.matchMedia(
+				"(prefers-reduced-motion: reduce)",
+			).matches;
+
+			if (sessionStorage.getItem(STORAGE_KEY) || reduced) {
+				overlay.style.display = "none";
+				return;
+			}
+
+			var finished = false;
+			function fadeOut() {
+				if (finished) return;
+				finished = true;
+				overlay.classList.add("lottie-fade-out");
+				overlay.addEventListener(
+					"transitionend",
+					function () {
+						overlay.style.display = "none";
+					},
+					{ once: true },
+				);
+				sessionStorage.setItem(STORAGE_KEY, "1");
+			}
+
+			// Primary: fade out shortly after the (known 2.52s) animation finishes.
+			// Independent of the lottie event chain so the overlay can never get stuck.
+			setTimeout(fadeOut, 3000);
+
+			// Render the animation with lottie-web; fade out on complete (snappier).
+			import("lottie-web")
+				.then(function (mod) {
+					var lottie = mod.default;
+					return fetch(animPath)
+						.then(function (res) {
+							return res.json();
+						})
+						.then(function (data) {
+							var player = lottie.loadAnimation({
+								container: container,
+								renderer: "svg",
+								loop: false,
+								autoplay: true,
+								animationData: data,
+							});
+							player.addEventListener("complete", fadeOut);
+						});
+				})
+				.catch(function () {
+					// Asset failed to load — don't block the page
+					fadeOut();
+				});
+		} else {
+			// ---- Loading animation: centered overlay during Swup page transitions ----
+			var player: AnimationItem | null = null;
+			var visible = false;
+			var watchDog: number | undefined;
+			var MAX_VISIBLE_MS = 8000;
+
+			function clearWatchDog() {
+				if (watchDog !== undefined) {
+					clearTimeout(watchDog);
+					watchDog = undefined;
+				}
+			}
+
+			function ensurePlayer() {
+				if (player) return player;
+				import("lottie-web")
+					.then(function (mod) {
+						var lottie = mod.default;
+						return fetch(animPath)
+							.then(function (res) {
+								return res.json();
+							})
+							.then(function (data) {
+								player = lottie.loadAnimation({
+									container: container,
+									renderer: "svg",
+									loop: true,
+									autoplay: false,
+									animationData: data,
+								});
+								if (visible && player) player.play();
+							});
+					})
+					.catch(function () {
+						player = null;
+					});
+				return player;
+			}
+
+			function show() {
+				visible = true;
+				overlay.classList.add("lottie-loading-visible");
+				if (player) player.play();
+				clearWatchDog();
+				watchDog = window.setTimeout(hide, MAX_VISIBLE_MS);
+			}
+
+			function hide() {
+				if (
+					!visible &&
+					!overlay.classList.contains("lottie-loading-visible")
+				) {
+					clearWatchDog();
+					return;
+				}
+				visible = false;
+				overlay.classList.remove("lottie-loading-visible");
+				if (player) player.pause();
+				clearWatchDog();
+			}
+
+			// Build the player as soon as possible
+			ensurePlayer();
+
+			var wire = function () {
+				if (!window.swup || !window.swup.hooks) return;
+				window.swup.hooks.on("visit:start", show);
+				window.swup.hooks.on("visit:end", hide);
+			};
+			if (window.swup && window.swup.hooks) wire();
+			else document.addEventListener("swup:enable", wire);
+
+			// Primary hide trigger: astro:page-load fires after every Swup visit.
+			// Skip the very first dispatch (initial page load, not a navigation).
+			var pageLoads = 0;
+			document.addEventListener("astro:page-load", function () {
+				pageLoads++;
+				if (pageLoads > 1) hide();
+			});
+		}
+	}
+
+	// Initialize once the DOM is ready.
+	function start() {
+		var overlays = document.querySelectorAll("[data-lottie-overlay]");
+		for (var i = 0; i < overlays.length; i++) {
+			initOverlay(overlays[i] as HTMLElement);
+		}
+	}
+
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", start);
+	} else {
+		start();
+	}
+</script>

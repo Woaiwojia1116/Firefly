@@ -168,6 +168,16 @@ export type SiteConfig = {
 		 */
 		noReferrerDomains?: string[];
 	};
+
+	// Lottie 动画配置
+	lottieAnimation: {
+		/** public 文件夹下的动画 JSON 路径 */
+		animationPath: string;
+		/** 进站动画开关：首次访问时全屏播放一遍后淡出 */
+		entry: boolean;
+		/** 加载动画开关：Swup 页面切换时居中显示 */
+		loading: boolean;
+	};
 };
 
 export type Favicon = {

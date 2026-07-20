@@ -244,6 +244,17 @@ export const siteConfig: SiteConfig = {
 		noReferrerDomains: [],
 	},
 
+	// Lottie 动画配置（进站动画 & 页面加载动画）
+	// 动画源文件位于 public/assets/animation/，支持 .json（lottie-web 标准格式）
+	lottieAnimation: {
+		// public 文件夹下的动画 JSON 路径
+		animationPath: "/assets/animation/fish-new.json",
+		// 进站动画开关：首次访问时全屏播放一遍后淡出，SPA 切换不重播
+		entry: true,
+		// 加载动画开关：Swup 页面切换时居中显示（保留顶部进度条）
+		loading: true,
+	},
+
 	// 字体配置
 	// 在src/config/fontConfig.ts中配置具体字体
 	font: fontConfig,
