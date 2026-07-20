@@ -188,9 +188,10 @@ html.is-animating .transition-swup-fade {
     inset: 0;
     z-index: 99999;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #ffeef2 0%, #ffffff 50%, #fff5f7 100%);
+    background: linear-gradient(135deg, #ffd9e1 0%, #fff0f3 50%, #ffe4ec 100%);
     /* sits above the progress bar (9999) and all content */
 }
 
@@ -198,6 +199,48 @@ html.is-animating .transition-swup-fade {
     opacity: 0;
     pointer-events: none;
     transition: opacity 500ms ease-out;
+}
+
+/* --------------------------------------------------------------------------
+   8. Lottie Skip Button (frosted glass)
+   -------------------------------------------------------------------------- */
+
+.lottie-skip-btn {
+    margin-top: 2.5rem;
+    padding: 0.5rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    color: color-mix(in oklch, var(--text) 70%, transparent);
+    background: color-mix(in oklch, var(--page-bg) 55%, transparent);
+    border: 1px solid color-mix(in oklch, var(--text) 12%, transparent);
+    border-radius: 9999px;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px);
+    transition: opacity 300ms ease, transform 300ms ease;
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    user-select: none;
+}
+
+.lottie-skip-btn.lottie-skip-visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+.lottie-skip-btn:hover {
+    color: var(--text);
+    background: color-mix(in oklch, var(--page-bg) 70%, transparent);
+    border-color: color-mix(in oklch, var(--text) 22%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lottie-skip-btn {
+        transition: none;
+    }
 }
 
 /* --------------------------------------------------------------------------

@@ -29,6 +29,15 @@ const show = isEnabled && !!cfg.animationPath;
 			id={`${animationId}-container`}
 			data-lottie-container=""
 		></div>
+		{mode === "entry" && (
+			<button
+				type="button"
+				class="lottie-skip-btn"
+				id={`${animationId}-skip`}
+			>
+				Skip
+			</button>
+		)}
 		{mode === "loading" && <span class="sr-only">Loading</span>}
 	</div>
 )}
@@ -80,6 +89,18 @@ const show = isEnabled && !!cfg.animationPath;
 			// Primary: fade out shortly after the (known 2.52s) animation finishes.
 			// Independent of the lottie event chain so the overlay can never get stuck.
 			setTimeout(fadeOut, 3000);
+
+			// Skip button: show after 0.5s, click to skip the animation.
+			var skipBtn = overlay.querySelector("#lottie-entry-skip") as
+				| HTMLButtonElement
+				| null;
+			if (skipBtn) {
+				var btn = skipBtn;
+				setTimeout(function () {
+					btn.classList.add("lottie-skip-visible");
+				}, 500);
+				btn.addEventListener("click", fadeOut);
+			}
 
 			// Render the animation with lottie-web; fade out on complete (snappier).
 			import("lottie-web")
