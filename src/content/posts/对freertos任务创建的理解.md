@@ -12,7 +12,6 @@ image: ./images/1.jpg
 
 # xTaskCreate() 函数源码分析笔记
 
-
 ## xTaskCreate()实现
 ```c
 BaseType_t xTaskCreate(	TaskFunction_t pxTaskCode,
