@@ -1,5 +1,5 @@
 ---
-title: archlinux安装教程
+title: archlinux安装笔记
 published: 2026-05-07
 pinned: false
 description: 在virtualbox安装arch系统
