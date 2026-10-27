@@ -26,7 +26,7 @@ function portal(node: HTMLElement) {
 	};
 }
 
-import letterImg from "../../assets/images/雨夜门前的无字信笺.png";
+import letterImg from "../../assets/images/雨夜门前的无字信笺.webp";
 
 interface Site {
 	name: string;
@@ -54,6 +54,15 @@ let userAnchor = $state<{ x: number; y: number } | null>(null);
 
 onMount(() => {
 	isMounted = true;
+	// 空闲时预加载信笺大图，点击弹窗时直接命中缓存、无需等待
+	const warm = () => {
+		new Image().src = letterImg.src;
+	};
+	if ("requestIdleCallback" in window) {
+		requestIdleCallback(warm, { timeout: 2500 });
+	} else {
+		setTimeout(warm, 1200);
+	}
 });
 
 /** 信笺上可复制的字段（顺序即信封上的书写顺序） */

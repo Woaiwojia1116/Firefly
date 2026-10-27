@@ -6,7 +6,7 @@ description: vTaskDelay分析
 tags: [freertos]
 category: RTOS
 draft: false
-image: ./images/cy.png
+image: ./images/cy.webp
 # timelineOnly: false
 ---
 # FreeRTOS vTaskDelay 个人理解

@@ -55,8 +55,32 @@ function dismiss() {
 function cleanup() {
 	window.removeEventListener("mousemove", handlePointerMove);
 	window.removeEventListener("touchmove", handlePointerMove);
+	window.removeEventListener("keydown", handleKeydown);
 	if (rafId !== null) cancelAnimationFrame(rafId);
 	rafId = null;
+}
+
+function handleKeydown(e: KeyboardEvent) {
+	if (e.key === "Escape" || e.key === "Enter") skip();
+}
+
+/** 提前跳过：立即淡出并清理（与自动收场共用同一出口，幂等） */
+let autoTimer: ReturnType<typeof setTimeout> | null = null;
+let finished = false;
+
+function skip() {
+	if (finished) return;
+	finished = true;
+	if (autoTimer !== null) {
+		clearTimeout(autoTimer);
+		autoTimer = null;
+	}
+	leaving = true;
+	cleanup();
+	setTimeout(() => {
+		show = false;
+		dismiss();
+	}, 400);
 }
 
 onMount(() => {
@@ -87,15 +111,11 @@ onMount(() => {
 
 	window.addEventListener("mousemove", handlePointerMove);
 	window.addEventListener("touchmove", handlePointerMove, { passive: true });
+	window.addEventListener("keydown", handleKeydown);
 	rafId = requestAnimationFrame(tickSpotlight);
 
-	setTimeout(() => {
-		leaving = true;
-		setTimeout(() => {
-			show = false;
-			cleanup();
-			dismiss();
-		}, 400);
+	autoTimer = setTimeout(() => {
+		skip();
 	}, 2200);
 });
 </script>
@@ -137,6 +157,9 @@ onMount(() => {
   <div class="particle" style="left:10%;top:60%;width:3px;height:3px;animation-delay:0.6s" />
   <div class="particle" style="left:65%;top:78%;width:5px;height:5px;animation-delay:1.0s" />
   <div class="particle" style="left:40%;top:82%;width:3px;height:3px;animation-delay:1.4s" />
+
+  <!-- 跳过按钮 -->
+  <button class="skip-btn" onclick={skip} type="button">跳过 Skip</button>
 
   <!-- 内容层 -->
   <div class="content">
@@ -297,6 +320,46 @@ onMount(() => {
     opacity: 0;
     filter: blur(1px);
     animation: float-particle 4s ease-in-out infinite;
+  }
+
+  /* ===== 跳过按钮 ===== */
+  .skip-btn {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 2.25rem;
+    margin: 0 auto;
+    width: fit-content;
+    padding: 0.45rem 1.1rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 2;
+    opacity: 0;
+    animation: fade-in 0.4s ease-out 0.8s forwards;
+    transition:
+      background 0.2s ease,
+      color 0.2s ease,
+      border-color 0.2s ease;
+  }
+
+  .skip-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.32);
+    color: #fff;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skip-btn {
+      animation: none;
+      opacity: 1;
+    }
   }
 
   /* ===== 内容层 ===== */
