@@ -1,6 +1,6 @@
 ---
 title: 移植freertos到stm32f407vet6的HAL库
-published: 2026-10-22
+published: 2026-10-27
 pinned: false
 description: 移植笔记
 tags: [freertos]
