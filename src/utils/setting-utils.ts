@@ -1,19 +1,12 @@
 import {
 	BANNER_HEIGHT_EXTEND,
 	DARK_MODE,
-	DEFAULT_THEME,
-	LIGHT_MODE,
-	SYSTEM_MODE,
 	WALLPAPER_BANNER,
 	WALLPAPER_NONE,
 	WALLPAPER_OVERLAY,
 } from "@constants/constants";
 import type { LIGHT_DARK_MODE, WALLPAPER_MODE } from "@/types/config";
-import {
-	backgroundWallpaper,
-	expressiveCodeConfig,
-	siteConfig,
-} from "../config";
+import { backgroundWallpaper, expressiveCodeConfig } from "../config";
 import { isHomePage as checkIsHomePage } from "./layout-utils";
 
 // Declare global functions
@@ -35,27 +28,18 @@ export function getDefaultHue(): number {
 }
 
 export function getDefaultTheme(): LIGHT_DARK_MODE {
-	// 如果配置文件中设置了 defaultMode，使用配置的值
-	// 否则使用 DEFAULT_THEME（向后兼容）
-	return siteConfig.themeColor.defaultMode ?? DEFAULT_THEME;
+	// 站点已移除亮色主题，恒为暗色
+	return DARK_MODE;
 }
 
 // 获取系统主题
 export function getSystemTheme(): LIGHT_DARK_MODE {
-	if (typeof window === "undefined") {
-		return LIGHT_MODE;
-	}
-	return window.matchMedia("(prefers-color-scheme: dark)").matches
-		? DARK_MODE
-		: LIGHT_MODE;
+	return DARK_MODE;
 }
 
-// 解析主题（如果是system模式，则获取系统主题）
-export function resolveTheme(theme: LIGHT_DARK_MODE): LIGHT_DARK_MODE {
-	if (theme === SYSTEM_MODE) {
-		return getSystemTheme();
-	}
-	return theme;
+// 解析主题（站点为纯暗色，任何模式都解析为 dark）
+export function resolveTheme(_theme: LIGHT_DARK_MODE): LIGHT_DARK_MODE {
+	return DARK_MODE;
 }
 
 export function getHue(): number {
@@ -84,73 +68,34 @@ export function setHue(hue: number): void {
 	r.style.setProperty("--hue", String(hue));
 }
 
-export function applyThemeToDocument(theme: LIGHT_DARK_MODE) {
+export function applyThemeToDocument(_theme: LIGHT_DARK_MODE) {
 	// 检查是否在浏览器环境中
 	if (typeof document === "undefined") {
 		return;
 	}
 
-	// 解析主题
-	const resolvedTheme = resolveTheme(theme);
-
-	// 获取当前主题状态的完整信息
+	// 站点为纯暗色主题：无论传入什么模式，目标状态恒为 dark
 	const currentIsDark = document.documentElement.classList.contains("dark");
 	const currentTheme = document.documentElement.getAttribute("data-theme");
+	const expectedTheme = expressiveCodeConfig.darkTheme;
 
-	// 计算目标主题状态
-	let targetIsDark = false; // 初始化默认值
-	switch (resolvedTheme) {
-		case LIGHT_MODE:
-			targetIsDark = false;
-			break;
-		case DARK_MODE:
-			targetIsDark = true;
-			break;
-		default:
-			// 处理默认情况，使用当前主题状态
-			targetIsDark = currentIsDark;
-			break;
-	}
-
-	// 检测是否真的需要主题切换：
-	// 1. dark类状态是否改变
-	// 2. expressiveCode主题是否需要更新
-	const needsThemeChange = currentIsDark !== targetIsDark;
-	const expectedTheme = targetIsDark
-		? expressiveCodeConfig.darkTheme
-		: expressiveCodeConfig.lightTheme;
+	const needsThemeChange = !currentIsDark;
 	const needsCodeThemeUpdate = currentTheme !== expectedTheme;
 
-	// 如果既不需要主题切换也不需要代码主题更新，直接返回
 	if (!needsThemeChange && !needsCodeThemeUpdate) {
 		return;
 	}
 
-	// 批量 DOM 操作，减少重绘
 	if (needsThemeChange) {
-		// 添加过渡保护类（但会导致大量重绘，所以使用更轻量的方式）
-		// document.documentElement.classList.add("is-theme-transitioning");
-
-		// 直接切换主题，利用 CSS 变量的特性让浏览器优化过渡
-		if (targetIsDark) {
-			document.documentElement.classList.add("dark");
-		} else {
-			document.documentElement.classList.remove("dark");
-		}
+		document.documentElement.classList.add("dark");
 	}
 
-	// Set the theme for Expressive Code based on current mode
 	if (needsCodeThemeUpdate) {
 		document.documentElement.setAttribute("data-theme", expectedTheme);
 	}
 }
 
-// 系统主题监听器引用
-let systemThemeListener:
-	| ((e: MediaQueryListEvent | MediaQueryList) => void)
-	| null = null;
-
-export function setTheme(theme: LIGHT_DARK_MODE): void {
+export function setTheme(_theme: LIGHT_DARK_MODE): void {
 	// 检查是否在浏览器环境中
 	if (
 		typeof localStorage === "undefined" ||
@@ -159,120 +104,24 @@ export function setTheme(theme: LIGHT_DARK_MODE): void {
 		return;
 	}
 
-	// 先应用主题
-	applyThemeToDocument(theme);
+	// 站点为纯暗色主题：任何入参都落到 dark
+	applyThemeToDocument(DARK_MODE);
 
-	// 保存到localStorage
-	localStorage.setItem("theme", theme);
-
-	// 如果切换到 system 模式，需要监听系统主题变化
-	if (theme === SYSTEM_MODE) {
-		setupSystemThemeListener();
-	} else {
-		// 如果切换其他模式，移除系统主题监听
-		cleanupSystemThemeListener();
-	}
+	// 覆写 localStorage，清掉历史遗留的 light/system 值
+	localStorage.setItem("theme", DARK_MODE);
 }
 
-// 设置系统主题监听器
-export function setupSystemThemeListener() {
-	// 先清理之前的监听器
-	cleanupSystemThemeListener();
-
-	if (typeof window === "undefined") {
-		return;
-	}
-
-	const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-
-	// 处理系统主题变化的回调
-	const handleSystemThemeChange = (e: MediaQueryListEvent | MediaQueryList) => {
-		const isDark = e.matches;
-		const currentIsDark = document.documentElement.classList.contains("dark");
-
-		// 如果主题状态没有变化，直接返回
-		if (currentIsDark === isDark) {
-			return;
-		}
-
-		// 直接应用系统主题，不使用过渡保护类以避免大量重绘
-		if (isDark) {
-			document.documentElement.classList.add("dark");
-		} else {
-			document.documentElement.classList.remove("dark");
-		}
-
-		// Set the theme for Expressive Code
-		const expressiveTheme = isDark
-			? expressiveCodeConfig.darkTheme
-			: expressiveCodeConfig.lightTheme;
-		document.documentElement.setAttribute("data-theme", expressiveTheme);
-
-		// 触发自定义事件通知其他组件（仅在真正切换时触发）
-		window.dispatchEvent(new CustomEvent("theme-change"));
-	};
-
-	// 立即调用一次以设置初始状态
-	handleSystemThemeChange(mediaQuery);
-
-	// 监听系统主题变化（现代浏览器）
-	if (mediaQuery.addEventListener) {
-		mediaQuery.addEventListener("change", handleSystemThemeChange);
-	} else {
-		// 兼容旧浏览器
-		mediaQuery.addListener(handleSystemThemeChange);
-	}
-
-	systemThemeListener = handleSystemThemeChange;
-}
-
-// 清理系统主题监听器
-function cleanupSystemThemeListener() {
-	if (typeof window === "undefined" || !systemThemeListener) {
-		return;
-	}
-
-	const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-
-	if (mediaQuery.removeEventListener) {
-		mediaQuery.removeEventListener("change", systemThemeListener);
-	} else {
-		// 兼容旧浏览器
-		mediaQuery.removeListener(systemThemeListener);
-	}
-
-	systemThemeListener = null;
-}
+// 系统主题监听器（亮色主题已移除，系统偏好不再影响站点，保持空实现）
+export function setupSystemThemeListener() {}
 
 export function getStoredTheme(): LIGHT_DARK_MODE {
-	// 检查是否在浏览器环境中
-	if (
-		typeof localStorage === "undefined" ||
-		typeof localStorage.getItem !== "function"
-	) {
-		return getDefaultTheme();
-	}
-	return (
-		(localStorage.getItem("theme") as LIGHT_DARK_MODE) || getDefaultTheme()
-	);
+	// 站点为纯暗色主题：忽略 localStorage 中的历史值
+	return DARK_MODE;
 }
 
 // 初始化主题监听器（用于页面加载后）
-export function initThemeListener() {
-	if (
-		typeof localStorage === "undefined" ||
-		typeof localStorage.getItem !== "function"
-	) {
-		return;
-	}
-
-	const theme = getStoredTheme();
-
-	// 如果主题是 system 模式，需要监听系统主题变化
-	if (theme === SYSTEM_MODE) {
-		setupSystemThemeListener();
-	}
-}
+// 亮色主题已移除，系统偏好不再影响站点，保持空实现
+export function initThemeListener() {}
 
 // Wallpaper mode functions
 export function applyWallpaperModeToDocument(mode: WALLPAPER_MODE) {
@@ -376,6 +225,17 @@ function ensureWallpaperState(mode: WALLPAPER_MODE) {
 	updateNavbarTransparency(mode);
 }
 
+// 首页与文章详情页共用「不展示壁纸」的语义：这两类页面都不该出现 #wallpaper-wrapper。
+// 必须先判断再写入 —— 一旦对文章页写下行内 display:block!important，其优先级高于
+// 任何样式表 !important（也高于 Layout 中同级的行内守卫），会把所有隐藏规则压掉，
+// 文章页的背景图就会重新露出来。
+function isWallpaperHiddenPage(): boolean {
+	return (
+		!!document.body?.classList.contains("homepage") ||
+		!!document.querySelector("#content-wrapper.post-narrow")
+	);
+}
+
 function showBannerMode() {
 	// 显示 wallpaper-wrapper 并切换为 banner 模式
 	const wallpaperWrapper = document.getElementById("wallpaper-wrapper");
@@ -394,6 +254,14 @@ function showBannerMode() {
 		if (isMobile && !isHomePage) {
 			wallpaperWrapper.style.display = "none";
 			wallpaperWrapper.classList.add("mobile-hide-banner");
+		} else if (isWallpaperHiddenPage()) {
+			// 首页（沉浸式叙事页自带各章背景）与文章详情页都不展示壁纸。
+			// 必须走「隐藏」分支并写入行内 none!important：若落到下面的 else，
+			// 会写出行内 block!important，其优先级高于样式表 !important，
+			// 把 CSS 隐藏规则与其他守卫一并压掉，文章页背景图就会重新出现。
+			// 仅隐藏节点、保留 DOM，切回其他内页时壁纸仍能恢复。
+			wallpaperWrapper.style.display = "none";
+			wallpaperWrapper.style.setProperty("display", "none", "important");
 		} else {
 			// 首页或桌面端：先设置display，然后使用requestAnimationFrame确保渲染
 			wallpaperWrapper.style.display = "block";
@@ -473,9 +341,17 @@ function showOverlayMode() {
 	if (wallpaperWrapper) {
 		// 添加 overlay 模式类
 		wallpaperWrapper.classList.add("wallpaper-overlay");
-		// 显示壁纸
-		wallpaperWrapper.style.display = "block";
-		wallpaperWrapper.style.setProperty("display", "block", "important");
+		// 首页（沉浸式叙事页自带各章背景）与文章详情页都不展示壁纸。
+		// 这里写的是行内 !important：对文章页若写 block，会压过样式表里的
+		// display:none!important（含 MainGridLayout 的 post-narrow 规则与本文件外的守卫），
+		// 背景图就会重新露出来。仅隐藏、保留 DOM，切回其他内页时壁纸仍能恢复。
+		const isHiddenPage = isWallpaperHiddenPage();
+		wallpaperWrapper.style.display = isHiddenPage ? "none" : "block";
+		wallpaperWrapper.style.setProperty(
+			"display",
+			isHiddenPage ? "none" : "block",
+			"important",
+		);
 		wallpaperWrapper.style.top = "";
 		requestAnimationFrame(() => {
 			wallpaperWrapper.classList.remove("hidden");

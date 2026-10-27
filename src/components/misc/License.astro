@@ -1,5 +1,4 @@
 ---
-import { Icon } from "astro-icon/components";
 import { licenseConfig } from "@/config/licenseConfig";
 import { profileConfig } from "@/config/profileConfig";
 import I18nKey from "@/i18n/i18nKey";
@@ -17,54 +16,30 @@ interface Props {
 	licenseUrl: string;
 }
 
-const { title, pubDate, author, sourceLink, licenseName, licenseUrl } =
-	Astro.props;
+const { pubDate, author, licenseName, licenseUrl } = Astro.props;
 const className = Astro.props.class;
 const profileConf = profileConfig;
 const licenseConf = licenseConfig;
-const postUrl = sourceLink || decodeURIComponent(Astro.url.toString());
 ---
 
-<div
-  class={`relative transition overflow-hidden bg-(--license-block-bg) py-5 px-6 ${className}`}
->
-  <div class="transition font-bold text-black/75 dark:text-white/75">
-    {title}
-  </div>
-  <a href={postUrl} class="link text-(--primary) break-all">
-    {postUrl}
+{/* 落款式版权行：作者 · 发布于 · 许可，无底色无框，与正文融为一体 */}
+<div class={`ip-post-license ${className}`}>
+  <span class="ip-post-license__item">
+    {i18n(I18nKey.author)}
+    <b>{author || profileConf.name}</b>
+  </span>
+  <span class="ip-post-license__dot" aria-hidden="true">·</span>
+  <span class="ip-post-license__item">
+    {i18n(I18nKey.publishedAt)}
+    <b>{formatDateToYYYYMMDD(pubDate)}</b>
+  </span>
+  <span class="ip-post-license__dot" aria-hidden="true">·</span>
+  <a
+    href={licenseName ? licenseUrl || undefined : licenseConf.url}
+    target="_blank"
+    rel="noopener"
+    class="ip-post-license__link"
+  >
+    {licenseName || licenseConf.name}
   </a>
-  <div class="flex flex-col sm:flex-row gap-3 sm:gap-6 mt-2">
-    <div>
-      <div class="transition text-black/30 dark:text-white/30 text-sm">
-        {i18n(I18nKey.author)}
-      </div>
-      <div class="transition text-black/75 dark:text-white/75 line-clamp-2">
-        {author || profileConf.name}
-      </div>
-    </div>
-    <div>
-      <div class="transition text-black/30 dark:text-white/30 text-sm">
-        {i18n(I18nKey.publishedAt)}
-      </div>
-      <div class="transition text-black/75 dark:text-white/75 line-clamp-2">
-        {formatDateToYYYYMMDD(pubDate)}
-      </div>
-    </div>
-    <div>
-      <div class="transition text-black/30 dark:text-white/30 text-sm">
-        {i18n(I18nKey.license)}
-      </div>
-      <a
-        href={licenseName ? licenseUrl || undefined : licenseConf.url}
-        target="_blank"
-        class="link text-(--primary) line-clamp-2"
-        >{licenseName || licenseConf.name}</a
-      >
-    </div>
-  </div>
-  <Icon
-    name="fa7-brands:creative-commons"
-    class="transition text-[15rem] absolute pointer-events-none right-6 top-1/2 -translate-y-1/2 text-black/5 dark:text-white/5"
-  />
 </div>

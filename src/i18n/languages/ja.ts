@@ -12,6 +12,8 @@ export const ja: Translation = {
 	[Key.searchSummary]: "摘要",
 	[Key.searchContent]: "内容",
 	[Key.searchViewMore]: "さらに結果を表示 ({count} 件)",
+	[Key.searchClear]: "クリア",
+	[Key.searchFocus]: "入力欄へ",
 	[Key.other]: "その他",
 	[Key.all]: "すべて",
 
@@ -44,19 +46,32 @@ export const ja: Translation = {
 	// お知らせ
 	[Key.announcement]: "お知らせ",
 	[Key.announcementClose]: "閉じる",
+	[Key.tools]: "ツール",
+	[Key.theme]: "テーマ",
+	[Key.themeLight]: "ライト",
+	[Key.themeDark]: "ダーク",
+	[Key.themeSystem]: "システム",
+	[Key.gotIt]: "了解",
+	[Key.viewDetails]: "詳細を見る",
 
 	[Key.comments]: "コメント",
 	[Key.commentSection]: "コメント欄",
 	[Key.commentSubtitle]: "あなたの考えを共有し、みんなと議論しましょう",
 	[Key.commentNotConfigured]: "コメントシステムが設定されていません",
-	[Key.guestbookCommentHint]:
-		"設定ファイルでコメントシステムをまだ有効にしていません。有効にすると、訪問者がここにメッセージを残せるようになります",
 	[Key.friends]: "友達",
 	[Key.friendsDescription]:
 		"ここは私の友達です、お互いに訪問して交流することを歓迎します",
-	[Key.guestbook]: "ゲストブック",
-	[Key.guestbookDescription]:
-		"ここに足跡を残して、あなたの考えや提案を共有してください",
+	[Key.moments]: "ひとこと",
+	[Key.momentsDescription]:
+		"つぶやきと日常のかけら、ひとつひとつ今起こっていること",
+	[Key.momentsEmpty]: "まだ投稿はありません。最初のひとことを書いてみましょう",
+	[Key.momentsCompose]: "ひとこと書く",
+	[Key.momentsMail]: "ブログ主のメール（設定と同じもの、初回のみ入力）",
+	[Key.momentsPlaceholder]: "今の気持ち…",
+	[Key.momentsImage]: "画像リンク（任意）",
+	[Key.momentsPublish]: "投稿する",
+	[Key.momentsCancel]: "キャンセル",
+	[Key.momentsRetry]: "再試行",
 	[Key.untitled]: "無題",
 	[Key.uncategorized]: "未分類",
 	[Key.noTags]: "タグなし",
@@ -85,6 +100,8 @@ export const ja: Translation = {
 	[Key.readTime]: "読了時間",
 	[Key.license]: "ライセンス",
 	[Key.bangumi]: "バングミ",
+
+	[Key.techStack]: "技術スタック",
 
 	// バングミフィルターと状態文本
 	[Key.bangumiTitle]: "私のバングミ",

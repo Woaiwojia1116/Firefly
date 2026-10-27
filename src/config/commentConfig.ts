@@ -14,6 +14,12 @@ export const commentConfig: CommentConfig = {
 		// 博主评论标签配置：匹配昵称的评论者将显示标签
 		masterTag: {
 			nickname: "ysdy", // 替换为你的评论昵称（昵称始终可见，推荐）
+			// 博主邮箱：动态（Moments）的身份校验依据。
+			// 写动态弹窗里填写的邮箱必须与这里一致，发布的内容才会进入动态流
+			// （前端只比对邮箱摘要，明文不会出现在页面里）。
+			// ⚠️ 当前是联调用的测试邮箱，上线前请换成你的真实邮箱；
+			// 换邮箱后，用测试邮箱发的历史动态会自动从动态流隐藏。
+			email: "test@ysdyblog.ccwu.cc",
 			label: "小破站代理人",
 			bgColor: "#14de40",
 			textColor: "rgba(0, 0, 0, 0.65)",

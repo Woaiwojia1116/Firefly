@@ -12,71 +12,451 @@ interface Props {
 const { headings } = Astro.props;
 ---
 
-<div class="floating-controls-container">
-  <FloatingTOC headings={headings ?? []} />
-  <BackToComment />
-  <BackToHome />
-  <BackToTop />
+<!-- 右下角悬浮快捷球：默认只有一个主按钮，悬浮/点击时其余按键绕其弧线展开。
+     子按键（目录/回评论/回首页/回顶部）各自保留原有的显隐逻辑（.hide 类），
+     展开槽位由脚本按「当前可见」的按键动态均分。 -->
+<div class="fab-hub" data-fab-hub>
+  <div class="fab-hub__items">
+    <div class="fab-item" data-fan>
+      <FloatingTOC headings={headings ?? []} />
+    </div>
+    <div class="fab-item" data-fan>
+      <BackToComment />
+    </div>
+    <div class="fab-item" data-fan>
+      <BackToHome />
+    </div>
+    <div class="fab-item" data-fan>
+      <BackToTop />
+    </div>
+    <div class="fab-item" data-fan data-fan-music>
+      <button
+        type="button"
+        class="fab-music-btn"
+        data-fab-music-btn
+        aria-label="音乐播放器"
+        aria-expanded="false"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="18"
+          height="18"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M9 18V5l10-2v13"></path>
+          <circle cx="6" cy="18" r="3"></circle>
+          <circle cx="16" cy="16" r="3"></circle>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <button
+    type="button"
+    class="fab-hub__main"
+    data-fab-main
+    aria-label="快捷操作"
+    aria-expanded="false"
+  >
+    <!-- 小机器人：天线 + 方圆脑袋 + 一双眼睛；展开时换成弯弯笑眼 -->
+    <svg
+      viewBox="0 0 24 24"
+      width="22"
+      height="22"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.8"
+      stroke-linecap="round"
+      aria-hidden="true"
+      class="fab-bot"
+    >
+      <line x1="12" y1="4" x2="12" y2="6.4"></line>
+      <circle class="fab-bot__antenna" cx="12" cy="3.2" r="1.1" fill="currentColor" stroke="none"></circle>
+      <rect x="4.8" y="6.8" width="14.4" height="12.4" rx="4.2"></rect>
+      <g class="fab-bot__eyes-idle">
+        <rect x="8.4" y="10.6" width="2.1" height="4.4" rx="1.05" fill="currentColor" stroke="none"></rect>
+        <rect x="13.5" y="10.6" width="2.1" height="4.4" rx="1.05" fill="currentColor" stroke="none"></rect>
+      </g>
+      <g class="fab-bot__eyes-happy">
+        <path d="M8.3 13.4c.7-1.8 2.5-1.8 3.2 0"></path>
+        <path d="M12.5 13.4c.7-1.8 2.5-1.8 3.2 0"></path>
+      </g>
+    </svg>
+  </button>
 </div>
 
 <style>
-  .floating-controls-container {
+  .fab-hub {
     position: fixed;
+    right: 1.25rem;
+    bottom: 1.25rem;
     z-index: 1000;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    align-items: flex-end; /* 右对齐 */
-    pointer-events: none; /* 容器不阻挡点击 */
-    
-    /* 默认桌面端位置 - 对应 BackToTop 的位置 */
-    right: 1rem;
-    bottom: 4rem;
+    width: 3rem;
+    height: 3rem;
+    pointer-events: none; /* 容器不挡点击，按键各自接管 */
   }
 
-  /* 响应式调整 - 保持原有的位置逻辑 */
-  @media (max-width: 1024px) {
-    .floating-controls-container {
-      right: 1rem;
-      bottom: 4rem;
+  /* ── 主按钮：黑白配色、无底无框，小机器人直接浮在背景上 ── */
+  .fab-hub__main {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    cursor: pointer;
+    pointer-events: auto;
+    color: rgb(255 255 255 / 0.85);
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    transition:
+      transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+      color 0.3s ease;
+  }
+
+  :root:not(.dark) .fab-hub__main {
+    color: rgb(0 0 0 / 0.82);
+  }
+
+  .fab-hub__main:hover {
+    background: transparent;
+    color: #fff;
+  }
+
+  :root:not(.dark) .fab-hub__main:hover {
+    color: #000;
+  }
+
+  .fab-hub__main:active {
+    transform: scale(0.9);
+  }
+
+  /* 展开时：眼睛换成弯弯笑眼，脑袋轻轻上浮，天线点亮 */
+  .fab-hub.is-open .fab-hub__main,
+  .fab-hub.is-pinned .fab-hub__main {
+    transform: translateY(-2px);
+  }
+
+  .fab-bot__eyes-idle {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: fab-blink 4.6s ease-in-out infinite;
+  }
+
+  .fab-bot__eyes-happy {
+    opacity: 0;
+  }
+
+  .fab-hub.is-open .fab-bot__eyes-idle,
+  .fab-hub.is-pinned .fab-bot__eyes-idle {
+    opacity: 0;
+    animation: none;
+  }
+
+  .fab-hub.is-open .fab-bot__eyes-happy,
+  .fab-hub.is-pinned .fab-bot__eyes-happy {
+    opacity: 1;
+  }
+
+  .fab-hub.is-open .fab-bot__antenna,
+  .fab-hub.is-pinned .fab-bot__antenna {
+    animation: fab-antenna 1.2s ease-in-out infinite;
+  }
+
+  @keyframes fab-blink {
+    0%,
+    91%,
+    100% {
+      transform: scaleY(1);
     }
+    94%,
+    97% {
+      transform: scaleY(0.12);
+    }
+  }
+
+  @keyframes fab-antenna {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.35;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fab-bot__eyes-idle,
+    .fab-hub.is-open .fab-bot__antenna,
+    .fab-hub.is-pinned .fab-bot__antenna {
+      animation: none;
+    }
+  }
+
+  /* ── 展开槽位 ───────────────────────────────────────────── */
+  .fab-hub__items {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .fab-item {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 2.75rem;
+    height: 2.75rem;
+    margin: -1.375rem;
+    opacity: 0;
+    pointer-events: none;
+    /* 收起态停在主按钮中心：关闭时按键被"吸"回球里 */
+    transform: translate(0, 0) scale(0.3);
+    transition:
+      transform 0.26s cubic-bezier(0.4, 0, 1, 1) var(--fan-delay-out, 0ms),
+      opacity 0.16s ease;
+  }
+
+  .fab-hub.is-open .fab-item.is-slotted,
+  .fab-hub.is-pinned .fab-item.is-slotted {
+    transform: translate(var(--fan-x, 0), var(--fan-y, 0)) scale(1);
+    opacity: 1;
+    pointer-events: auto;
+    transition:
+      transform 0.32s cubic-bezier(0.34, 1.4, 0.64, 1) var(--fan-delay, 0ms),
+      opacity 0.18s ease var(--fan-delay, 0ms);
+  }
+
+  .fab-item--hidden {
+    display: none;
+  }
+
+  /* 展开的按键：黑白配色、无底无框，与主按钮一体（压掉 .floating-btn / card-base 的卡片外观） */
+  .fab-item :global(.floating-btn) {
+    width: 100%;
+    height: 100%;
+    color: rgb(255 255 255 / 0.85) !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    border-radius: 999px !important;
+  }
+
+  .fab-item :global(.floating-btn):hover {
+    color: #fff !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  :root:not(.dark) .fab-item :global(.floating-btn) {
+    color: rgb(0 0 0 / 0.82) !important;
+  }
+
+  .fab-item :global(.floating-btn) :global(svg) {
+    font-size: 1.35rem;
+  }
+
+  /* ── 音乐键（与其余按键同族：黑白、无底无框） ───────────── */
+  .fab-music-btn {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    cursor: pointer;
+    color: rgb(255 255 255 / 0.85);
+    background: transparent;
+    border: none;
+    border-radius: 999px;
+    transition:
+      color 0.3s ease,
+      transform 0.15s ease;
+  }
+
+  .fab-music-btn:hover {
+    color: #fff;
+    background: transparent;
+  }
+
+  .fab-music-btn:active {
+    transform: scale(0.9);
+  }
+
+  :root:not(.dark) .fab-music-btn {
+    color: rgb(0 0 0 / 0.82);
   }
 
   @media (max-width: 768px) {
-    .floating-controls-container {
-      right: 0.75rem;
-      bottom: 4rem;
-      gap: 0.5rem;
+    .fab-hub {
+      right: 1rem;
+      bottom: 1rem;
+      width: 2.75rem;
+      height: 2.75rem;
     }
-  }
 
-  @media (max-width: 480px) {
-    .floating-controls-container {
-      right: 0.5rem;
-      bottom: 4rem;
-    }
-  }
-
-  /* 高缩放比例适配 */
-  @media (min-resolution: 2dppx) {
-    .floating-controls-container {
-      right: max(0.5rem, 2rem - 2vw);
-      bottom: max(3rem, 4rem - 5vh);
-    }
-  }
-  
-  /* 横屏模式适配 */
-  @media (orientation: landscape) and (max-height: 500px) {
-    .floating-controls-container {
-      bottom: 4rem; 
-    }
-  }
-
-  /* 极低分辨率适配 */
-  @media (max-width: 320px) {
-    .floating-controls-container {
-        right: 0.125rem;
-        bottom: 4rem;
+    .fab-item {
+      width: 2.5rem;
+      height: 2.5rem;
+      margin: -1.25rem;
     }
   }
 </style>
+
+<script>
+  // 悬浮快捷球控制器：槽位分配 + 展开/收起 + 面板联动（幂等绑定）
+  (() => {
+    const hub = document.querySelector<HTMLElement>("[data-fab-hub]");
+    if (!hub || hub.dataset.fabBound === "1") return;
+    hub.dataset.fabBound = "1";
+
+    const main = hub.querySelector<HTMLElement>("[data-fab-main]");
+    const musicBtn = hub.querySelector<HTMLButtonElement>("[data-fab-music-btn]");
+    const items = Array.from(hub.querySelectorAll<HTMLElement>("[data-fan]"));
+    const FAN_RADIUS_REM = 4.5;
+    let closeTimer: ReturnType<typeof setTimeout> | undefined;
+
+    // 每个槽位里真正的按键元素（目录项是包了一层 wrapper 的）
+    const buttonOf = (item: HTMLElement) =>
+      item.querySelector<HTMLElement>(".floating-btn") ??
+      item.firstElementChild as HTMLElement | null;
+
+    const musicItem = hub.querySelector<HTMLElement>("[data-fan-music]");
+
+    function isVisible(item: HTMLElement): boolean {
+      if (item === musicItem) {
+        return !!document.querySelector("[data-ip-fm]");
+      }
+      const el = buttonOf(item);
+      if (!el) return false;
+      if (el.style.display === "none") return false;
+      return !el.classList.contains("hide");
+    }
+
+    function layoutFan() {
+      const visible = items.filter(isVisible);
+      const n = visible.length;
+      // 只在值变化时写入，避免无谓的样式变更触发过渡重启
+      const setVar = (el: HTMLElement, name: string, val: string) => {
+        if (el.style.getPropertyValue(name) !== val) {
+          el.style.setProperty(name, val);
+        }
+      };
+      visible.forEach((item, i) => {
+        // 从正上（90°）到正左（180°）均分弧线；只有一个时放 135°
+        const angle = n === 1 ? 135 : 90 + (90 * i) / (n - 1);
+        const rad = (angle * Math.PI) / 180;
+        setVar(
+          item,
+          "--fan-x",
+          `${(Math.cos(rad) * FAN_RADIUS_REM).toFixed(3)}rem`,
+        );
+        setVar(
+          item,
+          "--fan-y",
+          `${(-Math.sin(rad) * FAN_RADIUS_REM).toFixed(3)}rem`,
+        );
+        setVar(item, "--fan-delay", `${i * 40}ms`);
+        // 收起时反序交错：最后弹出的先吸回
+        setVar(item, "--fan-delay-out", `${(n - 1 - i) * 30}ms`);
+        item.classList.add("is-slotted");
+      });
+      items.forEach((item) => {
+        if (!visible.includes(item)) item.classList.remove("is-slotted");
+      });
+      if (musicItem) {
+        musicItem.classList.toggle(
+          "fab-item--hidden",
+          !document.querySelector("[data-ip-fm]"),
+        );
+      }
+    }
+
+    function setOpen(open: boolean) {
+      hub!.classList.toggle("is-open", open);
+      main?.setAttribute("aria-expanded", String(open));
+    }
+
+    // 音乐/目录面板任一展开时，悬浮球保持展开（is-pinned）
+    function syncPin() {
+      const musicOpen = document
+        .querySelector("[data-ip-fm]")
+        ?.classList.contains("is-open");
+      const tocOpen = document
+        .querySelector("#floating-toc-panel")
+        ?.classList.contains("show");
+      hub!.classList.toggle("is-pinned", !!(musicOpen || tocOpen));
+    }
+
+    hub.addEventListener("mouseenter", () => {
+      clearTimeout(closeTimer);
+      setOpen(true);
+    });
+
+    hub.addEventListener("mouseleave", () => {
+      if (hub.classList.contains("is-pinned")) return;
+      // 留 350ms 缓冲，让指针能跨过缝隙移动到展开的按键上
+      closeTimer = setTimeout(() => setOpen(false), 350);
+    });
+
+    main?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setOpen(!hub.classList.contains("is-open"));
+    });
+
+    musicBtn?.addEventListener("click", () => {
+      const fm = document.querySelector<HTMLElement>("[data-ip-fm]");
+      if (!fm) return;
+      const open = !fm.classList.contains("is-open");
+      fm.classList.toggle("is-open", open);
+      musicBtn.setAttribute("aria-expanded", String(open));
+      syncPin();
+    });
+
+    document.addEventListener("click", (e) => {
+      const target = e.target as Node;
+      const fm = document.querySelector("[data-ip-fm]");
+      // 点击快捷球或播放器面板内部不处理
+      if (hub.contains(target) || (!!fm && fm.contains(target))) return;
+      // 点击空白处：关闭播放器面板并收起扇形
+      if (fm?.classList.contains("is-open")) {
+        fm.classList.remove("is-open");
+        musicBtn?.setAttribute("aria-expanded", "false");
+      }
+      setOpen(false);
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      const fm = document.querySelector("[data-ip-fm]");
+      if (fm?.classList.contains("is-open")) {
+        fm.classList.remove("is-open");
+        musicBtn?.setAttribute("aria-expanded", "false");
+      }
+      setOpen(false);
+    });
+
+    // 按键显隐由各自脚本切 .hide / style，body 级观察统一重算槽位
+    let raf = 0;
+    const observer = new MutationObserver(() => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        layoutFan();
+        syncPin();
+      });
+    });
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["class", "style"],
+      subtree: true,
+    });
+
+    layoutFan();
+  })();
+</script>

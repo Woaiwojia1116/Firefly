@@ -90,7 +90,7 @@ export type SiteConfig = {
 	pages: {
 		friends: boolean; // 友链页面开关
 		sponsor: boolean; // 赞助页面开关
-		guestbook: boolean; // 留言板页面开关
+		moments: boolean; // 动态页面开关
 		bangumi: boolean;
 		gallery: boolean; // 相册页面开关
 	};
@@ -192,7 +192,7 @@ export enum LinkPreset {
 	About = 2,
 	Friends = 3,
 	Sponsor = 4,
-	Guestbook = 5,
+	Moments = 5,
 	Bangumi = 6,
 	Gallery = 7,
 	Timeline = 8,
@@ -204,6 +204,7 @@ export type NavBarLink = {
 	external?: boolean;
 	icon?: string; // 菜单项图标
 	children?: (NavBarLink | LinkPreset)[]; // 支持子菜单，可以是NavBarLink或LinkPreset
+	activePathPrefixes?: string[]; // 额外视为激活的路径前缀
 };
 
 export enum NavBarSearchMethod {
@@ -676,6 +677,15 @@ export type BackgroundWallpaperConfig = {
 		blur?: number; // 背景模糊程度，单位px
 		cardOpacity?: number; // 卡片背景透明度，0-1之间
 	};
+	// 全站模拟雨丝特效配置（可选）
+	rain?: {
+		enable?: boolean; // 是否启用全站雨丝特效
+		showOnHomepage?: boolean; // 是否在首页显示（首页有自己的画布背景，默认关闭）
+		enableOnMobile?: boolean; // 移动端是否完整启用（默认降级为半密度）
+		density?: number; // 雨丝密度系数，1 为默认（1920x1080 约 150 条），范围 0.2 ~ 3
+		angle?: number; // 雨丝倾斜角度（度，正数向右倾斜，0 为竖直）
+		color?: string; // 雨丝颜色，RGB 三元组字符串，如 "188, 212, 240"
+	};
 	// 时间轴页面背景图（可选，留空则不显示）
 	timelineBg?: string;
 };
@@ -711,6 +721,7 @@ export type AdConfig = {
 export type FriendLink = {
 	title: string; // 友链标题
 	imgurl: string; // 头像图片URL
+	cover?: string; // 友链封面大图URL，留空则使用 imgurl 头像
 	desc: string; // 友链描述
 	siteurl: string; // 友链地址
 	tags?: string[]; // 标签数组

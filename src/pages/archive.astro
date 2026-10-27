@@ -3,11 +3,25 @@ import ArchivePanel from "@components/controls/ArchivePanel.svelte";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
+import PageTitle from "@/components/layout/PageTitle.astro";
 import { getSortedPostsList } from "@/utils/content-utils";
 
+// 归档页只保留「文章列表」本身：不再有页头壁纸带、统计条、年份竖轨、音乐等额外组件
 const sortedPostsList = await getSortedPostsList();
+const totalCount = sortedPostsList.length;
 ---
 
-<MainGridLayout title={i18n(I18nKey.archive)}>
-  <ArchivePanel sortedPosts={sortedPostsList} client:only="svelte" />
+<MainGridLayout title={i18n(I18nKey.archive)} hideSidebars={true}>
+  <div class="ip ip-archive-page">
+    <PageTitle
+      eyebrow="Archive"
+      title={i18n(I18nKey.archive)}
+      icon="material-symbols:inventory-2-rounded"
+      meta={[`${totalCount} ${i18n(I18nKey.postsCount)}`]}
+    />
+
+    <div class="card-base px-6 py-6 md:px-9 md:py-8">
+      <ArchivePanel sortedPosts={sortedPostsList} client:only="svelte" />
+    </div>
+  </div>
 </MainGridLayout>

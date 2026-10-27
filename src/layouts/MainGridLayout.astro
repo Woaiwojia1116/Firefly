@@ -4,12 +4,12 @@ import Live2DWidget from "@components/features/Live2DWidget.astro";
 import SpineModel from "@components/features/SpineModel.astro";
 import Footer from "@components/layout/Footer.astro";
 import Navbar from "@components/layout/Navbar.astro";
-import ScrollHint from "@components/layout/ScrollHint.astro";
 import SideBar from "@components/layout/SideBar.astro";
 import type { MarkdownHeading } from "astro";
 import { Icon } from "astro-icon/components";
 import ImageWrapper from "@/components/common/ImageWrapper.astro";
 import FloatingControls from "@/components/controls/FloatingControls.astro";
+import FloatingMusic from "@/components/controls/FloatingMusic.astro";
 import TypewriterText from "@/components/features/TypewriterText.astro";
 import CategoryBar from "@/components/layout/CategoryBar.astro";
 import {
@@ -317,7 +317,7 @@ const bannerCarouselInterval = Math.max(
     id="top-row"
     class="z-50 pointer-events-none relative transition-all duration-700 mx-auto"
     class:list={[
-        stickyNavbar ? "h-18 fixed top-0 left-0 right-0 z-80" : "",
+        stickyNavbar ? "h-16 fixed top-0 left-0 right-0 z-80" : "",
         navbarWidthFull ? "" : "w-full xl:w-[92vw] max-w-(--page-width) px-0 md:px-4",
     ]}
 >
@@ -349,8 +349,8 @@ const bannerCarouselInterval = Math.max(
     </div>
   </>
 ) : (
-<!-- Wallpaper - 首页始终渲染（全屏背景），其他页面按模式渲染 -->
-{(isHomePageCheck || isWallpaperSwitchable || isBannerMode || isOverlayMode) && (
+<!-- Wallpaper - 无壁纸模式下不渲染任何壁纸图片；其他页面按模式渲染 -->
+{isBackgroundEnabled && (isHomePageCheck || isWallpaperSwitchable || isBannerMode || isOverlayMode) && (
 <div id="wallpaper-wrapper" class:list={[
 	`absolute z-10 w-full transition duration-700 overflow-hidden ${mobileNonHomeBannerClass}`,
 	// 首页不加 wallpaper-overlay 类（CSS 已用 position: fixed 覆盖为全屏）
@@ -717,11 +717,6 @@ const bannerCarouselInterval = Math.max(
         );
     })()}
 
-    {/* 首页滚动提示箭头 — 始终显示 */}
-    {isHomePageCheck && (
-        <ScrollHint />
-    )}
-
     <script is:inline>
         // 打字机效果已在右侧显示，此脚本不再需要
         // 保留为空函数以避免潜在的引用错误
@@ -837,7 +832,7 @@ const bannerCarouselInterval = Math.max(
 )}
 
 {/* 当壁纸未渲染时，添加空的 Swup 占位容器，避免 Swup 找不到容器而回退为整页加载 */}
-{!(isWallpaperSwitchable || isBannerMode || isOverlayMode) && (
+{!(isBackgroundEnabled && (isHomePageCheck || isWallpaperSwitchable || isBannerMode || isOverlayMode)) && (
 <>
     <div id="banner-overlay-container" class="hidden"></div>
     <div id="banner-dim-container" class="hidden"></div>
@@ -847,9 +842,12 @@ const bannerCarouselInterval = Math.max(
 <!-- Main content -->
 <div class={`absolute w-full z-30 pointer-events-none ${mobileNonHomeBannerClass ? 'mobile-main-no-banner' : ''} ${!isHomePageCheck && !(isBannerMode && isBackgroundEnabled) ? 'no-banner-layout' : ''}`} style={`top: ${finalMainPanelTop}`}>
     <!-- The pointer-events-none here prevent blocking the click event of the TOC -->
-    <div class={`relative w-full pointer-events-auto ${hideSidebars ? '' : 'xl:w-[92vw] max-w-(--page-width) mx-auto'}`}>
+    <!-- 非首页都要有真正的页面宽度上限与居中；单列画布页面此前漏掉了这一步，
+         会把内容拉到整屏宽，比例失真。首页有自己的全宽画布规则，保持原样。 -->
+    <div class={`relative w-full pointer-events-auto ${isHomePageCheck ? '' : 'xl:w-[92vw] max-w-(--page-width) mx-auto'}`}>
         <div id="main-grid"
-          class={`transition duration-700 w-full left-0 right-0 grid ${gridCols} grid-rows-[auto_1fr_auto] lg:grid-rows-[auto] mx-auto gap-4 px-2 md:px-4 ${!sidebarConfig.mobileShowSidebar ? 'mobile-no-sidebar' : ''}`}
+          class={`transition duration-700 w-full left-0 right-0 ${hideSidebars ? "" : `grid ${gridCols}`} grid-rows-[auto_1fr_auto] lg:grid-rows-[auto] mx-auto gap-4 px-2 md:px-4 ${!sidebarConfig.mobileShowSidebar ? 'mobile-no-sidebar' : ''}`}
+          style={hideSidebars ? "display:block;width:100%;padding-left:1rem;padding-right:1rem;" : undefined}
           data-sidebar-position={sidebarLayoutConfig.position}
           data-tablet-sidebar={sidebarLayoutConfig.tabletSidebar ?? "left"}
           data-show-both-sidebars-on-post={sidebarLayoutConfig.showBothSidebarsOnPostPage ? "true" : "false"}
@@ -923,20 +921,21 @@ const bannerCarouselInterval = Math.max(
             ) : null}
                     
             {/* 主内容区包装器 - 包含静态栏位和swup容器，作为单个grid item */}
-            <div class={staticBarClass}>
+            <div class={staticBarClass} style="width:100%;min-width:0">
                 {/* 分类导航栏 - 全站渲染并显示 */}
                 {shouldRenderCategoryBar && <div id="category-bar-wrapper"><CategoryBar currentPostCategory={postCategory} /></div>}
                 {/* 主内容区 - 始终渲染，确保 Swup 容器存在 */}
                 <main
                     id="swup-container"
                     class="transition-main"
+                    style="width:100%;max-width:100%;"
                     data-current-post-category={postCategory || ""}
                 >
                 {/* 携带网格布局类名，用于JS更新父容器 */}
                 <div id="grid-class-carrier" data-grid-class={gridCols} class="hidden"></div>
                 {/* 为每个页面提供一个隐藏的h1标题，用于SEO和可访问性 */}
                 <h1 class="sr-only">{title}</h1>
-                <div id="content-wrapper" class="onload-animation transition-leaving">
+                <div id="content-wrapper" class:list={["onload-animation transition-leaving", isPostPage && "post-narrow"]} style="width:100%;max-width:100%;">
                     <slot></slot>
                 </div>
             </main>
@@ -973,6 +972,18 @@ const bannerCarouselInterval = Math.max(
                 </div>
             )}
 
+            {/* 单列画布页面（hideSidebars）仍然保留 Swup 所需的侧栏占位容器，
+                否则跳转到这些页面时 Swup 找不到容器会退化成整页刷新 */}
+            {hideSidebars && (
+                <>
+                    <div id="left-sidebar-dynamic" class="hidden"></div>
+                    <div id="right-sidebar-dynamic" class="hidden"></div>
+                </>
+            )}
+
+            {/* 侧栏组件不再搬到页底（那会把内容区挤成一条空带）。
+                个人资料 / 公告 / 分类 / 统计 已并入首页的章节；音乐播放器改为右下角浮动面板。 */}
+
             <div class={footerClassName}>
                 <Footer></Footer>
             </div>
@@ -984,8 +995,9 @@ const bannerCarouselInterval = Math.max(
 </div>
 
 <FloatingControls headings={headings} />
-
 )}
+
+{!minimal && <FloatingMusic />}
 </Layout>
 
 <style is:global>
@@ -1002,6 +1014,29 @@ const bannerCarouselInterval = Math.max(
     to {
       opacity: 0.95;
     }
+  }
+
+  /* ═══ 文章详情页布局（post-narrow 标记在 #swup-container 内，
+         随 Swup 换页一起替换；body:has(...) 因此能动态跟上当前页面）═══
+     1) 文章页彻底不显示壁纸：banner 模式的顶部横幅、overlay 模式的全屏
+        背景图一并隐藏（此前排除 .wallpaper-overlay 导致全屏壁纸仍垫在
+        卡片底下）。只隐藏不删节点：wrapper 内含 Swup 容器，且控制面板
+        切换壁纸模式仍可用；overlay 模式下卡片恢复实底，避免半透明垫空。
+     2) 桌面端正文列收窄到屏幕中央约三分之二宽度，两侧留白；窄屏仍占满。 */
+  body:has(#content-wrapper.post-narrow) #wallpaper-wrapper {
+    display: none !important;
+  }
+
+  body.wallpaper-transparent:has(#content-wrapper.post-narrow) .card-base {
+    background-color: var(--card-bg) !important;
+  }
+
+  body:has(#content-wrapper.post-narrow) #main-grid {
+    transform: none !important;
+  }
+
+  body:has(#content-wrapper.post-narrow) #top-row {
+    height: auto !important;
   }
 
 </style>

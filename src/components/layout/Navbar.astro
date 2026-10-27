@@ -1,70 +1,44 @@
 ---
 import { Picture } from "astro:assets";
 import * as path from "node:path";
-import type { ImageMetadata } from "astro";
 import { Icon } from "astro-icon/components";
-import LightDarkSwitch from "@/components/controls/LightDarkSwitch.svelte";
-import Search from "@/components/controls/Search.svelte";
-import MusicPlayer from "@/components/features/MusicPlayer.astro";
-import { backgroundWallpaper, navBarConfig, siteConfig } from "@/config";
-import { musicPlayerConfig } from "@/config/musicConfig";
+import type { ImageMetadata } from "astro";
+import DropdownItem from "@/components/common/DropdownItem.astro";
+import { announcementConfig, navBarConfig, siteConfig } from "@/config";
 import { LinkPresets } from "@/constants/link-presets";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
-import { LinkPreset, type NavBarLink } from "@/types/config";
+import type { NavBarLink } from "@/types/config";
 import { getFallbackFormat, getImageFormats } from "@/utils/image-utils";
-import { isHomePage } from "@/utils/layout-utils";
 import { url } from "@/utils/url-utils";
 import DropdownMenu from "./DropdownMenu.astro";
 import NavMenuPanel from "./NavMenuPanel.astro";
 
-const className = Astro.props.class;
-
-// 获取导航栏透明模式配置
-const navbarTransparentMode =
-	backgroundWallpaper.mode === "banner"
-		? backgroundWallpaper.banner?.navbar?.transparentMode || "semi"
-		: "semi";
-
-// 获取导航栏毛玻璃效果配置
-const navbarEnableBlur =
-	backgroundWallpaper.mode === "banner"
-		? (backgroundWallpaper.banner?.navbar?.enableBlur ?? true)
-		: false;
-
-// 获取导航栏模糊度
-const navbarBlur =
-	backgroundWallpaper.mode === "banner"
-		? (backgroundWallpaper.banner?.navbar?.blur ?? 20)
-		: 0;
-
-// 获取导航栏标题，如果没有设置则使用 siteConfig.title
 const navbarTitle = siteConfig.navbar.title || siteConfig.title;
-
-// 获取导航栏宽度配置
 const navbarWidthFull = siteConfig.navbar.widthFull ?? false;
-const navbarMenuAlign = siteConfig.navbar.menuAlign ?? "center";
-const isNavbarMenuCentered = navbarMenuAlign === "center";
+void navbarWidthFull;
 
-// 获取导航栏自动隐藏配置
-const autoHide = siteConfig.navbar.autoHide;
+let links = navBarConfig.links.map((item) => {
+	if (typeof item === "number") return LinkPresets[item];
+	return item;
+});
 
-// 检查是否为首页
-const isHomePageCheck = isHomePage(Astro.url.pathname);
+// 共享下拉面板的内容页：带子菜单的导航项各占一页，
+// 页序号与触发器容器上的 data-dropdown-index 配对
+interface NavbarDropdownPage {
+	index: number;
+	children: NavBarLink[];
+}
 
-// 禁用所有用户自定义样式接口（固定显示全屏 Hero）
-const hasDisplaySettings = false;
+const dropdownPages: NavbarDropdownPage[] = links
+	.map((link, index) => ({
+		index,
+		children: (link.children ?? [])
+			.map((child) => (typeof child === "number" ? LinkPresets[child] : child))
+			.filter((child): child is NavBarLink => child !== null),
+	}))
+	.filter((page) => page.children.length > 0);
 
-let links: NavBarLink[] = navBarConfig.links.map(
-	(item: NavBarLink | LinkPreset): NavBarLink => {
-		if (typeof item === "number") {
-			return LinkPresets[item];
-		}
-		return item;
-	},
-);
-
-// 处理导航栏 Logo 图片
 const logoValue = siteConfig.navbar.logo?.value || "";
 const isLocalSrcLogo =
 	siteConfig.navbar.logo?.type === "image" &&
@@ -82,410 +56,1122 @@ if (isLocalSrcLogo) {
 		.normalize(path.join("../../", logoValue))
 		.replace(/\\/g, "/");
 	const file = files[normalizedPath];
-	if (file) {
-		logoImg = await file();
-	}
+	if (file) logoImg = await file();
 }
+
+const announcementLink = announcementConfig.link;
 ---
-<div id="navbar" class="z-50" style={`--navbar-glass-blur: ${navbarBlur}px;`} data-transparent-mode={navbarTransparentMode} data-enable-blur={String(navbarEnableBlur)} data-is-home={isHomePageCheck} data-full-width={navbarWidthFull} data-auto-hide={autoHide ? JSON.stringify(autoHide) : ''}>
-    <div class:list={[
-        className,
-        "overflow-visible! h-18 px-4"
-    ]}>
-        <div class="mx-auto h-full w-full max-w-(--page-width) grid grid-cols-[auto_minmax(0,1fr)_auto] items-center">
-            <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Zhi+Mang+Xing&display=swap" rel="stylesheet">
-    <a href={url('/')} class="navbar-item btn-plain scale-animation rounded-lg h-13 px-5 font-bold active:scale-95">
-                <div class:list={[
-                    "flex flex-row items-center text-md",
-                    siteConfig.navbar.followTheme ? "text-(--primary)" : "dark:text-white text-black"
-                ]}>
-                                    {siteConfig.navbar.logo?.type === "icon" ? (
-                                        <Icon name={siteConfig.navbar.logo.value || "material-symbols:home-pin-outline"} is:inline class="text-[1.75rem] mb-1 mr-2" />
-                                    ) : siteConfig.navbar.logo?.type === "image" && logoImg ? (
-                                        <Picture
-                                            src={logoImg}
-                                            alt={siteConfig.navbar.logo.alt || siteConfig.title}
-                                            class="h-7 w-7 mb-1 mr-2 object-contain"
-                                            formats={getImageFormats()}
-                                            fallbackFormat={getFallbackFormat()}
-                                            widths={[28, 56]}
-                                            loading="eager"
-                                            fetchpriority="high"
-                                        />
-                                    ) : siteConfig.navbar.logo?.type === "image" ? (
-                                        <img src={url(siteConfig.navbar.logo.value)} alt={siteConfig.navbar.logo.alt || siteConfig.title} class="h-7 w-7 mb-1 mr-2 object-contain" fetchpriority="high" />
-                                    ) : siteConfig.navbar.logo?.type === "url" ? (
-                                        <img src={siteConfig.navbar.logo.value} alt={siteConfig.navbar.logo.alt || siteConfig.title} class="h-7 w-7 mb-1 mr-2 object-contain" fetchpriority="high" />
-                                    ) : (
-                                        <Icon name="material-symbols:home-pin-outline" is:inline class="text-[1.75rem] mb-1 mr-2" />
-                                    )}
-                    {navbarTitle}
-                </div>
-            </a>
-            <div class:list={[
-                "navbar-item hidden lg:flex items-center space-x-1 col-start-2",
-                isNavbarMenuCentered
-                    ? "justify-center"
-                    : "justify-start pl-2"
-            ]}>
-                {links.map((l) => {
-                    return <DropdownMenu link={l} />;
-                })}
-            </div>
-            <div class="navbar-item flex col-start-3 justify-self-end">
-                <!--<SearchPanel client:load>-->
-                <Search
-                    client:load
-                />
-                {musicPlayerConfig.showInNavbar && (
-                    <button aria-label={i18n(I18nKey.music)} class="btn-plain scale-animation rounded-lg h-11 w-11 active:scale-90" id="music-player-switch">
-                        <Icon name="material-symbols:music-note-rounded" is:inline class="text-[1.25rem]"></Icon>
-                    </button>
-                )}
-                {/* @ts-ignore */}
-                <LightDarkSwitch client:load></LightDarkSwitch>
-                <button aria-label="Menu" name="Nav Menu" class="btn-plain scale-animation rounded-lg w-11 h-11 active:scale-90 lg:hidden!" id="nav-menu-switch">
-                    <Icon name="material-symbols:menu-rounded" is:inline class="text-[1.25rem]"></Icon>
-                </button>
-            </div>
-        </div>
-        {musicPlayerConfig.showInNavbar && (
-            <div id="music-nav-panel" class="float-panel float-panel-closed absolute transition-all right-16 p-2 pt-4.5 w-80 z-50">
-                <MusicPlayer />
-            </div>
-        )}
-        <NavMenuPanel links={links}></NavMenuPanel>
-    </div>
+
+<div id="navbar" class="z-50" data-full-width={navbarWidthFull}>
+	<div class="navbar-segments">
+		<!-- 左段：logo + 标题（滚动收缩成球） -->
+		<div class="navbar-seg navbar-seg--left">
+			<a href={url('/')} class="navbar-logo scale-animation flex items-center text-(--deep-text)">
+				{siteConfig.navbar.logo?.type === "icon" ? (
+					<Icon name={siteConfig.navbar.logo.value || "material-symbols:home-pin-outline"} is:inline class="text-[1.35rem] flex-shrink-0" />
+				) : siteConfig.navbar.logo?.type === "image" && logoImg ? (
+					logoImg.format === "svg" ? (
+						<img src={logoImg.src} alt={siteConfig.navbar.logo.alt || siteConfig.title} class="h-6 w-6 object-contain flex-shrink-0" fetchpriority="high" />
+					) : (
+						<Picture
+							src={logoImg}
+							alt={siteConfig.navbar.logo.alt || siteConfig.title}
+							class="h-6 w-6 object-contain flex-shrink-0"
+							formats={getImageFormats()}
+							fallbackFormat={getFallbackFormat()}
+							widths={[24, 48]}
+							loading="eager"
+							fetchpriority="high"
+						/>
+					)
+				) : siteConfig.navbar.logo?.type === "image" ? (
+					<img src={url(siteConfig.navbar.logo.value)} alt={siteConfig.navbar.logo.alt || siteConfig.title} class="h-6 w-6 object-contain flex-shrink-0" fetchpriority="high" />
+				) : siteConfig.navbar.logo?.type === "url" ? (
+					<img src={siteConfig.navbar.logo.value} alt={siteConfig.navbar.logo.alt || siteConfig.title} class="h-6 w-6 object-contain flex-shrink-0" fetchpriority="high" />
+				) : (
+					<Icon name="material-symbols:home-pin-outline" is:inline class="text-[1.35rem] flex-shrink-0" />
+				)}
+				<span class="navbar-logo-text font-mono uppercase tracking-[0.12em] text-xs font-semibold ml-2">{navbarTitle}</span>
+			</a>
+		</div>
+
+		<!-- 中段：紧凑导航椭圆（滚动不变） -->
+		<div class="navbar-seg navbar-seg--center" data-navbar-nav>
+			<div class="navbar-nav hidden lg:flex items-center gap-0.5 relative">
+				<div class="navbar-hover-highlight" data-hover-border></div>
+				<span class="navbar-moving-icon" data-navbar-moving-icon aria-hidden="true">
+					<span class="navbar-moving-icon__glyph navbar-moving-icon__glyph--current" data-navbar-icon-current></span>
+					<span class="navbar-moving-icon__glyph navbar-moving-icon__glyph--next" data-navbar-icon-next></span>
+				</span>
+				{links.map((l, i) => <DropdownMenu link={l} index={i} />)}
+
+				<!-- 共享下拉面板：悬停跟随导航项左右滑动，内容页交叉淡换 -->
+				{dropdownPages.length > 0 && (
+					<div class="navbar-dropdown-panel" data-navbar-dropdown-panel>
+						<span class="navbar-dropdown-arrow" aria-hidden="true"></span>
+						<div class="navbar-dropdown-box">
+							{dropdownPages.map((page) => (
+								<div class="navbar-dropdown-page" data-dropdown-page={page.index}>
+									<!-- 悬停高亮：每页一个药丸，随该页一起淡换 -->
+									<span
+										aria-hidden="true"
+										class="navbar-dropdown-highlight"
+									></span>
+									{page.children.map((child, childIndex) => {
+										const isLast = childIndex === page.children.length - 1;
+										return (
+											<DropdownItem
+												href={child.external ? child.url : url(child.url)}
+												target={child.external ? "_blank" : undefined}
+												isLast={isLast}
+												class="dropdown-item"
+											>
+												{child.icon && <Icon name={child.icon} is:inline class="text-[1.2rem] mr-3 navbar-icon" />}
+												<span>{child.name}</span>
+												{child.external && (
+													<Icon name="fa7-solid:arrow-up-right-from-square" is:inline class="text-[0.7rem] text-black/25 dark:text-white/25 ml-auto" />
+												)}
+											</DropdownItem>
+										);
+									})}
+								</div>
+							))}
+						</div>
+					</div>
+				)}
+			</div>
+		</div>
+
+		<!-- 右段：工具按钮（悬停浮出工具面板，窄屏亦可用）+ 菜单按钮（窄屏），
+		     滚动收缩成球 -->
+		<div class="navbar-seg navbar-seg--right">
+			<button
+				aria-label={i18n(I18nKey.tools)}
+				aria-controls="nav-tools-panel"
+				aria-expanded="false"
+				class="btn-plain h-9 w-9 inline-flex"
+				id="nav-tools-btn"
+				name="Tools"
+				type="button"
+			>
+				<Icon name="material-symbols:tune-rounded" is:inline class="text-[1.4rem]" style="font-variation-settings: 'wght' 700"></Icon>
+			</button>
+			<button aria-label="Menu" name="Nav Menu" class="btn-plain h-9 w-9 lg:hidden!" id="nav-menu-switch">
+				<Icon name="material-symbols:menu-rounded" is:inline class="text-[1.2rem]"></Icon>
+			</button>
+		</div>
+
+		<!-- 工具面板：桌面端悬停/聚焦右段工具按钮浮出（搜索/公告/主题）。
+		     挂在 segments 下，避开右段滚动收缩态 overflow:hidden 对面板的裁剪 -->
+		<div class="nav-tools-panel" id="nav-tools-panel">
+			<div aria-label={i18n(I18nKey.tools)} class="nav-tools-box" role="menu">
+				<!-- 悬停高亮：整只箱体只有一个药丸，行与行之间滑动而非各自刷底 -->
+				<span class="nav-tools-highlight" aria-hidden="true"></span>
+				<a
+					class="nav-tools-item"
+					data-nav-tools-stop
+					href={url('/search/')}
+					role="menuitem"
+				>
+					<Icon name="material-symbols:search-rounded" is:inline class="nav-tools-item__icon" />
+					<span>{i18n(I18nKey.search)}</span>
+					<!-- 快捷键提示：Ctrl/Cmd+K 跳转搜索页，修饰键由脚本按平台改写 -->
+					<kbd aria-hidden="true" class="nav-tools-keys">
+						<span data-nav-tools-modifier>Ctrl</span>
+						<span>K</span>
+					</kbd>
+				</a>
+				<button
+					class="nav-tools-item"
+					data-nav-tools-stop
+					id="nav-tools-announcement"
+					role="menuitem"
+					type="button"
+				>
+					<Icon name="material-symbols:notifications-outline-rounded" is:inline class="nav-tools-item__icon" />
+					<span>{i18n(I18nKey.announcement)}</span>
+				</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- 公告弹窗：工具面板公告入口点击后居中展示。
+	     外壳复用 .privacy-* 弹窗系统（components/privacy-modal.css）。
+	     原生 <dialog> + showModal 白拿焦点陷阱、Esc 与背景 inert -->
+	<dialog
+		aria-label={announcementConfig.title || i18n(I18nKey.announcement)}
+		id="nav-announcement-modal"
+		class="privacy-modal"
+	>
+		<div class="privacy-overlay" data-nav-announcement-close></div>
+		<div class="privacy-panel">
+			<div class="privacy-header">
+				<h2 class="privacy-title nav-announcement-title">
+					<Icon name="material-symbols:notifications-outline-rounded" is:inline class="nav-announcement-title-icon"></Icon>
+					{announcementConfig.title || i18n(I18nKey.announcement)}
+				</h2>
+				<button aria-label={i18n(I18nKey.announcementClose)} class="privacy-close" data-nav-announcement-close type="button">
+					<Icon name="material-symbols:close-rounded" is:inline></Icon>
+				</button>
+			</div>
+			<div class="privacy-body">
+				<p class="nav-announcement-content">{announcementConfig.content}</p>
+			</div>
+			<div class="privacy-footer">
+				{announcementLink?.enable && announcementLink.url ? (
+					<a
+						class="privacy-confirm-btn"
+						href={announcementLink.external ? announcementLink.url : url(announcementLink.url)}
+						target={announcementLink.external ? "_blank" : undefined}
+						data-nav-announcement-close
+					>
+						{announcementLink.text || i18n(I18nKey.viewDetails)}
+					</a>
+				) : (
+					<button class="privacy-confirm-btn" data-nav-announcement-close type="button">
+						{i18n(I18nKey.gotIt)}
+					</button>
+				)}
+			</div>
+		</div>
+	</dialog>
+
+	<NavMenuPanel links={links}></NavMenuPanel>
 </div>
 
+<!-- 样式在 src/styles/layout/navbar-new.css -->
+
 <script>
-// 防止重复绑定的标记
-let buttonScriptInitialized = false;
+	import {
+		repositionNavbarDropdown,
+		syncNavbarDropdownOnHover,
+	} from "@/utils/navbar-dropdown-controller";
+	import {
+		definePageIsland,
+		definePersistentIsland,
+		onNavigation,
+	} from "@/utils/swup-lifecycle";
 
-function loadButtonScript() {
-    if (buttonScriptInitialized) return;
-    buttonScriptInitialized = true;
+	let _hoverSliderAbortController: AbortController | null = null;
+	let _hoverSliderMouseEnterHandlers: Array<[Element, (e: Event) => void]> = [];
+	let _navbarIconAnimations: Animation[] = [];
+	let _navbarIconAnimationRevision = 0;
+	let _navbarIconResizeObserver: ResizeObserver | null = null;
+	let _navbarIconResizeFrame: number | null = null;
+	let _navbarActiveItem: HTMLElement | null = null;
 
-    const menuBtn = document.getElementById("nav-menu-switch");
-    if (menuBtn) {
-        menuBtn.onclick = function () {
-            const menuPanel = document.getElementById("nav-menu-panel");
-            if (menuPanel) {
-                menuPanel.classList.toggle("float-panel-closed");
-            }
-        };
-    }
+	const NAVBAR_ICON_DURATION = 260;
+	const NAVBAR_ICON_EASING = 'cubic-bezier(0.22, 1, 0.36, 1)';
 
-    const musicBtn = document.getElementById("music-player-switch");
-    if (musicBtn) {
-        musicBtn.onclick = function () {
-            const musicPanel = document.getElementById("music-nav-panel");
-            if (musicPanel) {
-                musicPanel.classList.toggle("float-panel-closed");
-            }
-        };
-    }
+	function cleanupHoverSlider() {
+		if (_hoverSliderAbortController) {
+			_hoverSliderAbortController.abort();
+			_hoverSliderAbortController = null;
+		}
+		_hoverSliderMouseEnterHandlers.forEach(([item, handler]) => {
+			item.removeEventListener('mouseenter', handler);
+		});
+		_hoverSliderMouseEnterHandlers = [];
+		_navbarIconResizeObserver?.disconnect();
+		_navbarIconResizeObserver = null;
+		if (_navbarIconResizeFrame !== null) {
+			cancelAnimationFrame(_navbarIconResizeFrame);
+			_navbarIconResizeFrame = null;
+		}
+	}
 
-    const themeSwitchBtn = document.getElementById("scheme-switch");
-    if (themeSwitchBtn) {
-        themeSwitchBtn.onclick = function () {
-            const themePanel = document.getElementById("theme-mode-panel");
-            if (themePanel) {
-                themePanel.classList.toggle("float-panel-closed");
-            }
-        };
-    }
+	/**
+	 * 规范化路径：去掉尾部斜杠，根路径保留为 "/"
+	 */
+	function normalizePath(p: string): string {
+		return p.replace(/\/$/, '') || '/';
+	}
 
-    document.addEventListener("click", function(event) {
-        const panels = ["nav-menu-panel", "music-nav-panel", "theme-mode-panel"];
-        const buttons = ["nav-menu-switch", "music-player-switch", "scheme-switch"];
+	/**
+	 * 判断一个路径是否匹配某个 href（含子路径）
+	 */
+	function pathMatches(currentPath: string, href: string): boolean {
+		const cp = normalizePath(currentPath);
+		const hp = normalizePath(href);
+		if (hp === '/') return cp === '/';
+		return cp === hp || cp.startsWith(hp + '/');
+	}
 
-        panels.forEach((id, index) => {
-            const panel = document.getElementById(id);
-            const button = document.getElementById(buttons[index]);
-            if (panel && button && !panel.classList.contains("float-panel-closed")) {
-                if (event.target instanceof Node && !panel.contains(event.target) && !button.contains(event.target)) {
-                    panel.classList.add("float-panel-closed");
-                }
-            }
-        });
-    });
-}
+	/**
+	 * 一个导航项可匹配的全部路径：自身 href、共享面板里的子菜单 href（二级激活则一级
+	 * 也选中）、以及配置声明的额外前缀。
+	 */
+	function getItemPaths(item: HTMLElement): string[] {
+		const hrefs: string[] = [];
+		const selfLink = item.querySelector(':scope > a') as HTMLAnchorElement | null;
+		const selfHref = selfLink?.getAttribute('href');
+		if (selfHref) hrefs.push(selfHref);
 
-// 仅执行一次
-loadButtonScript();
+		const pageIndex = item.dataset.dropdownIndex;
+		const page = pageIndex !== undefined
+			? document.querySelector(`[data-navbar-dropdown-panel] [data-dropdown-page="${pageIndex}"]`)
+			: null;
+		page?.querySelectorAll('.dropdown-item[href]').forEach((el) => {
+			const href = (el as HTMLAnchorElement).getAttribute('href');
+			if (href) hrefs.push(href);
+		});
 
-// ===== 统一的导航栏滚动管理（合并 semifull + autoHide） =====
-let unifiedScrollHandler: (() => void) | null = null;
-let autoHideState: {
-    lastScrollY: number;
-    isHidden: boolean;
-    ticking: boolean;
-    threshold: number;
-    hideOnScrollDown: boolean;
-    showOnScrollUp: boolean;
-    hoverZone: HTMLDivElement | null;
-    animationRafId: number | null;
-} | null = null;
+		const activePathPrefixes = item.dataset.activePathPrefixes
+			?.split(/\s+/)
+			.filter(Boolean) ?? [];
+		return [...hrefs, ...activePathPrefixes];
+	}
 
-// 为semifull模式添加滚动检测逻辑
-function initSemifullScrollDetection() {
-    const navbar = document.getElementById('navbar');
-    if (!navbar) return;
+	/** 按路径找出应激活的导航项，无匹配返回 null。 */
+	function findItemByPath(navContainer: HTMLElement, currentPath: string): HTMLElement | null {
+		return Array.from(
+			navContainer.querySelectorAll<HTMLElement>(':scope > .dropdown-container'),
+		).find((item) => getItemPaths(item).some((href) => pathMatches(currentPath, href))) ?? null;
+	}
 
-    const transparentMode = navbar.getAttribute('data-transparent-mode');
-    if (transparentMode !== 'semifull') return;
+	function moveHighlight(navContainer: HTMLElement, hoverBorder: HTMLElement, item: HTMLElement | null) {
+		navContainer.querySelectorAll<HTMLElement>(":scope > .dropdown-container").forEach((navItem) => {
+			navItem.classList.toggle("is-highlighted", navItem === item);
+		});
 
-    // 初始状态不强制加 scrolled，保持透明；滚动后再切换
-    navbar.classList.remove('scrolled');
+		if (!item) {
+			hoverBorder.style.opacity = '0';
+			return;
+		}
+		const rect = item.getBoundingClientRect();
+		const containerRect = navContainer.getBoundingClientRect();
+		hoverBorder.style.width = `${rect.width}px`;
+		hoverBorder.style.height = `${rect.height}px`;
+		hoverBorder.style.left = `${rect.left - containerRect.left}px`;
+		hoverBorder.style.top = `${rect.top - containerRect.top}px`;
+	}
 
-    // 注册到统一滚动处理器
-    registerScrollHandler(function updateSemifullState(scrollY) {
-        if (document.documentElement.classList.contains('is-page-transitioning')) {
-            navbar!.classList.remove('scrolled');
-            return;
-        }
-        const threshold = 50;
-        if (scrollY > threshold) {
-            navbar!.classList.add('scrolled');
-        } else {
-            navbar!.classList.remove('scrolled');
-        }
-    });
-}
+	interface NavbarIconParts {
+		layer: HTMLElement;
+		current: HTMLElement;
+		next: HTMLElement;
+	}
 
-// 导航栏自动隐藏
-function initAutoHide() {
-    const navbar = document.getElementById('navbar');
-    if (!navbar) return;
+	interface NavbarIconSnapshot {
+		rect: DOMRect | null;
+		markup: string;
+	}
 
-    const rawConfig = navbar.getAttribute('data-auto-hide');
-    if (!rawConfig) return;
+	function getNavbarIconParts(navContainer: HTMLElement): NavbarIconParts | null {
+		const layer = navContainer.querySelector('[data-navbar-moving-icon]') as HTMLElement | null;
+		const current = layer?.querySelector('[data-navbar-icon-current]') as HTMLElement | null;
+		const next = layer?.querySelector('[data-navbar-icon-next]') as HTMLElement | null;
+		return layer && current && next ? { layer, current, next } : null;
+	}
 
-    let autoHideConfig: {
-        enable: boolean;
-        threshold: number;
-        hideOnScrollDown: boolean;
-        showOnScrollUp: boolean;
-        enableHoverZone: boolean;
-        hoverZoneHeight: number;
-    };
-    try {
-        autoHideConfig = JSON.parse(rawConfig);
-    } catch {
-        return;
-    }
-    if (!autoHideConfig || !autoHideConfig.enable) return;
+	function getNavbarIconTemplate(item: HTMLElement | null): HTMLElement | null {
+		return item?.querySelector('.navbar-trigger-icon') as HTMLElement | null;
+	}
 
-    const {
-        threshold = 100,
-        hideOnScrollDown = true,
-        showOnScrollUp = true,
-        enableHoverZone = true,
-        hoverZoneHeight = 60,
-    } = autoHideConfig;
+	function getNavbarIconMarkup(item: HTMLElement | null): string {
+		return getNavbarIconTemplate(item)?.innerHTML.trim() || '';
+	}
 
-    let hoverZone: HTMLDivElement | null = null;
-    let animationRafId: number | null = null;
+	function hasRunningNavbarIconAnimation(): boolean {
+		return _navbarIconAnimations.some((animation) => animation.playState === 'running');
+	}
 
-    // 创建顶部悬停区域
-    if (enableHoverZone) {
-        hoverZone = document.createElement('div');
-        hoverZone.id = 'navbar-hover-zone';
-        hoverZone.style.cssText = 'position:fixed;top:0;left:0;right:0;height:' + hoverZoneHeight + 'px;z-index:40;pointer-events:auto';
-        document.body.appendChild(hoverZone);
-        hoverZone.addEventListener('mouseenter', () => {
-            if (autoHideState?.isHidden) showNavbar();
-        });
-    }
+	function cancelNavbarIconAnimations(): number {
+		const revision = ++_navbarIconAnimationRevision;
+		_navbarIconAnimations.forEach((animation) => animation.cancel());
+		_navbarIconAnimations = [];
+		return revision;
+	}
 
-    function replayItemAnimation() {
-        if (animationRafId !== null) {
-            cancelAnimationFrame(animationRafId);
-            animationRafId = null;
-        }
-        navbar!.classList.remove('navbar-visible');
-        navbar!.classList.add('navbar-animate-reset');
-        void (navbar as HTMLElement).offsetWidth;
-        animationRafId = requestAnimationFrame(() => {
-            animationRafId = null;
-            navbar!.classList.remove('navbar-animate-reset');
-            navbar!.classList.add('navbar-visible');
-        });
-    }
+	function captureNavbarIconSnapshot(parts: NavbarIconParts): NavbarIconSnapshot {
+		const currentOpacity = Number.parseFloat(getComputedStyle(parts.current).opacity) || 0;
+		const nextOpacity = Number.parseFloat(getComputedStyle(parts.next).opacity) || 0;
+		const markup = parts.next.innerHTML && nextOpacity > currentOpacity
+			? parts.next.innerHTML
+			: parts.current.innerHTML;
+		const layerOpacity = Number.parseFloat(getComputedStyle(parts.layer).opacity) || 0;
+		return {
+			rect: markup && layerOpacity > 0.01 ? parts.layer.getBoundingClientRect() : null,
+			markup,
+		};
+	}
 
-    function showNavbar() {
-        if (!autoHideState?.isHidden) return;
-        navbar!.classList.remove('navbar-hidden');
-        autoHideState!.isHidden = false;
-        replayItemAnimation();
-    }
+	function setNavbarIconBox(
+		navContainer: HTMLElement,
+		layer: HTMLElement,
+		template: HTMLElement,
+	): DOMRect | null {
+		const navRect = navContainer.getBoundingClientRect();
+		const templateRect = template.getBoundingClientRect();
+		if (templateRect.width === 0 || templateRect.height === 0) return null;
 
-    function hideNavbar() {
-        if (!autoHideState?.isHidden) return;
-        navbar!.classList.remove('navbar-visible', 'navbar-animate-reset');
-        navbar!.classList.add('navbar-hidden');
-        autoHideState!.isHidden = true;
-    }
+		layer.style.left = `${templateRect.left - navRect.left}px`;
+		layer.style.top = `${templateRect.top - navRect.top}px`;
+		layer.style.width = `${templateRect.width}px`;
+		layer.style.height = `${templateRect.height}px`;
+		return templateRect;
+	}
 
-    autoHideState = {
-        lastScrollY: window.scrollY || window.pageYOffset,
-        isHidden: false,
-        ticking: false,
-        threshold,
-        hideOnScrollDown,
-        showOnScrollUp,
-        hoverZone,
-        animationRafId,
-    };
+	function hideNavbarIcon(parts: NavbarIconParts) {
+		cancelNavbarIconAnimations();
+		parts.layer.style.opacity = '0';
+		parts.layer.style.transform = 'none';
+		parts.current.style.opacity = '1';
+		parts.next.style.opacity = '0';
+		parts.current.innerHTML = '';
+		parts.next.innerHTML = '';
+	}
 
-    // 注册到统一滚动处理器
-    registerScrollHandler(function updateAutoHide(scrollY) {
-        if (!autoHideState) return;
-        if (document.documentElement.classList.contains('is-page-transitioning')) {
-            autoHideState.ticking = false;
-            return;
-        }
+	function showNavbarIconImmediately(
+		navContainer: HTMLElement,
+		parts: NavbarIconParts,
+		template: HTMLElement,
+		markup: string,
+	) {
+		cancelNavbarIconAnimations();
+		if (!setNavbarIconBox(navContainer, parts.layer, template)) {
+			hideNavbarIcon(parts);
+			return;
+		}
+		parts.layer.style.opacity = '1';
+		parts.layer.style.transform = 'none';
+		parts.current.innerHTML = markup;
+		parts.current.style.opacity = '1';
+		parts.next.innerHTML = '';
+		parts.next.style.opacity = '0';
+	}
 
-        const delta = scrollY - autoHideState.lastScrollY;
-        const isScrollingDown = delta > 0;
+	function finishNavbarIconAnimations(
+		revision: number,
+		animations: Animation[],
+		onFinish: () => void,
+	) {
+		void Promise.all(animations.map((animation) => animation.finished.catch(() => undefined))).then(() => {
+			if (revision !== _navbarIconAnimationRevision) return;
+			onFinish();
+			animations.forEach((animation) => animation.cancel());
+			_navbarIconAnimations = [];
+		});
+	}
 
-        if (scrollY > autoHideState.threshold) {
-            if (autoHideState.hideOnScrollDown && isScrollingDown && !autoHideState.isHidden) {
-                hideNavbar();
-            } else if (autoHideState.showOnScrollUp && !isScrollingDown && autoHideState.isHidden) {
-                showNavbar();
-            }
-        } else if (scrollY <= autoHideState.threshold && autoHideState.isHidden) {
-            showNavbar();
-        }
+	function syncNavbarIcon(
+		navContainer: HTMLElement,
+		previousItem: HTMLElement | null,
+		nextItem: HTMLElement | null,
+		snapshot: NavbarIconSnapshot,
+		animate: boolean,
+	) {
+		const parts = getNavbarIconParts(navContainer);
+		if (!parts) return;
 
-        autoHideState.lastScrollY = scrollY;
-    });
+		const template = getNavbarIconTemplate(nextItem);
+		const targetMarkup = getNavbarIconMarkup(nextItem);
+		const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		const canAnimate = animate && !reduceMotion && typeof parts.layer.animate === 'function';
 
-    // 初始化状态
-    function initState() {
-        if (!autoHideState) return;
-        const scrollY = window.scrollY || window.pageYOffset;
-        autoHideState.lastScrollY = scrollY;
-        if (scrollY > autoHideState.threshold) {
-            navbar!.classList.remove('navbar-visible', 'navbar-animate-reset');
-            navbar!.classList.add('navbar-hidden');
-            autoHideState.isHidden = true;
-        } else {
-            navbar!.classList.remove('navbar-hidden');
-            autoHideState.isHidden = false;
-            if (!navbar!.classList.contains('navbar-visible')) {
-                navbar!.classList.add('navbar-animate-reset');
-                replayItemAnimation();
-            }
-        }
-    }
-    initState();
-}
+		if (previousItem === nextItem && nextItem) {
+			if (!hasRunningNavbarIconAnimation() && template && targetMarkup) {
+				showNavbarIconImmediately(navContainer, parts, template, targetMarkup);
+			}
+			return;
+		}
 
-// 滚动处理器注册表
-const scrollHandlers: Array<(scrollY: number) => void> = [];
-let rafScheduled = false;
+		if (!template || !targetMarkup) {
+			if (!canAnimate || !snapshot.rect || !snapshot.markup) {
+				hideNavbarIcon(parts);
+				return;
+			}
 
-function registerScrollHandler(fn: (scrollY: number) => void) {
-    scrollHandlers.push(fn);
-    if (!unifiedScrollHandler) {
-        unifiedScrollHandler = function () {
-            if (rafScheduled) return;
-            rafScheduled = true;
-            requestAnimationFrame(() => {
-                rafScheduled = false;
-                const scrollY = window.scrollY || document.documentElement.scrollTop;
-                for (let i = 0; i < scrollHandlers.length; i++) {
-                    scrollHandlers[i](scrollY);
-                }
-            });
-        };
-        window.addEventListener('scroll', unifiedScrollHandler, { passive: true });
-    }
-}
+			const revision = cancelNavbarIconAnimations();
+			const navRect = navContainer.getBoundingClientRect();
+			parts.layer.style.left = `${snapshot.rect.left - navRect.left}px`;
+			parts.layer.style.top = `${snapshot.rect.top - navRect.top}px`;
+			parts.layer.style.width = `${snapshot.rect.width}px`;
+			parts.layer.style.height = `${snapshot.rect.height}px`;
+			parts.layer.style.opacity = '1';
+			parts.layer.style.transform = 'none';
+			parts.current.innerHTML = snapshot.markup;
+			parts.current.style.opacity = '1';
+			parts.next.innerHTML = '';
+			parts.next.style.opacity = '0';
+			const fadeOut = parts.layer.animate(
+				[{ opacity: 1 }, { opacity: 0 }],
+				{ duration: 180, easing: 'ease-out', fill: 'both' },
+			);
+			_navbarIconAnimations = [fadeOut];
+			finishNavbarIconAnimations(revision, [fadeOut], () => {
+				parts.layer.style.opacity = '0';
+				parts.current.innerHTML = '';
+			});
+			return;
+		}
 
-// Swup 页面切换时重新初始化
-function onSwupEnable() {
-    if (autoHideState) {
-        const scrollY = window.scrollY || window.pageYOffset;
-        autoHideState.lastScrollY = scrollY;
-        const navbar = document.getElementById('navbar');
-        if (navbar && scrollY <= autoHideState.threshold) {
-            navbar.classList.remove('navbar-hidden');
-            autoHideState.isHidden = false;
-        }
-    }
-}
+		if (!canAnimate || !snapshot.rect || !snapshot.markup) {
+			showNavbarIconImmediately(navContainer, parts, template, targetMarkup);
+			return;
+		}
 
-function onSwupContentReplaced() {
-    if (autoHideState) {
-        const scrollY = window.scrollY || window.pageYOffset;
-        autoHideState.lastScrollY = scrollY;
-        if (scrollY <= autoHideState.threshold && autoHideState.isHidden) {
-            const navbar = document.getElementById('navbar');
-            if (navbar) {
-                navbar.classList.remove('navbar-hidden');
-                autoHideState.isHidden = false;
-            }
-        }
-    }
-}
+		const revision = cancelNavbarIconAnimations();
+		const targetRect = setNavbarIconBox(navContainer, parts.layer, template);
+		if (!targetRect) {
+			hideNavbarIcon(parts);
+			return;
+		}
 
-document.addEventListener('swup:enable', onSwupEnable);
-document.addEventListener('swup:contentReplaced', onSwupContentReplaced);
+		parts.layer.style.opacity = '1';
+		parts.layer.style.transform = 'none';
+		parts.current.innerHTML = snapshot.markup;
+		parts.current.style.opacity = '1';
+		parts.next.innerHTML = targetMarkup;
+		parts.next.style.opacity = '0';
 
-// 暴露给外部调用
-window.initSemifullScrollDetection = initSemifullScrollDetection;
+		const deltaX = snapshot.rect.left - targetRect.left;
+		const deltaY = snapshot.rect.top - targetRect.top;
+		const movement = parts.layer.animate(
+			[
+				{ transform: `translate3d(${deltaX}px, ${deltaY}px, 0)` },
+				{ transform: 'translate3d(0, 0, 0)' },
+			],
+			{ duration: NAVBAR_ICON_DURATION, easing: NAVBAR_ICON_EASING, fill: 'both' },
+		);
+		const outgoing = parts.current.animate(
+			[{ opacity: 1 }, { opacity: 0 }],
+			{ duration: NAVBAR_ICON_DURATION, easing: 'ease-in-out', fill: 'both' },
+		);
+		const incoming = parts.next.animate(
+			[{ opacity: 0 }, { opacity: 1 }],
+			{ duration: NAVBAR_ICON_DURATION, easing: 'ease-in-out', fill: 'both' },
+		);
+		const animations = [movement, outgoing, incoming];
+		_navbarIconAnimations = animations;
+		finishNavbarIconAnimations(revision, animations, () => {
+			parts.layer.style.transform = 'none';
+			parts.current.innerHTML = targetMarkup;
+			parts.current.style.opacity = '1';
+			parts.next.innerHTML = '';
+			parts.next.style.opacity = '0';
+		});
+	}
 
-// 页面加载完成后初始化
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        initSemifullScrollDetection();
-        initAutoHide();
-    });
-} else {
-    initSemifullScrollDetection();
-    initAutoHide();
-}
+	function initHoverSlider(animateActiveChange = false) {
+		cleanupHoverSlider();
+
+		const navContainer = document.querySelector('[data-navbar-nav] .navbar-nav') as HTMLElement | null;
+		const hoverBorder = document.querySelector('[data-hover-border]') as HTMLElement | null;
+
+		if (!navContainer || !hoverBorder) return;
+
+		_hoverSliderAbortController = new AbortController();
+
+		const _navContainer = navContainer;
+		const _hoverBorder = hoverBorder;
+		const navItems = Array.from(_navContainer.querySelectorAll(':scope > .dropdown-container')) as HTMLElement[];
+
+		/**
+		 * 选中判定：单项导航匹配自身 href，下拉导航匹配自身或任一子菜单 href，
+		 * 外加配置声明的额外前缀（见 getItemPaths）。
+		 */
+		function detectActiveItem() {
+			const activeItem = findItemByPath(_navContainer, window.location.pathname);
+			const previousItem = _navbarActiveItem?.isConnected
+				? _navbarActiveItem
+				: _navContainer.querySelector('.nav-item-active') as HTMLElement | null;
+			const iconParts = getNavbarIconParts(_navContainer);
+			const iconSnapshot = iconParts
+				? captureNavbarIconSnapshot(iconParts)
+				: { rect: null, markup: '' };
+
+			navItems.forEach((item) => item.classList.toggle('nav-item-active', item === activeItem));
+			_navbarActiveItem = activeItem;
+			syncNavbarIcon(
+				_navContainer,
+				previousItem,
+				activeItem,
+				iconSnapshot,
+				animateActiveChange,
+			);
+
+			if (activeItem) {
+				_navContainer.classList.add('nav-has-active');
+				requestAnimationFrame(() => {
+					moveHighlight(_navContainer, _hoverBorder, activeItem);
+				});
+			} else {
+				_navContainer.classList.remove('nav-has-active');
+				_hoverBorder.style.opacity = '0';
+			}
+		}
+
+		navItems.forEach((item) => {
+			const handler = () => {
+				moveHighlight(_navContainer, _hoverBorder, item);
+				syncNavbarDropdownOnHover(item);
+			};
+			item.addEventListener('mouseenter', handler);
+			_hoverSliderMouseEnterHandlers.push([item, handler]);
+		});
+
+		_navContainer.addEventListener('mouseleave', () => {
+			// 回落到当前页的激活项，且必须按 URL 现算：点击导航项后 swup 立刻 pushState，
+			// 但容器替换与 page:view 还没到，DOM 上的 .nav-item-active 仍是旧页的。
+			// 直接读它就会在鼠标移出时把高亮闪回原页那一项，等导航完成再跳回来。
+			moveHighlight(_navContainer, _hoverBorder, findItemByPath(_navContainer, window.location.pathname));
+			// 面板是导航行的子节点，悬停进面板不会触发 mouseleave；只有真正离开才收起
+			syncNavbarDropdownOnHover(null);
+		}, { signal: _hoverSliderAbortController.signal });
+
+		_navContainer.addEventListener('mouseenter', () => {
+			_hoverBorder.style.opacity = '1';
+		}, { signal: _hoverSliderAbortController.signal });
+
+		function scheduleIconPositionSync() {
+			if (_navbarIconResizeFrame !== null) return;
+			_navbarIconResizeFrame = requestAnimationFrame(() => {
+				_navbarIconResizeFrame = null;
+				if (hasRunningNavbarIconAnimation()) return;
+				const activeItem = _navbarActiveItem?.isConnected
+					? _navbarActiveItem
+					: _navContainer.querySelector('.nav-item-active') as HTMLElement | null;
+				const parts = getNavbarIconParts(_navContainer);
+				const template = getNavbarIconTemplate(activeItem);
+				if (parts && template) setNavbarIconBox(_navContainer, parts.layer, template);
+				repositionNavbarDropdown();
+			});
+		}
+
+		_navbarIconResizeObserver = new ResizeObserver(scheduleIconPositionSync);
+		_navbarIconResizeObserver.observe(_navContainer);
+		window.addEventListener('resize', scheduleIconPositionSync, {
+			passive: true,
+			signal: _hoverSliderAbortController.signal,
+		});
+
+		detectActiveItem();
+	}
+
+	type NavbarRuntimeWindow = Window & {
+		__navbarScrollLayoutCleanup?: () => void;
+	};
+
+	function initNavbarScrollLayout() {
+		const runtimeWindow = window as NavbarRuntimeWindow;
+		runtimeWindow.__navbarScrollLayoutCleanup?.();
+
+		const navbarNode = document.getElementById('navbar');
+		if (!navbarNode) return;
+		const navbar = navbarNode as HTMLElement;
+
+		const navbarWrapper = document.getElementById('navbar-wrapper');
+		const segmentsNode = navbar.querySelector<HTMLElement>('.navbar-segments');
+		const centerNode = navbar.querySelector<HTMLElement>('.navbar-seg--center');
+		if (!segmentsNode || !centerNode) return;
+		const segments = segmentsNode as HTMLElement;
+		const center = centerNode as HTMLElement;
+
+		const SCROLL_IN = 80;
+		const SCROLL_OUT = 40;
+		const COMPACT_GAP = 8;
+		const desktopMedia = window.matchMedia('(min-width: 1024px)');
+		const abortController = new AbortController();
+		const { signal } = abortController;
+		let isCompact = navbar.classList.contains('scrolled');
+		let scrollFrame: number | null = null;
+		let layoutFrame: number | null = null;
+
+		function updateCompactLayout() {
+			if (!isCompact || !desktopMedia.matches) return;
+
+			const segmentsRect = segments.getBoundingClientRect();
+			const centerRect = center.getBoundingClientRect();
+			navbar.style.setProperty(
+				'--navbar-compact-left',
+				`${centerRect.left - segmentsRect.left - COMPACT_GAP}px`,
+			);
+			navbar.style.setProperty(
+				'--navbar-compact-right',
+				`${centerRect.right - segmentsRect.left + COMPACT_GAP}px`,
+			);
+		}
+
+		function scheduleCompactLayout() {
+			if (layoutFrame !== null) return;
+			layoutFrame = requestAnimationFrame(() => {
+				layoutFrame = null;
+				updateCompactLayout();
+			});
+		}
+
+		function syncCompactState() {
+			let nextCompact = isCompact;
+			if (window.scrollY > SCROLL_IN) nextCompact = true;
+			else if (window.scrollY < SCROLL_OUT) nextCompact = false;
+			if (nextCompact === isCompact) return;
+
+			isCompact = nextCompact;
+			navbar.classList.toggle('scrolled', isCompact);
+			navbarWrapper?.classList.toggle('navbar-scrolled', isCompact);
+			// 状态切换发生在滚动 rAF 内，立即测量可避免先渲染一帧错误锚点。
+			updateCompactLayout();
+		}
+
+		function handleScroll() {
+			if (scrollFrame !== null) return;
+			scrollFrame = requestAnimationFrame(() => {
+				scrollFrame = null;
+				syncCompactState();
+			});
+		}
+
+		window.addEventListener('scroll', handleScroll, { passive: true, signal });
+		window.addEventListener('resize', scheduleCompactLayout, { passive: true, signal });
+		onNavigation(syncCompactState, { signal });
+
+		const resizeObserver = new ResizeObserver(scheduleCompactLayout);
+		resizeObserver.observe(segments);
+		resizeObserver.observe(center);
+
+		const cleanup = () => {
+			abortController.abort();
+			resizeObserver.disconnect();
+			if (scrollFrame !== null) cancelAnimationFrame(scrollFrame);
+			if (layoutFrame !== null) cancelAnimationFrame(layoutFrame);
+			if (runtimeWindow.__navbarScrollLayoutCleanup === cleanup) {
+				delete runtimeWindow.__navbarScrollLayoutCleanup;
+			}
+		};
+		runtimeWindow.__navbarScrollLayoutCleanup = cleanup;
+
+		syncCompactState();
+		navbarWrapper?.classList.toggle('navbar-scrolled', isCompact);
+		updateCompactLayout();
+	}
+
+	// 滚动/尺寸监听绑在 window 与 ResizeObserver 上，跨导航一直有效，只需装一次
+	definePersistentIsland("navbar:scroll-layout", initNavbarScrollLayout);
+
+	// generation === 0 就是首次加载：此时激活项已经是服务端渲染好的，不要做位移过渡；
+	// 导航后才需要动画。导航栏 DOM 跨导航常驻，unmount 只需解绑监听与观察者，
+	// 换代重挂由 mount 开头的 cleanupHoverSlider 再兜一层
+	definePageIsland({
+		name: "navbar:hover-slider",
+		mount: ({ generation }) => {
+			initHoverSlider(generation > 0);
+		},
+		unmount: cleanupHoverSlider,
+	});
+
+	// ===== 移动端全屏菜单（#nav-menu-panel，样式在 navbar.css） =====
+	definePersistentIsland("navbar:mobile-menu", () => {
+		const menuBtn = document.getElementById("nav-menu-switch");
+		menuBtn?.addEventListener("click", () => {
+			const menuPanel = document.getElementById("nav-menu-panel");
+			if (!menuPanel) return;
+			menuPanel.classList.toggle("float-panel-closed");
+			const opened = !menuPanel.classList.contains("float-panel-closed");
+			document.body.style.overflow = opened ? "hidden" : "";
+		});
+
+		document.addEventListener("click", (event) => {
+			const panel = document.getElementById("nav-menu-panel");
+			const btn = document.getElementById("nav-menu-switch");
+			if (!panel || panel.classList.contains("float-panel-closed")) return;
+			if (
+				event.target instanceof Node &&
+				!panel.contains(event.target) &&
+				!(btn?.contains(event.target) ?? false)
+			) {
+				panel.classList.add("float-panel-closed");
+				document.body.style.overflow = "";
+			}
+		});
+	});
+
+	// 导航后收起移动端菜单并还原背景滚动，同时按地址栏现算刷新当前项高亮
+	// （菜单的 nav-active 是 SSR 构建期算的，Swup 换页后菜单不重建会残留旧值）
+	onNavigation(() => {
+		const panel = document.getElementById("nav-menu-panel");
+		panel?.classList.add("float-panel-closed");
+		document.body.style.overflow = "";
+
+		const normalize = (p: string | null): string => {
+			if (!p) return "/";
+			const clean = p.split("?")[0].split("#")[0].replace(/\/+$/, "");
+			return clean === "" ? "/" : clean;
+		};
+		const current = normalize(window.location.pathname);
+		panel?.querySelectorAll<HTMLElement>("[data-nav-href]").forEach((el) => {
+			const href = normalize(el.getAttribute("data-nav-href"));
+			const children = (el.getAttribute("data-nav-children") || "")
+				.split(/\s+/)
+				.filter(Boolean)
+				.map(normalize);
+			el.classList.toggle(
+				"nav-active",
+				current === href || children.includes(current),
+			);
+		});
+	});
+
+	// ===== 右段工具面板（桌面端）：悬停/聚焦展开 搜索 / 公告 / 主题 =====
+	// 导航栏在 Swup 容器之外、本模块只执行一次，事件直接绑在持久节点上
+	const TOOLS_CLOSE_DELAY = 260;
+
+	const toolsButton = document.getElementById("nav-tools-btn");
+	const toolsPanel = document.getElementById("nav-tools-panel");
+	let toolsCloseTimer: number | null = null;
+	let toolsRepositionFrame = 0;
+	let toolsPointerInside = false;
+
+	function isToolsPanelOpen(): boolean {
+		return toolsPanel?.classList.contains("is-open") ?? false;
+	}
+
+	function cancelToolsClose(): void {
+		if (toolsCloseTimer !== null) {
+			window.clearTimeout(toolsCloseTimer);
+			toolsCloseTimer = null;
+		}
+	}
+
+	function scheduleToolsClose(): void {
+		if (toolsCloseTimer !== null) return;
+		toolsCloseTimer = window.setTimeout(() => {
+			toolsCloseTimer = null;
+			closeToolsPanel();
+		}, TOOLS_CLOSE_DELAY);
+	}
+
+	// 面板与视口左右边缘、指针与箱体左右边缘共用的最小留白
+	const TOOLS_EDGE_INSET = 12;
+
+	function clampValue(value: number, min: number, max: number): number {
+		return Math.min(Math.max(value, min), max);
+	}
+
+	/**
+	 * 面板定位：箱体水平中心对准工具按钮中心，指针落在箱体中央。
+	 * 视口右侧放不下时箱体整体内收（左右各留 TOOLS_EDGE_INSET），
+	 * --tools-anchor-x 记录按钮中心相对面板左缘的偏移，指针沿箱沿滑动、
+	 * 缩放原点同步跟上。
+	 * 滚动收缩后右段变成吸附在导航中段旁的小球，固定 right 会与小球脱节，
+	 * 所以每次展开都实测。读写分组：先集中量测再一次性写入，避免反复强制同步布局。
+	 */
+	function positionToolsPanel(): void {
+		if (!toolsButton || !toolsPanel) return;
+		const segments = toolsButton.closest(".navbar-segments");
+		if (!segments) return;
+		const segmentsRect = segments.getBoundingClientRect();
+		const buttonRect = toolsButton.getBoundingClientRect();
+		const panelWidth = toolsPanel.offsetWidth;
+		const viewportWidth = document.documentElement.clientWidth;
+		const center = buttonRect.left + buttonRect.width / 2;
+
+		const left = clampValue(
+			center - panelWidth / 2,
+			TOOLS_EDGE_INSET,
+			viewportWidth - panelWidth - TOOLS_EDGE_INSET,
+		);
+		const anchorX = clampValue(
+			center - left,
+			TOOLS_EDGE_INSET,
+			panelWidth - TOOLS_EDGE_INSET,
+		);
+
+		toolsPanel.style.left = `${left - segmentsRect.left}px`;
+		toolsPanel.style.setProperty("--tools-anchor-x", `${anchorX}px`);
+	}
+
+	function openToolsPanel(): void {
+		if (!toolsPanel || !toolsButton) return;
+		cancelToolsClose();
+		if (isToolsPanelOpen()) return;
+		positionToolsPanel();
+		toolsPanel.classList.add("is-open");
+		toolsButton.setAttribute("aria-expanded", "true");
+	}
+
+	function closeToolsPanel(): void {
+		if (!toolsPanel || !toolsButton) return;
+		cancelToolsClose();
+		if (!isToolsPanelOpen()) return;
+		toolsPanel.classList.remove("is-open");
+		toolsButton.setAttribute("aria-expanded", "false");
+		highlightToolsRow(null);
+	}
+
+	// ===== 工具面板悬停高亮：箱体里只有一个药丸，靠 translateY 在行之间滑动 =====
+	const toolsHighlight = document.querySelector<HTMLElement>(
+		"#nav-tools-panel .nav-tools-highlight",
+	);
+	const toolsRows = Array.from(
+		document.querySelectorAll<HTMLElement>(
+			"#nav-tools-panel [data-nav-tools-stop]",
+		),
+	);
+	// 展开错峰的行序号写在内联属性上：分隔符和高亮药丸也是箱体子元素，
+	// 用 nth-child 数不出来
+	toolsRows.forEach((row, index) => {
+		row.style.setProperty("--tools-row-index", String(index));
+	});
+
+	let toolsHighlightedRow: HTMLElement | null = null;
+
+	function highlightToolsRow(row: HTMLElement | null): void {
+		if (!toolsHighlight) return;
+		toolsHighlightedRow = row;
+		if (!row) {
+			toolsHighlight.classList.remove("is-on");
+			return;
+		}
+		toolsHighlight.style.setProperty("--tools-hl-y", `${row.offsetTop}px`);
+		toolsHighlight.style.setProperty("--tools-hl-h", `${row.offsetHeight}px`);
+		toolsHighlight.classList.add("is-on");
+	}
+
+	const toolsListBox = document.querySelector<HTMLElement>(
+		"#nav-tools-panel .nav-tools-box",
+	);
+
+	if (toolsListBox) {
+		const listBox = toolsListBox;
+
+		function rowOf(target: EventTarget | null): HTMLElement | null {
+			if (!(target instanceof Element)) return null;
+			return target.closest<HTMLElement>("[data-nav-tools-stop]");
+		}
+
+		// 悬停即高亮，但不抢键盘焦点：pointerover 只改药丸位置
+		listBox.addEventListener("pointerover", (event) => {
+			if ((event as PointerEvent).pointerType === "touch") return;
+			const row = rowOf(event.target);
+			if (row === toolsHighlightedRow) return;
+			highlightToolsRow(row);
+		});
+		listBox.addEventListener("pointerleave", () => highlightToolsRow(null));
+		// 键盘路径：焦点落在哪一行，药丸就跟到哪一行（含三段滑块整行）
+		listBox.addEventListener("focusin", (event) => {
+			highlightToolsRow(rowOf(event.target));
+		});
+	}
+
+	if (toolsButton && toolsPanel) {
+		toolsButton.addEventListener("mouseenter", openToolsPanel);
+		toolsButton.addEventListener("mouseleave", scheduleToolsClose);
+		// 面板与按钮之间有过渡区，进入面板时取消收起计时
+		toolsPanel.addEventListener("mouseenter", () => {
+			toolsPointerInside = true;
+			cancelToolsClose();
+		});
+		toolsPanel.addEventListener("mouseleave", (event) => {
+			const rect = toolsPanel.getBoundingClientRect();
+			const stillInside =
+				event.clientX >= rect.left &&
+				event.clientX <= rect.right &&
+				event.clientY >= rect.top &&
+				event.clientY <= rect.bottom;
+			// 主题切换的 View Transition 会把指针命中转交给快照层，
+			// 指针没离开箱体也会补发 mouseleave；按坐标确认后再收起
+			if (
+				stillInside &&
+				document.documentElement.classList.contains("is-theme-transitioning")
+			) {
+				return;
+			}
+			toolsPointerInside = false;
+			scheduleToolsClose();
+		});
+		// 键盘路径：聚焦展开，焦点离开按钮与面板后延迟收起。
+		// 主题切换走视图过渡，期间可能把焦点甩回 body 冒出 focusout，
+		// 指针还停在面板里时不据此收起——移出面板由 mouseleave 负责
+		toolsButton.addEventListener("focusin", openToolsPanel);
+		toolsButton.addEventListener("focusout", (event) => {
+			const next = event.relatedTarget;
+			if (next instanceof Node && toolsPanel.contains(next)) return;
+			if (toolsPointerInside) return;
+			scheduleToolsClose();
+		});
+		toolsPanel.addEventListener("focusout", (event) => {
+			const next = event.relatedTarget;
+			if (
+				next instanceof Node &&
+				(toolsPanel.contains(next) || toolsButton.contains(next))
+			) {
+				return;
+			}
+			if (toolsPointerInside) return;
+			scheduleToolsClose();
+		});
+		// 点击开合兜底（触屏 / 键盘 Enter）
+		toolsButton.addEventListener("click", (event) => {
+			event.stopPropagation();
+			if (isToolsPanelOpen()) closeToolsPanel();
+			else openToolsPanel();
+		});
+		// 行点击的收合规则：主题三段滑块保持展开（选完要看滑块反馈），
+		// 其余行（搜索 / 公告）点完即收起
+		toolsPanel.addEventListener("click", (event) => {
+			const target = event.target;
+			if (!(target instanceof Element)) return;
+			if (target.closest('[data-nav-tools-stop="group"]')) return;
+			if (target.closest("[data-nav-tools-stop]")) closeToolsPanel();
+		});
+		// 收缩小球随滚动位移，面板锚点会失效，滚动即收起
+		window.addEventListener(
+			"scroll",
+			() => {
+				// 主题三段滑块选完要留在面板里看滑块反馈：切换时代码主题属性跟着变，
+				// 页面高度抖动会冒出一次 scroll，此时锚点其实没动
+				if (toolsPointerInside) return;
+				if (isToolsPanelOpen()) closeToolsPanel();
+			},
+			{ passive: true },
+		);
+		window.addEventListener("resize", () => {
+			if (!isToolsPanelOpen()) return;
+			// 连续 resize 合并到一帧内只量测一次
+			if (toolsRepositionFrame !== 0) return;
+			toolsRepositionFrame = window.requestAnimationFrame(() => {
+				toolsRepositionFrame = 0;
+				positionToolsPanel();
+			});
+		}, { passive: true });
+		document.addEventListener("click", (event) => {
+			const target = event.target;
+			if (!(target instanceof Node)) return;
+			if (toolsButton.contains(target) || toolsPanel.contains(target)) return;
+			if (isToolsPanelOpen()) closeToolsPanel();
+		});
+	}
+
+	// 面板主题三段滑块已随亮色主题移除
+
+	// 搜索快捷键提示：修饰键按平台显示 ⌘ / Ctrl；
+	// Ctrl/Cmd+K 直接跳转搜索页（走 swup，拿不到实例时回退整页跳转）
+	const toolsSearchModifier = document.querySelector<HTMLElement>(
+		"[data-nav-tools-modifier]",
+	);
+	if (
+		toolsSearchModifier &&
+		/Mac|iPhone|iPad|iPod/.test(navigator.userAgent)
+	) {
+		toolsSearchModifier.textContent = "⌘";
+	}
+
+	document.addEventListener("keydown", (event) => {
+		if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+			event.preventDefault();
+			closeToolsPanel();
+			const swup = (window as unknown as { swup?: { navigate?: (u: string) => void } }).swup;
+			if (typeof swup?.navigate === "function") swup.navigate("/search/");
+			else window.location.href = "/search/";
+		}
+	});
+
+	// ===== 公告弹窗：原生 <dialog>，外壳复用 privacy-modal 样式 =====
+	const announcementModal = document.getElementById(
+		"nav-announcement-modal",
+	) as HTMLDialogElement | null;
+	const announcementTrigger = document.getElementById("nav-tools-announcement");
+
+	function isAnnouncementModalOpen(): boolean {
+		return announcementModal?.open ?? false;
+	}
+
+	function openAnnouncementModal(): void {
+		if (!announcementModal || isAnnouncementModalOpen()) return;
+		closeToolsPanel();
+		announcementModal.showModal();
+		// 锁背景滚动，公告内容自身仍可滚动（showModal 只 inert，不锁滚动）
+		document.body.style.overflow = "hidden";
+	}
+
+	function closeAnnouncementModal(restoreFocus: boolean): void {
+		if (!announcementModal || !isAnnouncementModalOpen()) return;
+		announcementModal.close();
+		document.body.style.overflow = "";
+		// 触发器在工具面板里，面板此刻已收起；close() 的自动回焦可能落到隐藏节点上，
+		// 所以沿用显式回焦
+		if (restoreFocus) announcementTrigger?.focus();
+	}
+
+	announcementTrigger?.addEventListener("click", (event) => {
+		event.stopPropagation();
+		openAnnouncementModal();
+	});
+
+	// 遮罩、关闭按钮与底部按钮共用 data-nav-announcement-close 委托。
+	// 判 target 用 Element 而不是 HTMLElement —— 按钮里包着 svg，点中图形时
+	// target 是 SVGElement，用 HTMLElement 过滤会漏掉，按钮就点了没反应
+	announcementModal?.addEventListener("click", (event) => {
+		const target = event.target;
+		if (
+			target instanceof Element &&
+			target.closest("[data-nav-announcement-close]")
+		) {
+			closeAnnouncementModal(false);
+		}
+	});
+
+	// 兜底：任何路径关掉弹窗都还原背景滚动（含浏览器自行处理的 Esc）
+	announcementModal?.addEventListener("close", () => {
+		document.body.style.overflow = "";
+	});
+
+	announcementModal?.addEventListener("cancel", (event) => {
+		event.preventDefault();
+		closeAnnouncementModal(true);
+	});
+
+	// Escape：公告弹窗优先，其次工具面板；收起后焦点还给触发器
+	document.addEventListener("keydown", (event) => {
+		if (event.key !== "Escape") return;
+		if (isAnnouncementModalOpen()) {
+			event.preventDefault();
+			closeAnnouncementModal(true);
+			return;
+		}
+		if (isToolsPanelOpen()) {
+			event.preventDefault();
+			closeToolsPanel();
+			toolsButton?.focus();
+		}
+	});
+
+	// 导航后收起面板与弹窗（公告卡片里的站内链接会触发 Swup 导航）
+	onNavigation(() => {
+		closeToolsPanel();
+		closeAnnouncementModal(false);
+	});
 </script>
 
 {
-    import.meta.env.PROD && (
-        <script is:inline data-swup-ignore-script define:vars={{ scriptUrl: url('/pagefind/pagefind.js') }}>
-            {/* 你的 loadPagefind 函数的完整内容放在这里 */}
-            async function loadPagefind() {
-                try {
-                    const response = await fetch(scriptUrl, { method: 'HEAD' });
-                    if (!response.ok) {
-                        throw new Error(`Pagefind script not found: ${response.status}`);
-                    }
-                    const pagefind = await import(scriptUrl);
-                    await pagefind.options({
-                        excerptLength: 20
-                    });
-                    window.pagefind = pagefind;
-                    document.dispatchEvent(new CustomEvent('pagefindready'));
-                    console.log('Pagefind loaded and initialized successfully, event dispatched.');
-                } catch (error) {
-                    console.error('Failed to load Pagefind:', error);
-                    window.pagefind = {
-                        search: () => Promise.resolve({ results: [] }),
-                        options: () => Promise.resolve(),
-                    };
-                    document.dispatchEvent(new CustomEvent('pagefindloaderror'));
-                    console.log('Pagefind load error, event dispatched.');
-                }
-            }
+	import.meta.env.PROD && (
+		<script is:inline data-swup-ignore-script define:vars={{ scriptUrl: url('/pagefind/pagefind.js') }}>
+			async function loadPagefind() {
+				try {
+					const response = await fetch(scriptUrl, { method: 'HEAD' });
+					if (!response.ok) {
+						throw new Error(`Pagefind script not found: ${response.status}`);
+					}
+					const pagefind = await import(scriptUrl);
+					await pagefind.options({ excerptLength: 20 });
+					window.pagefind = pagefind;
+					document.dispatchEvent(new CustomEvent('pagefindready'));
+				} catch (error) {
+					console.error('Failed to load Pagefind:', error);
+					window.pagefind = {
+						search: () => Promise.resolve({ results: [] }),
+						options: () => Promise.resolve(),
+					};
+					document.dispatchEvent(new CustomEvent('pagefindloaderror'));
+				}
+			}
 
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', loadPagefind);
-            } else {
-                loadPagefind();
-            }
-        </script>
-    )
+			if (document.readyState === 'loading') {
+				document.addEventListener('DOMContentLoaded', loadPagefind);
+			} else {
+				loadPagefind();
+			}
+		</script>
+	)
 }

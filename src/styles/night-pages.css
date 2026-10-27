@@ -1,0 +1,125 @@
+/* ==========================================================================
+   全站夜色皮肤 —— 内页与首页同一套视觉语言
+   --------------------------------------------------------------------------
+   背景：全站固定铺一张「雨夜窗前的山城灯火」（.site-nightbackdrop，
+         Layout.astro 渲染，首页 body.homepage 隐藏 —— 首页有自己的画布）。
+   配色：在 body 层把内页设计系统（inner-pages.css 的 --ip-*）与
+         Fuwari 旧主题令牌（--card-bg / --btn-* / --link-* 等）统一改成
+         夜色米白系 —— 与首页 .fyh 的取值一致。卡片改为半透明深色玻璃，
+         压在照片上；文字不随明暗主题翻转（主题开关仍影响代码块等细节）。
+
+   注意：必须在 inner-pages.css 之后导入（同选择器靠后者胜出）；
+         自定义属性写在 body 上，对 body 内所有元素生效，压过 :root 定义。
+   ========================================================================== */
+
+/* ── 背景层 ──────────────────────────────────────────────────────────── */
+.site-nightbackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.site-nightbackdrop__img,
+.site-nightbackdrop__img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 压暗遮罩：保证内页正文与导航的可读性，边缘略收暗 */
+.site-nightbackdrop__shade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(9, 10, 18, 0.38) 0%,
+      rgba(9, 10, 18, 0.52) 42%,
+      rgba(9, 10, 18, 0.6) 100%
+    ),
+    radial-gradient(
+      120% 90% at 50% 0%,
+      rgba(9, 10, 18, 0) 42%,
+      rgba(9, 10, 18, 0.3) 100%
+    );
+}
+
+/* 首页有自己的全屏画布（fyh-hero 视差背景），隐藏全站背景层 */
+body.homepage .site-nightbackdrop {
+  display: none;
+}
+
+/* ── 夜色令牌：内页设计系统（--ip-*）────────────────────────────────── */
+body:not(.homepage) {
+  /* 页面底色透明，让照片透出来（背景层在 body 之下已经铺好） */
+  --page-bg: transparent;
+
+  --ip-ink: #efe8da;
+  --ip-ink-soft: rgba(239, 232, 218, 0.74);
+  --ip-ink-faint: rgba(239, 232, 218, 0.48);
+
+  /* 纸面 → 半透明夜色玻璃：面板压在照片上仍可读 */
+  --ip-paper: rgba(11, 12, 21, 0.62);
+  --ip-paper-2: rgba(16, 18, 28, 0.58);
+  --ip-surface: rgba(13, 15, 25, 0.72);
+  --ip-surface-2: rgba(22, 24, 38, 0.68);
+
+  --ip-line: rgba(239, 232, 218, 0.28);
+  --ip-line-soft: rgba(239, 232, 218, 0.14);
+  --ip-warm: #e6a173;
+  --ip-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.35),
+    0 24px 48px -28px rgba(0, 0, 0, 0.7);
+
+  /* ── Fuwari 旧主题令牌：卡片 / 按钮 / 链接 / 分隔线 ────────────────── */
+  --card-bg: rgba(13, 15, 25, 0.72);
+  --card-bg-transparent: rgb(13 15 25 / var(--card-transparent-opacity, 0.72));
+
+  --btn-content: rgba(239, 232, 218, 0.92);
+  --btn-regular-bg: rgba(30, 32, 48, 0.72);
+  --btn-regular-bg-hover: rgba(42, 44, 62, 0.82);
+  --btn-regular-bg-active: rgba(50, 52, 72, 0.88);
+  --btn-plain-bg-hover: rgba(30, 32, 48, 0.6);
+  --btn-plain-bg-active: rgba(40, 42, 58, 0.7);
+  --btn-card-bg-hover: rgba(32, 34, 50, 0.8);
+  --btn-card-bg-active: rgba(42, 44, 62, 0.88);
+
+  --friend-card-bg: rgba(24, 26, 40, 0.55);
+  --float-panel-bg: rgba(16, 18, 28, 0.94);
+
+  --deep-text: #efe8da;
+  --title-active: #e6a173;
+
+  --line-divider: rgba(239, 232, 218, 0.12);
+  --line-color: rgba(239, 232, 218, 0.16);
+  --meta-divider: rgba(239, 232, 218, 0.24);
+  --content-meta: rgba(239, 232, 218, 0.66);
+
+  --link-underline: rgba(230, 161, 115, 0.4);
+  --link-hover: rgba(230, 161, 115, 0.45);
+  --link-active: rgba(230, 161, 115, 0.6);
+
+  --inline-code-bg: rgba(30, 32, 48, 0.8);
+  --inline-code-color: #e8c9a8;
+
+  --selection-bg: rgba(230, 161, 115, 0.28);
+
+  /* 行内代码 / TOC 徽标等跟随按钮底色的组件一并压暗 */
+  --toc-badge-bg: rgba(30, 32, 48, 0.72);
+  --toc-btn-hover: rgba(40, 42, 58, 0.7);
+  --toc-btn-active: rgba(50, 52, 72, 0.8);
+}
+
+/* ── 组件微调 ────────────────────────────────────────────────────────── */
+
+/* 卡片悬停：夜色下用浅色细线强化（原亮色规则的深色细线看不见） */
+body:not(.homepage) .card-base:hover {
+  border-color: rgba(239, 232, 218, 0.34) !important;
+}
+
+/* 亮色主题下 body 不再需要纸面底色（照片就是底） */
+body:not(.homepage),
+body:not(.homepage) #content-wrapper {
+  background: transparent;
+}

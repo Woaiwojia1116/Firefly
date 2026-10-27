@@ -4,7 +4,7 @@ published: 2026-09-15
 pinned: false
 description: 一次任务抢占导致共享标志被误清零
 tags: [freertos]
-category: freertos
+category: RTOS
 draft: false
 image: ./images/4.jpg
 # timelineOnly: false

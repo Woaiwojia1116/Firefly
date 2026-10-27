@@ -1,6 +1,9 @@
 @import 'tailwindcss';
 @import './layout-styles.css';
 @import './navbar.css';
+@import './layout/navbar-new.css';
+@import './layout/dropdown-menu.css';
+@import './components/privacy-modal.css';
 @import './banner-title.css';
 @import './waves.css';
 @import './transition.css'; 

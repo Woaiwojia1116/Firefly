@@ -36,7 +36,8 @@ export const siteConfig: SiteConfig = {
 		// 是否对访问者隐藏主题色选择器
 		fixed: true,
 		// 默认模式："light" 亮色，"dark" 暗色，"system" 跟随系统
-		defaultMode: "system",
+		// 夜是站点默认身份（萤火·夜航），昼为纸面变体
+		defaultMode: "dark",
 	},
 
 	// 页面整体宽度（单位：rem）
@@ -140,16 +141,17 @@ export const siteConfig: SiteConfig = {
 		friends: true,
 		// 赞助页面开关
 		sponsor: false,
-		// 留言板页面开关，需要配置评论系统
-		guestbook: true,
+		// 动态页面开关，需要配置评论系统（Twikoo）
+		moments: true,
 		// 番组计划页面开关，含追番、游戏、书籍和音乐，dev调试时只获取一页数据，build才会获取全部数据
-		bangumi: true,
+		bangumi: false,
 		// 相册页面开关
 		gallery: true,
 	},
 
-	// 分类导航栏开关，在首页和归档页顶部显示分类快捷导航
-	categoryBar: true,
+	// 分类导航栏开关：本次改造后全站不再显示这条快捷栏
+	// （首页第 4 章「兴趣的坐标」里有内容自带的分类胶囊，那是首页自身结构，不受此开关影响）
+	categoryBar: false,
 
 	// 文章列表布局配置
 	postListLayout: {

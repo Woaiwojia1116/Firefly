@@ -26,9 +26,9 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		links.push(LinkPreset.Friends);
 	}
 
-	// 根据配置决定是否添加留言板，在siteConfig关闭pages.guestbook时导航栏不显示留言板
-	if (siteConfig.pages.guestbook) {
-		links.push(LinkPreset.Guestbook);
+	// 根据配置决定是否添加动态，在siteConfig关闭pages.moments时导航栏不显示动态
+	if (siteConfig.pages.moments) {
+		links.push(LinkPreset.Moments);
 	}
 
 	// 我的及其子菜单
@@ -40,8 +40,12 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 			// 根据配置决定是否添加相册，在siteConfig关闭pages.gallery时导航栏不显示相册
 			...(siteConfig.pages.gallery ? [LinkPreset.Gallery] : []),
 
-			// 根据配置决定是否添加番组计划，在siteConfig关闭pages.bangumi时导航栏不显示番组计划
-			...(siteConfig.pages.bangumi ? [LinkPreset.Bangumi] : []),
+			// 技术栈页面（原番组计划位置）
+			{
+				name: "技术栈",
+				url: "/tech/",
+				icon: "material-symbols:terminal",
+			},
 		],
 	});
 

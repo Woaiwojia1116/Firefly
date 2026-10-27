@@ -12,6 +12,8 @@ export const zh_TW: Translation = {
 	[Key.searchSummary]: "摘要",
 	[Key.searchContent]: "內容",
 	[Key.searchViewMore]: "查看更多結果 ({count} 個更多)",
+	[Key.searchClear]: "清空",
+	[Key.searchFocus]: "聚焦",
 	[Key.other]: "其他",
 	[Key.all]: "全部",
 
@@ -44,17 +46,30 @@ export const zh_TW: Translation = {
 	// 公告欄
 	[Key.announcement]: "公告",
 	[Key.announcementClose]: "關閉",
+	[Key.tools]: "工具",
+	[Key.theme]: "主題",
+	[Key.themeLight]: "淺色",
+	[Key.themeDark]: "深色",
+	[Key.themeSystem]: "跟隨系統",
+	[Key.gotIt]: "知道了",
+	[Key.viewDetails]: "查看詳情",
 
 	[Key.comments]: "評論",
 	[Key.commentSection]: "評論區",
 	[Key.commentSubtitle]: "分享你的想法，與大家交流討論",
 	[Key.commentNotConfigured]: "評論系統暫未配置",
-	[Key.guestbookCommentHint]:
-		"您還未在配置文件中啟用評論系統，啟用後訪客才可在此留言",
 	[Key.friends]: "友鏈",
 	[Key.friendsDescription]: "這裡是我的朋友們，歡迎互相訪問交流",
-	[Key.guestbook]: "留言",
-	[Key.guestbookDescription]: "歡迎在這裡留下你的足跡，分享你的想法和建議",
+	[Key.moments]: "動態",
+	[Key.momentsDescription]: "碎碎念與日常片段，一條一條正在發生的事",
+	[Key.momentsEmpty]: "還沒有動態，寫下第一條吧",
+	[Key.momentsCompose]: "寫動態",
+	[Key.momentsMail]: "博主郵箱（與配置一致，僅首次需要填寫）",
+	[Key.momentsPlaceholder]: "這一刻的想法…",
+	[Key.momentsImage]: "圖片連結（選填）",
+	[Key.momentsPublish]: "發布",
+	[Key.momentsCancel]: "取消",
+	[Key.momentsRetry]: "重試",
 	[Key.untitled]: "無標題",
 	[Key.uncategorized]: "未分類",
 	[Key.noTags]: "無標籤",
@@ -83,6 +98,8 @@ export const zh_TW: Translation = {
 	[Key.readTime]: "閱讀時長",
 	[Key.license]: "許可協議",
 	[Key.bangumi]: "番組計劃",
+
+	[Key.techStack]: "技術棧",
 
 	// 番組計劃
 	[Key.bangumiTitle]: "我的番組計劃",

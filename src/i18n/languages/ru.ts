@@ -12,6 +12,8 @@ export const ru: Translation = {
 	[Key.searchSummary]: "Резюме",
 	[Key.searchContent]: "Содержание",
 	[Key.searchViewMore]: "Показать еще ({count} шт)",
+	[Key.searchClear]: "Очистить",
+	[Key.searchFocus]: "К поиску",
 	[Key.other]: "Прочее",
 	[Key.all]: "Все",
 
@@ -44,19 +46,32 @@ export const ru: Translation = {
 	// Объявление
 	[Key.announcement]: "Объявление",
 	[Key.announcementClose]: "Закрыть",
+	[Key.tools]: "Инструменты",
+	[Key.theme]: "Тема",
+	[Key.themeLight]: "Светлая",
+	[Key.themeDark]: "Тёмная",
+	[Key.themeSystem]: "Системная",
+	[Key.gotIt]: "Понятно",
+	[Key.viewDetails]: "Подробнее",
 
 	[Key.comments]: "Комментарии",
 	[Key.commentSection]: "Комментарии",
 	[Key.commentSubtitle]: "Поделитесь своими мыслями и обсудите с остальными",
 	[Key.commentNotConfigured]: "Система комментариев не настроена",
-	[Key.guestbookCommentHint]:
-		"Вы еще не включили систему комментариев в файле конфигурации. После включения посетители смогут оставлять сообщения здесь",
 	[Key.friends]: "Ссылки",
 	[Key.friendsDescription]:
 		"Вот мои друзья, добро пожаловать посетить и общаться друг с другом",
-	[Key.guestbook]: "Гостевая книга",
-	[Key.guestbookDescription]:
-		"Добро пожаловать, оставьте свой след здесь, поделитесь своими мыслями и предложениями",
+	[Key.moments]: "Моменты",
+	[Key.momentsDescription]:
+		"Короткие заметки и фрагменты повседневности, одна за другой",
+	[Key.momentsEmpty]: "Моментов пока нет — напишите первый",
+	[Key.momentsCompose]: "Новый момент",
+	[Key.momentsMail]: "Почта владельца (как в конфиге, вводится один раз)",
+	[Key.momentsPlaceholder]: "О чём вы думаете…",
+	[Key.momentsImage]: "Ссылка на изображение (необязательно)",
+	[Key.momentsPublish]: "Опубликовать",
+	[Key.momentsCancel]: "Отмена",
+	[Key.momentsRetry]: "Повторить",
 	[Key.untitled]: "Без названия",
 	[Key.uncategorized]: "Без категории",
 	[Key.noTags]: "Нет тегов",
@@ -85,6 +100,8 @@ export const ru: Translation = {
 	[Key.readTime]: "Время чтения",
 	[Key.license]: "Лицензия",
 	[Key.bangumi]: "Бангуми",
+
+	[Key.techStack]: "Стек технологий",
 
 	// Фильтр и статус Бангуми текст
 	[Key.bangumiTitle]: "Мой план группы",

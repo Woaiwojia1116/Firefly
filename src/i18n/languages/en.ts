@@ -12,6 +12,8 @@ export const en: Translation = {
 	[Key.searchSummary]: "Summary",
 	[Key.searchContent]: "Content",
 	[Key.searchViewMore]: "View more results ({count} more)",
+	[Key.searchClear]: "Clear",
+	[Key.searchFocus]: "Focus",
 	[Key.other]: "Other",
 	[Key.all]: "All",
 
@@ -44,19 +46,32 @@ export const en: Translation = {
 	// Announcement
 	[Key.announcement]: "Announcement",
 	[Key.announcementClose]: "Close",
+	[Key.tools]: "Tools",
+	[Key.theme]: "Theme",
+	[Key.themeLight]: "Light",
+	[Key.themeDark]: "Dark",
+	[Key.themeSystem]: "System",
+	[Key.gotIt]: "Got it",
+	[Key.viewDetails]: "View details",
 
 	[Key.comments]: "Comments",
 	[Key.commentSection]: "Comments",
 	[Key.commentSubtitle]: "Share your thoughts and discuss with everyone",
 	[Key.commentNotConfigured]: "Comment system not configured",
-	[Key.guestbookCommentHint]:
-		"You have not enabled the comment system in the configuration file yet. After enabling it, visitors will be able to leave messages here",
 	[Key.friends]: "Friends",
 	[Key.friendsDescription]:
 		"Here are my friends, welcome to visit and communicate with each other",
-	[Key.guestbook]: "Guestbook",
-	[Key.guestbookDescription]:
-		"Welcome to leave your mark here, share your thoughts and suggestions",
+	[Key.moments]: "Moments",
+	[Key.momentsDescription]:
+		"Short notes and everyday fragments, one by one as they happen",
+	[Key.momentsEmpty]: "No moments yet — write the first one",
+	[Key.momentsCompose]: "New moment",
+	[Key.momentsMail]: "Owner email (must match config, asked once)",
+	[Key.momentsPlaceholder]: "What's on your mind…",
+	[Key.momentsImage]: "Image URL (optional)",
+	[Key.momentsPublish]: "Publish",
+	[Key.momentsCancel]: "Cancel",
+	[Key.momentsRetry]: "Retry",
 	[Key.untitled]: "Untitled",
 	[Key.uncategorized]: "Uncategorized",
 	[Key.noTags]: "No Tags",
@@ -85,6 +100,8 @@ export const en: Translation = {
 	[Key.readTime]: "Read time",
 	[Key.license]: "License",
 	[Key.bangumi]: "Bangumi",
+
+	[Key.techStack]: "Tech Stack",
 
 	// Bangumi Filter and Status Text
 	[Key.bangumiTitle]: "My Bangumi",

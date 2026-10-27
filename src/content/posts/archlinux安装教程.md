@@ -4,7 +4,7 @@ published: 2026-05-07
 pinned: false
 description: 在virtualbox安装arch系统
 tags: [Markdown, archlinux,虚拟机]
-category: linux
+category: Linux
 draft: false
 image: ./images/nn.jpg
 ---

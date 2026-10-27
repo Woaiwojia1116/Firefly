@@ -17,12 +17,7 @@ export const site = {
 
 {/* ========= 注意事项 ========== */}
 
-export const notes = [
-  { title: "互换原则", content: "请先将本站添加到您的友链页面，确认后会添加您的友链" },
-  { title: "链接维护", content: "友链网站长期无法访问或内容违规，将会被移除" },
-  { title: "内容要求", content: "内容积极向上，不含有任何含色情/反动/暴力等违法违规内容" },
-  { title: "站点要求", content: "支持 HTTPS，以原创内容为主，能够正常访问且有持续更新" },
-];
+{/* 注意事项已并入友链申请流程，如需恢复弹窗展示可传回 FriendsModal 的 notes 属性 */}
 
 {/* ============================= */}
 
@@ -31,60 +26,48 @@ import FriendsModal from "../../components/pages/FriendsModal.svelte";
 <div class="not-prose my-4">
   {/* ======== 玻璃按钮 → 弹窗（Svelte 交互组件） ======== */}
   <div class="mb-4">
-    <FriendsModal client:only="svelte" site={site} notes={notes} />
+    <FriendsModal client:only="svelte" site={site} />
   </div>
 
-  {/* ======== 申请友链 ======== */}
-  <div class="rounded-2xl border border-(--line-divider) overflow-hidden">
-    <div class="p-5 sm:p-6">
-      <h3 class="text-lg font-bold mb-5 flex items-center gap-2">
-        <span class="w-7 h-7 rounded-lg bg-(--primary)/10 flex items-center justify-center text-(--primary) text-sm">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-        </span>
-        申请友链
-      </h3>
+  {/* ======== 申请友链（无边框版：编号 + 底色填充表达层级） ======== */}
+  <div class="my-2">
+    <div class="flex items-baseline justify-between gap-3 mb-5">
+      <h3 class="text-lg font-bold m-0 text-(--ip-ink)">申请友链</h3>
+      <span class="font-mono text-[0.66rem] tracking-[0.18em] uppercase text-(--ip-ink-faint)">APPLY · FRIENDS</span>
+    </div>
 
-      <div class="space-y-0">
-        {/* Step 1 */}
-        <div class="flex gap-3.5">
-          <div class="flex flex-col items-center">
-            <div class="w-7 h-7 rounded-full bg-(--primary) text-white text-xs font-bold flex items-center justify-center shrink-0">1</div>
-            <div class="w-0.5 flex-1 bg-(--line-divider) my-1.5"></div>
-          </div>
-          <div class="pb-4">
-            <p class="font-semibold text-sm mb-1">添加本站友链</p>
-            <p class="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">请先在您的网站友链页面添加本站信息，可通过上方按钮弹窗中的「站点信息列表」获取</p>
+    <div class="space-y-5">
+      {/* Step 1 */}
+      <div class="flex gap-3.5">
+        <span class="font-mono text-[0.8rem] leading-5 text-(--ip-warm) shrink-0">01</span>
+        <div>
+          <p class="font-semibold text-sm mb-1 text-(--ip-ink)">添加本站友链</p>
+          <p class="text-xs leading-relaxed text-(--ip-ink-faint)">请先在您的网站友链页面添加本站信息，可通过上方「查看友链信息」弹窗中信笺的字迹获取（点击即可复制）</p>
+        </div>
+      </div>
+
+      {/* Step 2 */}
+      <div class="flex gap-3.5">
+        <span class="font-mono text-[0.8rem] leading-5 text-(--ip-warm) shrink-0">02</span>
+        <div class="min-w-0 flex-1">
+          <p class="font-semibold text-sm mb-1 text-(--ip-ink)">评论区留言 / 发送邮件至：<code class="px-1.5 py-0.5 rounded bg-(--ip-surface-2) font-mono text-[0.7rem] text-(--ip-ink-soft)">{site.email}</code></p>
+          <p class="text-xs leading-relaxed text-(--ip-ink-faint) mb-2">把下方模板复制修改后，到评论区或邮件中发送</p>
+          <div class="relative rounded-(--ip-radius-sm) bg-(--ip-surface-2) p-4 pr-10 font-mono text-[0.7rem] leading-relaxed text-(--ip-ink-soft) overflow-x-auto whitespace-pre">
+            <button onclick={`navigator.clipboard.writeText('站点名称：您的站点名称\n站点描述：您的站点描述\n站点链接：您的站点链接\n头像链接：您的站点头像');this.querySelectorAll('svg')[0].classList.add('hidden');this.querySelectorAll('svg')[1].classList.remove('hidden');setTimeout(()=>{this.querySelectorAll('svg')[0].classList.remove('hidden');this.querySelectorAll('svg')[1].classList.add('hidden')},1500)`} class="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-md text-(--ip-warm) hover:text-(--ip-ink) transition-colors cursor-pointer">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+              <svg class="w-3.5 h-3.5 hidden text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            </button>
+            {`站点名称：您的站点名称\n站点描述：您的站点描述\n站点链接：您的站点链接\n头像链接：您的站点头像`}
           </div>
         </div>
+      </div>
 
-        {/* Step 2 */}
-        <div class="flex gap-3.5">
-          <div class="flex flex-col items-center">
-            <div class="w-7 h-7 rounded-full bg-(--primary) text-white text-xs font-bold flex items-center justify-center shrink-0">2</div>
-            <div class="w-0.5 flex-1 bg-(--line-divider) my-1.5"></div>
-          </div>
-          <div class="pb-4">
-            <p class="font-semibold text-sm mb-1">评论区留言 / 发送邮件至：<code class="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10 text-[0.7rem]">{site.email}</code></p>
-            <p class="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">把下方模板复制修改后，到评论区或邮件中发送</p>
-            <div class="relative rounded-lg bg-black/5 dark:bg-white/5 p-4 pr-10 text-[0.7rem] leading-relaxed overflow-x-auto whitespace-pre">
-              <button onclick={`navigator.clipboard.writeText('站点名称：您的站点名称\\n站点描述：您的站点描述\\n站点链接：您的站点链接\\n头像链接：您的站点头像');this.querySelectorAll('svg')[0].classList.add('hidden');this.querySelectorAll('svg')[1].classList.remove('hidden');setTimeout(()=>{this.querySelectorAll('svg')[0].classList.remove('hidden');this.querySelectorAll('svg')[1].classList.add('hidden')},1500)`} class="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-md bg-black/10 dark:bg-white/10 text-(--btn-content) hover:opacity-80 transition-opacity cursor-pointer">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                <svg class="w-3.5 h-3.5 hidden text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-              </button>
-              {`站点名称：您的站点名称\n站点描述：您的站点描述\n站点链接：您的站点链接\n头像链接：您的站点头像`}
-            </div>
-          </div>
-        </div>
-
-        {/* Step 3 */}
-        <div class="flex gap-3.5">
-          <div class="flex flex-col items-center">
-            <div class="w-7 h-7 rounded-full bg-(--primary) text-white text-xs font-bold flex items-center justify-center shrink-0">3</div>
-          </div>
-          <div>
-            <p class="font-semibold text-sm mb-1">等待审核</p>
-            <p class="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">确认信息无误后会尽快添加您的友链</p>
-          </div>
+      {/* Step 3 */}
+      <div class="flex gap-3.5">
+        <span class="font-mono text-[0.8rem] leading-5 text-(--ip-warm) shrink-0">03</span>
+        <div>
+          <p class="font-semibold text-sm mb-1 text-(--ip-ink)">等待审核</p>
+          <p class="text-xs leading-relaxed text-(--ip-ink-faint)">确认信息无误后会尽快添加您的友链</p>
         </div>
       </div>
     </div>

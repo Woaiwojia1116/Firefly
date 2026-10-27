@@ -4,51 +4,27 @@
  * 因为主题状态（dark class、data-theme、--hue 等）会随 DOM 保持
  */
 (function () {
-  var LIGHT_MODE = "light";
   var DARK_MODE = "dark";
-  var SYSTEM_MODE = "system";
 
   // 从 data-* 属性读取配置
   var html = document.documentElement;
   var config = html.getAttribute("data-theme-config");
   var opts = config ? JSON.parse(config) : {};
 
-  var defaultMode = opts.defaultMode || "light";
   var configHue = opts.hue || 250;
   var darkTheme = opts.darkTheme || "github-dark";
-  var lightTheme = opts.lightTheme || "github-light";
   var cardTransparentOpacity = typeof opts.cardTransparentOpacity === "number"
     ? opts.cardTransparentOpacity
     : 0.6;
 
-  // 获取存储的主题
-  var theme = localStorage.getItem("theme") || defaultMode;
-
-  // 获取系统主题
-  function getSystemTheme() {
-    return window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? DARK_MODE
-      : LIGHT_MODE;
-  }
-
-  // 解析主题
-  function resolveTheme(themeValue) {
-    if (themeValue === SYSTEM_MODE) return getSystemTheme();
-    return themeValue;
-  }
-
-  var resolvedTheme = resolveTheme(theme);
-  var isDark = resolvedTheme === DARK_MODE;
+  // 站点为纯暗色主题：忽略存储与系统偏好，恒为 dark
+  var isDark = true;
 
   // 应用主题
-  if (isDark) {
-    html.classList.add("dark");
-  } else {
-    html.classList.remove("dark");
-  }
+  html.classList.add("dark");
 
   // 设置 Expressive Code 主题
-  html.setAttribute("data-theme", isDark ? darkTheme : lightTheme);
+  html.setAttribute("data-theme", darkTheme);
 
   // 加载 hue
   var hue = localStorage.getItem("hue") || configHue;

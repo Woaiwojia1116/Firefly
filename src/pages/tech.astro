@@ -1,0 +1,400 @@
+---
+import { Icon } from "astro-icon/components";
+import dayjs from "dayjs";
+import { siteConfig, techStackConfig } from "@/config";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import PageTitle from "@/components/layout/PageTitle.astro";
+import pkg from "../../package.json";
+
+const cfg = techStackConfig;
+const version = pkg.version;
+
+// 建站天数（与首页「运行」口径一致）
+const uptimeDays = Math.max(
+	0,
+	dayjs().diff(dayjs(siteConfig.siteStartDate), "day"),
+);
+
+// 展开分组为带序号的输出行，供逐行浮现动画使用
+interface OutputLine {
+	type: "sec" | "row";
+	title?: string;
+	label?: string;
+	value?: string;
+	index: number;
+}
+let lineIndex = 0;
+const outputLines: OutputLine[] = cfg.sections.flatMap((section) => {
+	const lines: Omit<OutputLine, "index">[] = [];
+	if (section.title) lines.push({ type: "sec", title: section.title });
+	for (const entry of section.entries) {
+		lines.push({ type: "row", label: entry.label, value: entry.value });
+	}
+	return lines.map((l) => ({ ...l, index: lineIndex++ }));
+});
+const lastLineIndex = lineIndex;
+
+// value 中 **文本** 标记暖色强调
+const parseEmphasis = (value: string) => value.split(/(\*\*[^*]+\*\*)/g);
+const isEmphasis = (part: string) => part.startsWith("**") && part.endsWith("**");
+---
+
+<MainGridLayout title={i18n(I18nKey.techStack)} hideSidebars={true}>
+  <div class="ip ip-tech">
+    <PageTitle
+      eyebrow="TECH STACK"
+      title={i18n(I18nKey.techStack)}
+      desc="会的东西都在这里了"
+      icon="material-symbols:terminal"
+      meta={[`v${version}`]}
+    />
+
+    <div class="tech-term" role="img" aria-label="技术栈终端展示">
+      <!-- 终端标题栏 -->
+      <div class="tech-term-bar">
+        <span class="tech-dot tech-dot--r" aria-hidden="true"></span>
+        <span class="tech-dot tech-dot--y" aria-hidden="true"></span>
+        <span class="tech-dot tech-dot--g" aria-hidden="true"></span>
+        <span class="tech-term-title">{cfg.user}@{cfg.host}: ~/blog</span>
+      </div>
+
+      <div class="tech-term-body">
+        <!-- 命令行：打字机输入 -->
+        <p class="tech-cmd" aria-hidden="true">
+          <span class="tech-prompt">{cfg.user}@{cfg.host}</span><span class="tech-path">:~$</span>
+          <span class="tech-cmd-text">{cfg.command}</span><span class="tech-caret tech-caret--typing"></span>
+        </p>
+
+        <!-- 输出：ASCII 画 + 信息（neofetch 式左右布局） -->
+        <div class="tech-output">
+          <pre class="tech-ascii" data-caption={cfg.asciiCaption} aria-hidden="true">{cfg.asciiArt.join("\n")}</pre>
+
+          <div class="tech-info">
+            {outputLines.map((line) => (
+              <>
+                {line.type === "sec" && (
+                  <p class="tech-sec" style={`--i:${line.index}`} aria-hidden="true">── {line.title} ──</p>
+                )}
+                {line.type === "row" && (
+                  <p class="tech-row" style={`--i:${line.index}`} aria-hidden="true">
+                    <span class="tech-key">{line.label}</span>
+                    <span class="tech-val">
+                      {parseEmphasis(line.value ?? "").map((part) =>
+                        isEmphasis(part) ? <b class="tech-hl">{part.slice(2, -2)}</b> : part,
+                      )}
+                    </span>
+                  </p>
+                )}
+              </>
+            ))}
+            <p class="tech-row tech-os" style={`--i:${lastLineIndex}`} aria-hidden="true">
+              <span class="tech-key">blog</span>
+              <span class="tech-val">Firefly <b class="tech-hl">v{version}</b> · 已运行 {uptimeDays} 天</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- 待输入行：闪烁光标 -->
+        <p class="tech-cmd tech-cmd--idle" aria-hidden="true">
+          <span class="tech-prompt">{cfg.user}@{cfg.host}</span><span class="tech-path">:~$</span>
+          <span class="tech-caret tech-caret--blink"></span>
+        </p>
+      </div>
+    </div>
+
+    <p class="tech-note">{cfg.note}</p>
+
+    <!-- 屏幕阅读器可读的完整文本 -->
+    <ul class="sr-only-tech">
+      {cfg.sections.map((section) => (
+        <>
+          {section.title && <li>{section.title}</li>}
+          {section.entries.map((entry) => (
+            <li>{entry.label}: {entry.value.replaceAll("**", "")}</li>
+          ))}
+        </>
+      ))}
+    </ul>
+  </div>
+</MainGridLayout>
+
+<style>
+  /* ========== 页面容器 ========== */
+  .ip-tech {
+    max-width: 780px;
+    margin: 0 auto;
+    padding-bottom: 2rem;
+  }
+
+  /* ========== 终端窗口 ========== */
+  .tech-term {
+    margin-top: 1.5rem;
+    border-radius: 0.9rem;
+    overflow: hidden;
+    background: #0e131d;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+      0 20px 50px rgba(10, 15, 30, 0.35),
+      0 4px 14px rgba(10, 15, 30, 0.2);
+    font-family: ui-monospace, "Cascadia Code", "JetBrains Mono", Consolas,
+      "Noto Sans Mono", monospace;
+  }
+
+  html.dark .tech-term {
+    background: #0b0f18;
+    box-shadow:
+      0 20px 50px rgba(0, 0, 0, 0.5),
+      0 4px 14px rgba(0, 0, 0, 0.3);
+  }
+
+  .tech-term-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.6rem 0.9rem;
+    background: rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .tech-dot {
+    width: 0.68rem;
+    height: 0.68rem;
+    border-radius: 9999px;
+  }
+
+  .tech-dot--r { background: #e0655f; }
+  .tech-dot--y { background: #d8a34c; }
+  .tech-dot--g { background: #58a86b; }
+
+  .tech-term-title {
+    margin-left: 0.5rem;
+    font-size: 0.72rem;
+    color: rgba(200, 210, 224, 0.55);
+    letter-spacing: 0.03em;
+  }
+
+  .tech-term-body {
+    padding: 1.1rem 1.25rem 1rem;
+    overflow-x: auto;
+  }
+
+  /* ========== 命令行 ========== */
+  .tech-cmd {
+    margin: 0 0 0.9rem;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+
+  .tech-prompt {
+    color: var(--ip-warm);
+    font-weight: 600;
+  }
+
+  .tech-path {
+    color: rgba(200, 210, 224, 0.6);
+    margin-right: 0.4rem;
+  }
+
+  /* 打字机：8 字符逐格显出 */
+  .tech-cmd-text {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: bottom;
+    width: 8ch;
+    color: #c9d2e0;
+    animation: techType 0.9s steps(8) 0.35s both;
+  }
+
+  @keyframes techType {
+    from { width: 0ch; }
+    to   { width: 8ch; }
+  }
+
+  .tech-cmd--idle {
+    margin: 0.9rem 0 0;
+    opacity: 0;
+    animation: techLineIn 0.2s ease-out 2.6s both;
+  }
+
+  /* ========== 输出区 ========== */
+  .tech-output {
+    display: flex;
+    align-items: center;
+    gap: 1.75rem;
+    min-width: 0;
+  }
+
+  .tech-ascii {
+    margin: 0;
+    flex-shrink: 0;
+    font-size: clamp(6px, 1.35vw, 11px);
+    line-height: 1.25;
+    color: var(--ip-warm);
+    opacity: 0.92;
+    user-select: none;
+    animation: techLineIn 0.3s ease-out 1.35s both;
+  }
+
+  .tech-ascii::after {
+    content: attr(data-caption);
+    display: block;
+    margin-top: 0.4rem;
+    text-align: center;
+    font-size: 0.66rem;
+    letter-spacing: 0.12em;
+    color: rgba(200, 210, 224, 0.45);
+  }
+
+  .tech-info {
+    min-width: 0;
+  }
+
+  .tech-sec {
+    margin: 0.55rem 0 0.15rem;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    color: rgba(200, 210, 224, 0.42);
+  }
+
+  .tech-sec:first-child {
+    margin-top: 0;
+  }
+
+  .tech-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.9rem;
+    margin: 0.28rem 0;
+    font-size: 0.8rem;
+    line-height: 1.5;
+  }
+
+  .tech-key {
+    flex-shrink: 0;
+    width: 8.5ch;
+    text-align: right;
+    color: rgba(200, 210, 224, 0.55);
+  }
+
+  .tech-val {
+    color: #c9d2e0;
+  }
+
+  .tech-hl {
+    font-weight: 600;
+    font-style: normal;
+    color: var(--ip-warm);
+  }
+
+  .tech-os {
+    margin-top: 0.6rem;
+    padding-top: 0.55rem;
+    border-top: 1px dashed rgba(255, 255, 255, 0.1);
+  }
+
+  /* 输出行逐行浮现（紧跟命令打完的节奏） */
+  .tech-sec,
+  .tech-row {
+    opacity: 0;
+    animation: techLineIn 0.22s ease-out calc(1.4s + var(--i) * 0.05s) both;
+  }
+
+  @keyframes techLineIn {
+    from {
+      opacity: 0;
+      transform: translateY(3px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* ========== 光标 ========== */
+  .tech-caret {
+    display: inline-block;
+    width: 0.55em;
+    height: 1.05em;
+    margin-left: 0.1rem;
+    vertical-align: text-bottom;
+    background: var(--ip-warm);
+  }
+
+  .tech-caret--typing {
+    opacity: 0;
+    animation:
+      techCaretIn 0.01s linear 0.35s both,
+      techBlink 0.85s steps(1) 0.35s 3,
+      techCaretOut 0.01s linear 1.25s both;
+  }
+
+  .tech-caret--blink {
+    animation: techBlink 1.1s steps(1) 2.6s infinite;
+    opacity: 0;
+  }
+
+  @keyframes techCaretIn { from { opacity: 1; } to { opacity: 1; } }
+  @keyframes techCaretOut { from { opacity: 0; } to { opacity: 0; } }
+
+  @keyframes techBlink {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+  }
+
+  /* ========== 备注 ========== */
+  .tech-note {
+    margin: 0.9rem 0.15rem 0;
+    font-size: 0.72rem;
+    color: var(--ip-ink-faint);
+    text-align: center;
+  }
+
+  .sr-only-tech {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* ========== 小屏 ========== */
+  @media (max-width: 560px) {
+    .tech-output {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .tech-ascii {
+      font-size: 5.5px;
+      margin: 0 auto;
+    }
+
+    .tech-key {
+      width: 7.5ch;
+    }
+  }
+
+  /* ========== 减少动态 ========== */
+  @media (prefers-reduced-motion: reduce) {
+    .tech-cmd-text,
+    .tech-cmd--idle,
+    .tech-ascii,
+    .tech-sec,
+    .tech-row,
+    .tech-caret--blink {
+      animation: none;
+      opacity: 1;
+      width: 8ch;
+    }
+
+    .tech-caret--typing {
+      animation: none;
+      opacity: 0;
+    }
+  }
+</style>

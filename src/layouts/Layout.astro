@@ -7,8 +7,8 @@ import FancyboxManager from "@components/features/FancyboxManager.astro";
 import FontManager from "@components/features/FontManager.astro";
 import LottieAnimation from "@components/features/LottieAnimation.astro";
 import MusicManager from "@components/features/MusicManager.astro";
+import RainEffect from "@components/features/RainEffect.astro";
 import SakuraEffect from "@components/features/SakuraEffect.astro";
-import Avatar from "@components/layout/Avatar.astro";
 import ConfigCarrier from "@components/layout/ConfigCarrier.astro";
 
 import {
@@ -25,11 +25,15 @@ import {
 } from "@/constants/constants";
 import { defaultFavicons } from "@/constants/icon";
 import type { Favicon } from "@/types/config";
+import ImageWrapper from "@/components/common/ImageWrapper.astro";
 import { getDefaultBackground, isHomePage } from "@/utils/layout-utils";
 import { url } from "@/utils/url-utils";
 
 import "@/styles/main.css";
 import "@/styles/sakura-theme.css";
+import "@/styles/inner-pages.css";
+import "@/styles/night-pages.css";
+import "@/styles/tokens.css";
 import "@/styles/variables.styl";
 import "@/styles/markdown-extend.styl";
 import "@rehype-callouts-theme";
@@ -101,6 +105,12 @@ const siteLang = lang.replace("_", "-");
 <html lang={siteLang} class="bg-(--page-bg) text-[14px] md:text-[16px]" data-wallpaper-mode={backgroundWallpaper.mode}>
   <head>
     <meta charset="UTF-8" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700;900&family=Playfair+Display:wght@600;700&family=Zhi+Mang+Xing&display=swap"
+      rel="stylesheet"
+    />
     {siteConfig.analytics?.googleAnalyticsId && (
             <GoogleAnalytics analyticsId={siteConfig.analytics.googleAnalyticsId} />
     )}
@@ -331,8 +341,15 @@ const siteLang = lang.replace("_", "-");
 
           // 处理wallpaper-wrapper的显示
           var wallpaperWrapper = document.getElementById("wallpaper-wrapper");
+          // 文章详情页（content-wrapper 带 post-narrow）：彻底不显示壁纸，
+          // 直接强制行内隐藏并跳过所有壁纸模式分支，避免被下述脚本再置为可见。
+          var isPostNarrow = !!document.querySelector(
+            "#content-wrapper.post-narrow",
+          );
 
-          if (wallpaperMode === WALLPAPER_OVERLAY) {
+          if (isPostNarrow && wallpaperWrapper) {
+            wallpaperWrapper.style.setProperty("display", "none", "important");
+          } else if (wallpaperMode === WALLPAPER_OVERLAY) {
             if (wallpaperWrapper) {
               wallpaperWrapper.classList.add("wallpaper-overlay");
               wallpaperWrapper.style.display = "block";
@@ -435,6 +452,29 @@ const siteLang = lang.replace("_", "-");
 
     <div id="progress-bar"></div>
 
+    <!-- 全站夜色背景：雨夜窗前的山城灯火。
+         固定铺满视口，所有内页浸在同一张照片里；首页有自己的画布，
+         通过 body.homepage 在 CSS 中隐藏（Swup 切页时只切类名，节点常驻）。 -->
+    <div class="site-nightbackdrop" aria-hidden="true">
+      <ImageWrapper
+        class="site-nightbackdrop__img"
+        src="assets/images/雨夜窗前的山城灯火.png"
+        alt=""
+        position="center 58%"
+        loading="eager"
+        fetchpriority="high"
+        widths={[1280, 1920, 2560]}
+        sizes="100vw"
+      />
+      <i class="site-nightbackdrop__shade"></i>
+    </div>
+
+    <!-- 全站胶片颗粒层（tokens.css 提供样式，reduced-motion 时静止） -->
+    <div class="fy-grain" aria-hidden="true"></div>
+
+    <!-- 全站模拟雨丝特效（配置见 backgroundWallpaper.ts 的 rain 字段） -->
+    <RainEffect />
+
     <!-- 页面顶部渐变高光效果 - 只在full和semifull模式下显示 -->
     {shouldShowTopHighlight && <div class="top-gradient-highlight" />}
     <ConfigCarrier />
@@ -444,16 +484,6 @@ const siteLang = lang.replace("_", "-");
     <LottieAnimation mode="loading" />
 
     <MusicManager />
-
-    <!-- 首页头像组件 - 樱花主题 -->
-    <div class="homepage-avatar">
-      <Avatar
-        imageSrc={backgroundWallpaper.banner?.avatar?.imageSrc || "/assets/images/default-avatar.png"}
-        imageAlt={backgroundWallpaper.banner?.avatar?.imageAlt || "Avatar"}
-        label={backgroundWallpaper.banner?.avatar?.label || "文字"}
-        imagePosition={backgroundWallpaper.banner?.avatar?.imagePosition || "center"}
-      />
-    </div>
 
     <slot />
 
@@ -714,97 +744,85 @@ const siteLang = lang.replace("_", "-");
       @apply transition-all duration-300;
     }
 
-    /* 首页全屏背景 — 背景铺满视口 */
+    /* ═══ 首页（沉浸式叙事页）画布 ═════════════════════════════════════
+       以下规则全部限定在 html body.homepage 之下，只作用于首页第 1 页 /，
+       不会影响文章详情、归档、时间轴等其它页面。
+       原则：只调整可见性，不删除任何 Swup 容器节点。 */
+
+    /* 1. 隐藏全局全屏壁纸，避免与新首页各章背景叠加。
+          注意：仅隐藏、不删除节点 —— #banner-overlay-container 与
+          #banner-dim-container 是 Swup 容器，必须始终存在于 DOM 中。 */
     html body.homepage #wallpaper-wrapper {
-        display: block !important;
-        position: fixed !important;
-        inset: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
+        display: none !important;
+    }
+
+    /* 2. 主内容区回到正常文档流：从页面顶部开始，可正常滚动、可交互 */
+    html body.homepage .absolute.w-full.z-30 {
+        position: static !important;
         top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        bottom: 0 !important;
-        transform: none !important;
-        z-index: 0 !important;
         opacity: 1 !important;
-        filter: none !important;
+        visibility: visible !important;
         pointer-events: auto !important;
+        transform: none !important;
         transition: none !important;
     }
-    html body.homepage #banner {
-        height: 100% !important;
+
+    /* 3. 满宽画布：解除页面宽度限制与栅格内边距 */
+    html body.homepage .absolute.w-full.z-30 > .relative {
+        width: 100% !important;
+        max-width: none !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
     }
 
-    /* 首页：覆盖子元素 img 的模糊效果 */
-    html body.homepage #wallpaper-wrapper img {
-        filter: none !important;
+    html body.homepage #main-grid {
+        display: block !important;
+        width: 100% !important;
+        padding: 0 !important;
+        gap: 0 !important;
+        transform: none !important;
     }
 
-    /* 首页：确保 banner 文字可见（覆盖 overlay 模式的隐藏规则） */
-    html body.homepage #wallpaper-wrapper .banner-home-text-overlay {
-        display: flex !important;
+    html body.homepage #swup-container,
+    html body.homepage #content-wrapper {
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
 
-    /* 首页：内容区基础样式，显示时过渡动画 */
-    html body.homepage .absolute.w-full.z-30 {
-        transition: opacity 0.8s ease, transform 0.8s ease, top 0.6s ease !important;
+    /* 4. 首页隐藏与叙事无关的站点组件：保留 DOM、仅隐藏，其它页面照常 */
+    html body.homepage #left-sidebar-wrapper,
+    html body.homepage #right-sidebar-static,
+    html body.homepage #mobile-bottom-sidebar,
+    html body.homepage #category-bar-wrapper,
+    html body.homepage #scroll-hint,
+    html body.homepage .banner-home-text-overlay {
+        display: none !important;
     }
 
-    /* 首页：初始隐藏内容区，隐藏时更快 */
-    html body.homepage:not(.has-scrolled) .absolute.w-full.z-30 {
-        opacity: 0 !important;
-        pointer-events: none !important;
-        visibility: hidden !important;
-        top: 100vh !important;
-        transform: translateY(0) !important;
-        transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease, top 0.4s ease !important;
-    }
-
-    /* 首页滚动后：显示内容区，从视口中部开始 */
-    html body.homepage.has-scrolled .absolute.w-full.z-30 {
-        opacity: 1 !important;
-        pointer-events: auto !important;
-        visibility: visible !important;
-        top: 50vh !important;
-        transform: translateY(0) !important;
-    }
-
-    /* 移动端首页也全屏 */
-    @media (max-width: 1023px) {
-        html body.homepage #wallpaper-wrapper {
-            height: 100% !important;
-            min-height: 100% !important;
-            top: 0 !important;
-        }
-    }
-
-    /* 首页卡片使用主题适配的纯色背景 */
+    /* 5. 首页卡片沿用主题适配背景（保留原有规则） */
     html body.homepage .card-base {
         background: var(--card-bg) !important;
     }
 
-    /* 首页滚动后隐藏banner标题 */
-    html body.homepage.has-scrolled .banner-home-text-overlay {
-        opacity: 0 !important;
-        pointer-events: none !important;
+    /* 6. 页脚容器在首页取消栅格外边距；配色由第 5 章向页面底色的过渡承接，
+          因此不需要覆盖页脚文字颜色，亮/暗主题下都可读。 */
+    html body.homepage .footer {
+        margin: 0 !important;
+        padding: 0 !important;
     }
 
-    /* 头像容器 - 默认隐藏 */
-    .homepage-avatar {
-        display: none;
+    /* 7. 关闭首页内容容器的 onload-animation。
+          fade-in-scale 结束后仍保留 transform: scale(1)，会为 position: fixed
+          建立包含块，导致 ScrollTrigger 的 pin 定位失效；首页有自己的入场。 */
+    html body.homepage #content-wrapper {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
     }
 
-    /* 只在首页显示头像 */
-    body.homepage .homepage-avatar {
-        display: block;
-    }
-
-    /* 非首页或无壁纸模式时隐藏头像 */
-    body:not(.homepage) .homepage-avatar,
-    html[data-wallpaper-mode="none"] .homepage-avatar {
-        display: none !important;
-    }
+    /* 旧的首页头像 / 标签组件已整块移除，相关样式一并删除 */
   }
 
   @layer utilities {
@@ -834,7 +852,7 @@ const siteLang = lang.replace("_", "-");
       left: 0 !important;
       right: 0 !important;
       z-index: 80 !important;
-      height: 4.5rem !important;
+      height: 4rem !important;
     }
 
     body.sticky-navbar #navbar-wrapper {
@@ -889,7 +907,7 @@ const siteLang = lang.replace("_", "-");
     }
 
     body.sticky-navbar #top-row {
-      height: 4.5rem !important;
+      height: 4rem !important;
     }
   }
 </style>
@@ -1134,7 +1152,7 @@ function disableAnimation() {
         var revealObserver = new IntersectionObserver(function(entries) {
           entries.forEach(function(entry) {
             if (entry.isIntersecting) {
-              entry.target.style.animationPlayState = 'running';
+              (entry.target as HTMLElement).style.animationPlayState = 'running';
               revealObserver.unobserve(entry.target);
             }
           });
@@ -1261,6 +1279,30 @@ function disableAnimation() {
         ".absolute.w-full.z-30"
       ) as HTMLElement | null;
 
+      // 主内容区外层包裹不在任何 Swup 容器内，换页时它的内联 top 和
+      // no-banner-layout 类仍停留在初始加载页的值：从首页（top:100vh）
+      // 跳到归档/友链/动态等内页时，body.homepage 一移除，残留的 100vh
+      // 立即生效，把整屏内容压出视口（大片空白，刷新才恢复）。这里在
+      // 每次跳转开始时按目标页与当前壁纸模式同步，数值与 MainGridLayout
+      // 的 SSR 计算（finalMainPanelTop）保持一致。
+      if (mainContentWrapper) {
+        const isBannerMode =
+          document.documentElement.getAttribute("data-wallpaper-mode") ===
+          "banner";
+        if (isHomePage) {
+          mainContentWrapper.classList.remove("no-banner-layout");
+          mainContentWrapper.style.top = "100vh";
+        } else if (isBannerMode) {
+          // banner 模式内页偏移：BANNER_HEIGHT(35vh) - MAIN_PANEL_OVERLAPS_BANNER_HEIGHT(3.5rem)
+          mainContentWrapper.classList.remove("no-banner-layout");
+          mainContentWrapper.style.top = "calc(35vh - 3.5rem)";
+        } else {
+          // overlay / none 模式：挂上类，由 layout-styles.css 钉回 5.5rem
+          mainContentWrapper.classList.add("no-banner-layout");
+          mainContentWrapper.style.top = "5.5rem";
+        }
+      }
+
       if (isMobile && wallpaperWrapper && mainContentWrapper) {
         if (isHomePage) {
           // 首页：禁用主内容区域的过渡动画，防止文章列表下移
@@ -1288,8 +1330,15 @@ function disableAnimation() {
         }
       } else if (!isMobile && wallpaperWrapper) {
         // 桌面端：确保banner正常显示
-        wallpaperWrapper.style.display = "";
-        wallpaperWrapper.classList.remove("mobile-hide-banner");
+        // 但文章详情页（post-narrow）必须例外：此处若不拦，下面的
+        // style.display = "" 会把前面强制写入的 display:none!important 整条清掉，
+        // 壁纸又会露出来。
+        if (document.querySelector("#content-wrapper.post-narrow")) {
+          wallpaperWrapper.style.setProperty("display", "none", "important");
+        } else {
+          wallpaperWrapper.style.display = "";
+          wallpaperWrapper.classList.remove("mobile-hide-banner");
+        }
         if (mainContentWrapper) {
           mainContentWrapper.classList.remove("mobile-main-no-banner");
         }
@@ -1338,20 +1387,8 @@ function disableAnimation() {
         }, 600); // 等待主内容区动画完成（0.4s + 0.1s delay + 100ms buffer）
       }
 
-      // 同步主题状态 - 解决从首页进入文章页面时代码块渲染问题
-      const storedTheme = localStorage.getItem("theme") || siteConfig.themeColor.defaultMode || "light";
-      let isDark = false;
-      
-      // 处理 system 模式
-      if (storedTheme === "system") {
-        isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      } else {
-        isDark = storedTheme === "dark";
-      }
-      
-      const expectedTheme = isDark
-        ? expressiveCodeConfig.darkTheme
-        : expressiveCodeConfig.lightTheme;
+      // 同步主题状态 - 站点为纯暗色主题，代码块恒用暗色主题
+      const expectedTheme = expressiveCodeConfig.darkTheme;
       const currentTheme = document.documentElement.getAttribute("data-theme");
 
       // 如果主题不匹配，静默更新（不触发事件，避免重新加载效果）
@@ -1671,6 +1708,8 @@ function disableAnimation() {
   // Initialize wallpaper mode
   import { initWallpaperMode, initThemeListener } from "@/utils/setting-utils";
   import { initIconLoader } from "@/utils/icon-loader";
+  import { initPageEntrance } from "@/utils/page-entrance";
+  initPageEntrance();
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
       updateMainGridCols();

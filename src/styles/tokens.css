@@ -1,0 +1,110 @@
+/* ══════════════════════════════════════════════════════════════════════
+   萤火 · 夜航 —— 全站统一令牌
+   ────────────────────────────────────────────────────────────────────────
+   夜为默认身份：html.dark 时使用夜幕取值；昼（无 .dark）为纸面变体。
+   取值沿用内页设计系统（inner-pages.css 的墨 / 纸 / 暖调），全站一套语言。
+   首页组件（fyh-*）与后续内页改造都从这里取色，不再各自定义色值。
+
+   注意：--fy-* 只新增不覆盖，不影响 Fuwari 原有的 --page-bg 等令牌。
+   ══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── 字体与动效（两种模式共用）────────────────────────────────────── */
+  --fy-serif:
+    "Noto Serif SC", "Source Han Serif SC", "Songti SC", "SimSun", serif;
+  --fy-mono:
+    "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, SFMono-Regular,
+    Menlo, Consolas, monospace;
+  --fy-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --fy-dur-fast: 160ms;
+  --fy-dur-med: 320ms;
+  --fy-dur-slow: 640ms;
+
+  /* 萤火点：全站唯一标记。静态、不呼吸，只在悬停 / 激活时发光 */
+  --fy-dot-size: 7px;
+}
+
+/* ── 夜（默认身份）────────────────────────────────────────────────── */
+html.dark {
+  --fy-bg-0: #0e0c12;
+  --fy-bg-1: #16131a;
+  --fy-bg-2: #201b26;
+  --fy-ink: #ece5ea;
+  --fy-ink-soft: rgba(236, 229, 234, 0.64);
+  --fy-ink-faint: rgba(236, 229, 234, 0.42);
+  --fy-accent: #e6a173;
+  --fy-accent-deep: #c97b4a;
+  --fy-moon: #93a7e0;
+  --fy-line: rgba(236, 229, 234, 0.14);
+  --fy-line-soft: rgba(236, 229, 234, 0.08);
+  --fy-glow: rgba(230, 161, 115, 0.32);
+  --fy-grain-opacity: 0.05;
+}
+
+/* ── 昼（纸面变体）────────────────────────────────────────────────── */
+html:not(.dark) {
+  --fy-bg-0: #fbf7f4;
+  --fy-bg-1: #f4eee8;
+  --fy-bg-2: #ffffff;
+  --fy-ink: #2a232c;
+  --fy-ink-soft: rgba(42, 35, 44, 0.66);
+  --fy-ink-faint: rgba(42, 35, 44, 0.45);
+  --fy-accent: #c97b4a;
+  --fy-accent-deep: #b5673a;
+  --fy-moon: #a8bce0;
+  --fy-line: rgba(42, 35, 44, 0.16);
+  --fy-line-soft: rgba(42, 35, 44, 0.08);
+  --fy-glow: rgba(201, 123, 74, 0.25);
+  --fy-grain-opacity: 0.032;
+}
+
+/* ── 萤火点标记 ───────────────────────────────────────────────────── */
+.fy-dot {
+  display: inline-block;
+  width: var(--fy-dot-size);
+  height: var(--fy-dot-size);
+  border-radius: 50%;
+  background: var(--fy-accent);
+  flex: none;
+}
+
+.fy-dot--lit {
+  box-shadow:
+    0 0 10px 2px var(--fy-glow),
+    0 0 3px var(--fy-accent);
+}
+
+/* ── 全站胶片颗粒 ───────────────────────────────────────────────────
+   不是粒子：一张 feTurbulence 噪点贴图按步进错位重铺，模拟银盐颗粒。
+   置于内容之上、导航（z-30）与弹层之下；reduced-motion 时静止。 */
+.fy-grain {
+  position: fixed;
+  inset: -64px;
+  z-index: 4;
+  pointer-events: none;
+  opacity: var(--fy-grain-opacity, 0.04);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='180' height='180' filter='url(%23n)'/></svg>");
+  background-size: 180px 180px;
+  animation: fy-grain-jitter 0.9s steps(3) infinite;
+}
+
+@keyframes fy-grain-jitter {
+  0% {
+    transform: translate(0, 0);
+  }
+  33% {
+    transform: translate(-28px, 14px);
+  }
+  66% {
+    transform: translate(18px, -22px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fy-grain {
+    animation: none;
+  }
+}

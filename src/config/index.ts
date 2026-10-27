@@ -38,6 +38,7 @@ export { fontConfig } from "./fontConfig"; // 字体配置
 export { footerConfig } from "./footerConfig"; // 页脚配置
 export { friendsPageConfig, getEnabledFriends } from "./friendsConfig"; // 友链配置
 export { galleryConfig } from "./galleryConfig"; // 相册配置
+export { cinematicHomeConfig } from "./homeConfig"; // 沉浸式首页配置（仅首页第 1 页使用）
 export { licenseConfig } from "./licenseConfig"; // 许可证配置
 // 组件配置
 export { musicPlayerConfig } from "./musicConfig"; // 音乐播放器配置
@@ -51,3 +52,4 @@ export { sidebarLayoutConfig } from "./sidebarConfig"; // 侧边栏布局配置
 // 核心配置
 export { siteConfig } from "./siteConfig"; // 站点基础配置
 export { sponsorConfig } from "./sponsorConfig"; // 赞助配置
+export { techStackConfig } from "./techStackConfig"; // 技术栈页面配置

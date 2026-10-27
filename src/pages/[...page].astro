@@ -1,8 +1,11 @@
 ---
 import type { GetStaticPaths } from "astro";
 import Pagination from "@/components/common/Pagination.astro";
+import CinematicHome from "@/components/layout/CinematicHome.astro";
 import PostPage from "@/components/layout/PostPage.astro";
 import { siteConfig } from "@/config";
+import I18nKey from "@i18n/i18nKey";
+import { i18n } from "@i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
 import { getSortedPosts } from "@/utils/content-utils";
 export const getStaticPaths = (async ({ paginate }) => {
@@ -16,17 +19,36 @@ export const getStaticPaths = (async ({ paginate }) => {
 const { page } = Astro.props;
 
 const len = page.data.length;
+
+// 首页第 1 页使用沉浸式叙事首页；第 2 页及以后保持原有文章列表 + 分页。
+// getStaticPaths 未改动，因此路由结构与分页数量完全不变。
+const isFirstPage = page.currentPage === 1;
 ---
 
-<MainGridLayout>
-  <PostPage page={page} />
+<MainGridLayout hideSidebars={true}>
   {
-    page.total > page.size && (
-      <Pagination
-        class="mx-auto onload-animation"
-        page={page}
-        style={`animation-delay: calc(var(--content-delay) + ${len * 50}ms)`}
-      />
+    isFirstPage ? (
+      <CinematicHome posts={page.data} />
+    ) : (
+      <div class="ip ip-list">
+        <header class="ip-head">
+          <p class="ip-eyebrow">Latest</p>
+          <span class="ip-title-mark"></span>
+          <p class="ip-meta">
+            <span>第 {page.currentPage} / {page.lastPage} 页</span>
+            <span class="ip-sep">·</span>
+            <span>{page.total} {i18n(I18nKey.postsCount)}</span>
+          </p>
+        </header>
+        <PostPage page={page} />
+        {page.total > page.size && (
+          <Pagination
+            class="mx-auto onload-animation"
+            page={page}
+            style={`animation-delay: calc(var(--content-delay) + ${len * 50}ms)`}
+          />
+        )}
+      </div>
     )
   }
 </MainGridLayout>

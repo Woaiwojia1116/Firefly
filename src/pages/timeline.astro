@@ -5,7 +5,6 @@ import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
 import { getFileDirFromPath, getPostUrlBySlug } from "@utils/url-utils";
 import type { ImageMetadata } from "astro";
-import mikuAvatar from "@/assets/images/miku.png";
 import { backgroundWallpaper } from "@/config";
 import { getPostsForTimeline } from "@/utils/content-utils";
 
@@ -15,71 +14,35 @@ interface ArticleInfo {
 	title: string;
 	published: Date;
 	image?: string;
+	category?: string;
 	timelineOnly?: boolean;
+	description?: string;
 }
 
-interface MonthGroup {
-	month: number; // 1–12
-	articles: ArticleInfo[];
-}
-
-interface YearGroup {
-	year: number;
-	months: MonthGroup[];
-}
-
-// ── Fetch & group posts: year → month → articles ─────────────────────────
+// ── 统一展示：不按年→月分组 ─────────────────────────────────────────────
+// 直接沿用项目原有的排序（置顶优先，其后按发布日期倒序），一年一节挂到底。
 const allPosts = await getPostsForTimeline();
 
-const groupedMap = new Map<number, Map<number, ArticleInfo[]>>();
+const articles: ArticleInfo[] = allPosts.map((post) => ({
+	id: post.id,
+	title: post.data.title,
+	published: new Date(post.data.published),
+	image: post.data.image as string | undefined,
+	category: post.data.category as string | undefined,
+	timelineOnly: post.data.timelineOnly,
+	description: post.data.description as string | undefined,
+}));
 
-for (const post of allPosts) {
-	const date = new Date(post.data.published);
-	const year = date.getFullYear();
-	const month = date.getMonth() + 1;
-
-	if (!groupedMap.has(year)) groupedMap.set(year, new Map());
-	const yearMap = groupedMap.get(year)!;
-	if (!yearMap.has(month)) yearMap.set(month, []);
-	yearMap.get(month)!.push({
-		id: post.id,
-		title: post.data.title,
-		published: date,
-		image: post.data.image as string | undefined,
-		timelineOnly: post.data.timelineOnly,
-	});
+// ── 年份筛选：只列出真正出现过文章的年份（倒序） ──────────────────────────
+const yearCounts = new Map<number, number>();
+for (const article of articles) {
+	const year = article.published.getFullYear();
+	yearCounts.set(year, (yearCounts.get(year) ?? 0) + 1);
 }
 
-// Sort years & months descending; articles within a month also descending
-const yearGroups: YearGroup[] = [];
-for (const [year, monthMap] of [...groupedMap.entries()].sort(
-	(a, b) => b[0] - a[0],
-)) {
-	const months: MonthGroup[] = [];
-	for (const [month, articles] of [...monthMap.entries()].sort(
-		(a, b) => b[0] - a[0],
-	)) {
-		articles.sort((a, b) => b.published.getTime() - a.published.getTime());
-		months.push({ month, articles });
-	}
-	yearGroups.push({ year, months });
-}
-
-// ── Calendar month i18n key lookup ───────────────────────────────────────
-const CALENDAR_MONTH_KEYS: Record<number, I18nKey> = {
-	1: I18nKey.calendarJanuary,
-	2: I18nKey.calendarFebruary,
-	3: I18nKey.calendarMarch,
-	4: I18nKey.calendarApril,
-	5: I18nKey.calendarMay,
-	6: I18nKey.calendarJune,
-	7: I18nKey.calendarJuly,
-	8: I18nKey.calendarAugust,
-	9: I18nKey.calendarSeptember,
-	10: I18nKey.calendarOctober,
-	11: I18nKey.calendarNovember,
-	12: I18nKey.calendarDecember,
-};
+const years = [...yearCounts.entries()]
+	.sort((a, b) => b[0] - a[0])
+	.map(([year, count]) => ({ year, count }));
 
 // ── Image helpers ────────────────────────────────────────────────────────
 function hasLocalImage(src: string | undefined): boolean {
@@ -114,722 +77,905 @@ if (bgPath && !bgPath.startsWith("http") && !bgPath.startsWith("/")) {
 	bgSrc = bgPath;
 }
 
-// Global stagger index across all cards on the page
-let animIdx = 0;
+const totalPosts = articles.length;
 ---
 
 <MainGridLayout title={i18n(I18nKey.timeline)} minimal={true}>
   {bgSrc && (
     <div id="tl-bg">
       <img src={bgSrc} alt="" />
+      <span class="tl-bg__veil" aria-hidden="true"></span>
     </div>
   )}
-  <div class="tl">
-    {
-      yearGroups.length === 0 ? (
-        <p class="tl-empty">{i18n(I18nKey.searchNoResults)}</p>
-      ) : (
-        yearGroups.map((yg) => {
-          const yearTotal = yg.months.reduce(
-            (s, m) => s + m.articles.length,
-            0,
-          );
-          return (
-            <div class="tl-year" data-tl-toggle>
-              {/* ── Year header ─────────────────────────── */}
-              <button class="tl-year-summary" data-tl-trigger>
-                <span class="tl-year-text">{yg.year}</span>
-                <span class="tl-year-count">
-                  &middot; {yearTotal}{" "}
-                  {i18n(
-                    yearTotal === 1
-                      ? I18nKey.eventCount
-                      : I18nKey.eventsCount,
+  <div class="ip ip-timeline">
+    {/* 首屏大界面：与首页同一套语言 —— 整屏留白，字直接落在夜空上。
+        灯线展示栏被推到下一屏，向下滑动才进入视野。 */}
+    <header class="tl-hero">
+      <div class="tl-hero__inner">
+        <p class="tl-eyebrow">TIMELINE</p>
+        <h1 class="tl-title">{i18n(I18nKey.timeline)}</h1>
+        <span class="tl-rule" aria-hidden="true"></span>
+        <p class="tl-desc">
+          沿着一条夜街的灯往回走——每一盏亮起的灯，是一篇写下的记录。
+        </p>
+        <p class="tl-meta">{totalPosts} {i18n(I18nKey.postsCount)}</p>
+      </div>
+
+      <p class="tl-scroll" aria-hidden="true">
+        <span class="tl-scroll__line" />
+        <span class="tl-scroll__text">向下滑动</span>
+      </p>
+    </header>
+
+    <div class="tb" data-tb>
+      {/* 时间筛选：只按年份 */}
+      <div class="tb-filter" role="group" aria-label="按年份筛选">
+        <button
+          class="tb-chip is-on"
+          type="button"
+          data-tb-filter="all"
+          aria-pressed="true"
+        >
+          {i18n(I18nKey.all)}
+          <span class="tb-chip__n">{totalPosts}</span>
+        </button>
+        {
+          years.map((y) => (
+            <button
+              class="tb-chip"
+              type="button"
+              data-tb-filter={String(y.year)}
+              aria-pressed="false"
+            >
+              {y.year}
+              <span class="tb-chip__n">{y.count}</span>
+            </button>
+          ))
+        }
+      </div>
+
+      {/* 灯线：一条纵向的夜街，每篇文章是一盏挂在灯线上的灯。
+          滚动时最接近视口中线的灯「点亮」（JS 给 .is-lit），
+          其余的灯保持压暗 —— 点亮是强调，信息在暗态下也完整可读。 */}
+      <ol class="tb-line">
+        {
+          articles.length === 0 ? (
+            <li class="tb-empty">{i18n(I18nKey.searchNoResults)}</li>
+          ) : (
+            articles.map((a, idx) => {
+              const year = a.published.getFullYear();
+              const yearStart =
+                idx === 0 ||
+                articles[idx - 1].published.getFullYear() !== year;
+              const imgBasePath = getFileDirFromPath(
+                `src/content/posts/${a.id}`,
+              );
+              const localImg = hasLocalImage(a.image);
+              const remoteImg = hasRemoteImage(a.image);
+              const showImg = localImg || remoteImg;
+              const plain = a.timelineOnly || !showImg;
+              return (
+                <>
+                  {yearStart && (
+                    <li
+                      class="tb-yearmark"
+                      data-tb-mark
+                      data-tb-year={String(year)}
+                    >
+                      <span class="tb-lamp__node" aria-hidden="true"></span>
+                      <span class="tb-yearmark__text">{year}</span>
+                    </li>
                   )}
-                </span>
-                <svg class="tl-toggle-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </button>
-
-              {/* ── Months under this year ─────────────── */}
-              <div class="tl-year-body" data-tl-body>
-                {yg.months.map((mg, mIdx) => {
-                  const mc = mg.articles.length;
-                  return (
-                    <div class="tl-month" data-tl-toggle>
-                      {/* ── Month node + label ────────── */}
-                      <button class="tl-month-summary" data-tl-trigger>
-                        <span class="tl-month-dot" />
-                        <span class="tl-month-label">
-                          {i18n(CALENDAR_MONTH_KEYS[mg.month])}
-                        </span>
-                        <span class="tl-month-count">
-                          &middot; {mc}{" "}
-                          {i18n(
-                            mc === 1
-                              ? I18nKey.eventCount
-                              : I18nKey.eventsCount,
-                          )}
-                        </span>
-                        <svg class="tl-toggle-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
-                      </button>
-
-                      {/* ── Article cards ──────────────── */}
-                      <div class="tl-cards" data-tl-body>
-                        {mg.articles.map((a) => {
-                          const idx = animIdx++;
-                          const delay = idx * 80;
-                          const cardSide = idx % 2 === 0 ? "left" : "right";
-                          const imgBasePath = getFileDirFromPath(
-                            `src/content/posts/${a.id}`,
-                          );
-                          const localImg = hasLocalImage(a.image);
-                          const remoteImg = hasRemoteImage(a.image);
-                          const showImg = localImg || remoteImg;
-
-                          return (
-                            <div
-                              class="tl-card-row"
-                              style={`--stagger-delay: ${delay}ms`}
+                  <li
+                    class:list={[
+                      "tb-lamp",
+                      plain && "tb-lamp--plain",
+                    ]}
+                    data-tb-lamp
+                    data-tb-year={String(year)}
+                  >
+                    <span class="tb-lamp__node" aria-hidden="true"></span>
+                    <time
+                      class="tb-lamp__date"
+                      datetime={a.published.toISOString()}
+                      aria-hidden="true"
+                    >
+                      {fmtDate(a.published)}
+                    </time>
+                    {/* 左侧纯文字介绍；封面平时藏在夜里，
+                        悬停整行时从文字后面向右滑出。
+                        整行只有一个可点元素：标题链接用 ::after 撑满行面，
+                        键盘焦点与可点区域一致，避免多重嵌套 */}
+                    <div class="tb-lamp__row">
+                      <div class="tb-lamp__body">
+                        <h3 class="tb-lamp__title">
+                          {a.timelineOnly ? (
+                            a.title
+                          ) : (
+                            <a
+                              class="tb-lamp__link"
+                              href={getPostUrlBySlug(a.id)}
                             >
-                              <span class="tl-card-dot" />
-                              {a.timelineOnly ? (
-                                <div
-                                  class={`tl-card tl-card--${cardSide}`}
-                                >
-                                  <div class="tl-card-body">
-                                    <h3 class="tl-card-title text-90">
-                                      {a.title}
-                                    </h3>
-                                    <time
-                                      class="tl-card-date text-75"
-                                      datetime={a.published.toISOString()}
-                                    >
-                                      {fmtDate(a.published)}
-                                    </time>
-                                  </div>
-                                </div>
-                              ) : (
-                                <a
-                                  href={getPostUrlBySlug(a.id)}
-                                  class={`tl-card tl-card--${cardSide}`}
-                                >
-                                  <div class="tl-card-body">
-                                    <h3 class="tl-card-title text-90">
-                                      {a.title}
-                                    </h3>
-                                    <time
-                                      class="tl-card-date text-75"
-                                      datetime={a.published.toISOString()}
-                                    >
-                                      {fmtDate(a.published)}
-                                    </time>
-                                  </div>
-                                  {showImg && (
-                                    <div class="tl-card-img-side">
-                                      {localImg ? (
-                                        <CoverImage
-                                          src={a.image!}
-                                          basePath={imgBasePath}
-                                          alt={a.title}
-                                        />
-                                      ) : (
-                                        <img
-                                          src={a.image}
-                                          alt={a.title}
-                                          loading="lazy"
-                                          decoding="async"
-                                        />
-                                      )}
-                                    </div>
-                                  )}
-                                </a>
-                              )}
-                            </div>
-                          );
-                        })}
+                              {a.title}
+                            </a>
+                          )}
+                        </h3>
+                        {a.description && (
+                          <p class="tb-lamp__desc">{a.description}</p>
+                        )}
+                        <p class="tb-lamp__meta">
+                          {a.category && (
+                            <span class="tb-lamp__cat">{a.category}</span>
+                          )}
+                          <time datetime={a.published.toISOString()}>
+                            {fmtDate(a.published)}
+                          </time>
+                        </p>
                       </div>
+                      {showImg && (
+                        <div class="tb-lamp__photo" aria-hidden="true">
+                          {localImg ? (
+                            <CoverImage
+                              src={a.image!}
+                              basePath={imgBasePath}
+                              alt=""
+                            />
+                          ) : (
+                            <img
+                              src={a.image}
+                              alt=""
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          )}
+                        </div>
+                      )}
+                      {showImg && (
+                        <span class="tb-lamp__hint" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="4" width="18" height="16" rx="2.5" />
+                            <circle cx="9" cy="10" r="1.6" />
+                            <path d="M4.5 17.5l4.8-4.8c.6-.6 1.5-.6 2.1 0l5.1 5.1M14.5 15.5l1.9-1.9c.6-.6 1.5-.6 2.1 0l2.5 2.5" />
+                          </svg>
+                        </span>
+                      )}
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })
-      )
-    }
+                  </li>
+                </>
+              );
+            })
+          )
+        }
+      </ol>
+    </div>
   </div>
-
 </MainGridLayout>
 
 <style>
   /* ===================================================================
-     Container & central line
+     时间轴 = 提灯夜行 —— 一条纵向的夜街灯线，每篇文章是一盏灯
+     滚动即点亮：最接近视口中线的灯牌亮起（封面满亮度、暖边框、
+     萤火光晕），其余的灯保持压暗。压暗态信息完整可读。
      =================================================================== */
-  .tl {
+
+  /* ── 首屏大界面：整屏留白 + 无面板艺术字（与首页同一套节奏） ──────────
+     第一眼只有这一屏；灯线展示栏被推到下一屏，向下滑动才出现。 */
+  .tl-hero {
     position: relative;
-    padding: 6rem 0 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
-    --tl-dot: 12px;   /* node diameter */
-    --tl-line: 2px;   /* central line thickness */
-  }
-
-  /* Vertical centre line — 生长动画 */
-  .tl::before {
-    content: "";
-    position: absolute;
-    left: 50%;
-    top: 0;
-    bottom: 0;
-    width: var(--tl-line);
-    background: var(--line-divider);
-    transform: translateX(-50%) scaleY(0);
-    transform-origin: top center;
-    border-radius: 1px;
-    animation: tl-line-grow 1.5s cubic-bezier(0.4, 0, 0.2, 1) 0.2s forwards;
-  }
-
-  @keyframes tl-line-grow {
-    to { transform: translateX(-50%) scaleY(1); }
-  }
-
-  .tl-empty {
-    text-align: center;
-    color: var(--btn-content);
-    padding: 3rem 1rem;
-  }
-
-  /* ===================================================================
-     Year section (<details>)
-     =================================================================== */
-  .tl-year {
-    position: relative;
-    margin-bottom: 1.5rem;
-  }
-
-  .tl-year-summary {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 0.35rem;
-    cursor: pointer;
-    list-style: none;
-    padding: 0.5rem 0 0.7rem;
-    margin-bottom: 0.75rem;
-    position: relative;
-    user-select: none;
-    opacity: 0;
-    animation: tl-fade-in 0.6s ease 0.3s forwards;
-    background: none;
-    border: none;
+    /* 整屏高：min-height 含上下留白，正文块正好落在视口中线 */
+    min-height: 100vh;
+    min-height: 100svh;
+    /* 上下留白：顶部 7rem 让出固定导航栏 */
+    padding: 7rem 0 6rem;
+  }
+
+  .tl-hero__inner {
     width: 100%;
-    font: inherit;
-    color: inherit;
+    max-width: 72rem;
+    margin-inline: auto;
+    padding-inline: clamp(1.25rem, 4vw, 3rem);
+    animation: tl-rise 1.05s cubic-bezier(0.22, 0.61, 0.36, 1) both;
   }
 
-  @keyframes tl-fade-in {
-    to { opacity: 1; }
-  }
-
-  .tl-year-summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .tl-year .tl-toggle-icon {
-    margin-left: 0.25rem;
-    transition: transform 0.3s ease;
-    flex-shrink: 0;
-  }
-
-  .tl-year[data-tl-expanded="false"] .tl-toggle-icon {
-    transform: rotate(-90deg);
-  }
-
-  /* Horizontal lines extending from year text to container edges */
-  .tl-year-summary::before,
-  .tl-year-summary::after {
-    content: "";
+  /* 首屏下方的向下提示：一条极细的竖线 + 一行小字，不抢标题 */
+  .tl-scroll {
     position: absolute;
-    top: 50%;
-    height: 1px;
-    background: var(--line-divider);
-  }
-
-  .tl-year-summary::before {
-    right: calc(50% + 3.75rem);
-    left: 0;
-  }
-
-  .tl-year-summary::after {
-    left: calc(50% + 3.75rem);
-    right: 0;
-  }
-
-  .tl-year-text {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: var(--primary);
-    line-height: 1.2;
-    /* Small dot below the year number */
+    left: 50%;
+    bottom: 2.2rem;
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 0.65rem;
+    margin: 0;
+    transform: translateX(-50%);
   }
 
-  .tl-year-text::after {
-    content: "";
-    display: block;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--primary);
-    margin-top: 2px;
+  .tl-scroll__line {
+    width: 1px;
+    height: 2.6rem;
+    /* 由淡到实的一条细线，指向下方 */
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      color-mix(in srgb, var(--ip-ink) 50%, transparent)
+    );
+    animation: tl-bob 2.6s ease-in-out infinite;
   }
 
-  .tl-year-count {
-    font-size: 0.75rem;
-    color: var(--btn-content);
-    font-weight: 400;
+  .tl-scroll__text {
+    font-family: var(--ip-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.3em;
+    color: color-mix(in srgb, var(--ip-ink) 46%, transparent);
   }
 
-  /* ===================================================================
-     Month section (<details>)
-     =================================================================== */
-  .tl-month {
-    position: relative;
-    margin-bottom: 0.25rem;
+  @keyframes tl-rise {
+    from {
+      opacity: 0;
+      transform: translateY(1.1rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
-  .tl-month-summary {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.35rem;
-    cursor: pointer;
-    list-style: none;
-    padding: 0.35rem 0;
-    user-select: none;
-    background: none;
-    border: none;
-    width: 100%;
-    font: inherit;
-    color: inherit;
+  @keyframes tl-bob {
+    0%,
+    100% {
+      opacity: 0.45;
+      transform: translateY(-0.3rem);
+    }
+    50% {
+      opacity: 1;
+      transform: translateY(0.3rem);
+    }
   }
 
-  .tl-month-summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .tl-month .tl-toggle-icon {
-    transition: transform 0.3s ease;
-    flex-shrink: 0;
-  }
-
-  .tl-month[data-tl-expanded="false"] .tl-toggle-icon {
-    transform: rotate(-90deg);
-  }
-
-  /* Circular dot on the central line — 弹跳出现 */
-  .tl-month-dot {
-    display: block;
-    width: var(--tl-dot);
-    height: var(--tl-dot);
-    border-radius: 50%;
-    background: var(--primary);
-    flex-shrink: 0;
-    position: relative;
-    z-index: 1;
-    box-shadow: 0 0 0 3px var(--page-bg);
-    opacity: 0;
-    transform: scale(0);
-    animation: tl-bounce-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  }
-
-  @keyframes tl-bounce-in {
-    to { opacity: 1; transform: scale(1); }
-  }
-
-  .tl-month-label {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--primary);
-  }
-
-  .tl-month-count {
-    font-size: 0.72rem;
-    color: var(--btn-content);
-  }
-
-  /* ===================================================================
-     Toggle body — transition for fade in / out
-     =================================================================== */
-  .tl-year-body,
-  .tl-cards {
-    overflow: hidden;
-    transition:
-      opacity 0.35s ease,
-      max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1);
-    /* Start visible — JS will toggle via max-height */
-    max-height: none;
-    opacity: 1;
-  }
-
-  /* ===================================================================
-     Article cards column
-     =================================================================== */
-  .tl-cards {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-    width: 100%;
-    padding: 0.1rem 0 0.6rem;
-  }
-
-  /* Odd cards → on the left */
-  .tl-card--left {
-    margin-right: auto;
-    margin-left: 0;
-  }
-
-  /* Even cards → on the right */
-  .tl-card--right {
-    margin-left: auto;
-    margin-right: 0;
-  }
-
-  /* ===================================================================
-     Card row (wrapper for dot + card) — 左右滑入动画
-     =================================================================== */
-  .tl-card-row {
-    position: relative;
-    padding-top: 0.5rem;
-  }
-
-  /* 左侧卡片从左滑入 */
-  .tl-card--left {
-    opacity: 0;
-    animation: tl-slide-left 0.5s ease forwards;
-    animation-delay: var(--stagger-delay, 0ms);
-  }
-
-  /* 右侧卡片从右滑入 */
-  .tl-card--right {
-    opacity: 0;
-    animation: tl-slide-right 0.5s ease forwards;
-    animation-delay: var(--stagger-delay, 0ms);
-  }
-
-  @keyframes tl-slide-left {
-    from { opacity: 0; transform: translateX(-40px); }
-    to   { opacity: 1; transform: translateX(0); }
-  }
-
-  @keyframes tl-slide-right {
-    from { opacity: 0; transform: translateX(40px); }
-    to   { opacity: 1; transform: translateX(0); }
-  }
-
-  /* Node dot on the centre line — 弹跳出现 */
-  .tl-card-dot {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%) scale(0);
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--primary);
-    z-index: 1;
-    box-shadow: 0 0 0 2px var(--page-bg);
-    opacity: 0;
-    animation: tl-bounce-in-center 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-    animation-delay: var(--stagger-delay, 0ms);
-  }
-
-  @keyframes tl-bounce-in-center {
-    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  }
-
-  /* ===================================================================
-     Single article card
-     =================================================================== */
-  .tl-card {
-    position: relative;
-    display: flex;
-    width: 42%;
-    max-width: 460px;
-    background: color-mix(in srgb, var(--card-bg) 45%, transparent);
-    border-radius: var(--radius-large);
-    overflow: visible;
-    text-decoration: none;
-    color: inherit;
-    transition:
-      transform 0.25s ease,
-      box-shadow 0.25s ease;
-  }
-
-  /* Slide-out image (hidden by default) */
-  .tl-card-img-side {
-    position: absolute;
-    top: 0;
-    height: 100%;
-    width: 0;
-    overflow: hidden;
-    transition: width 0.35s ease;
-    border-radius: var(--radius-large);
-    z-index: 1;
-    background: var(--code-bg);
-  }
-
-  .tl-card--left .tl-card-img-side {
-    left: 100%;
-  }
-
-  .tl-card--right .tl-card-img-side {
-    right: 100%;
-  }
-
-  .tl-card:hover .tl-card-img-side {
-    width: 150px;
-  }
-
-  .tl-card-img-side :global(.cover-image-container) {
-    min-height: 0;
-    height: 100%;
-  }
-
-  .tl-card-img-side :global(img),
-  .tl-card-img-side :global(picture) {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  /* Suppress entrance animation during Swup page-leave */
-  .transition-leaving .tl-card-row,
-  .transition-leaving .tl-month-dot,
-  .transition-leaving .tl-card-dot,
-  .transition-leaving .tl-year-summary,
-  .transition-leaving .tl-year-body,
-  .transition-leaving .tl-cards,
-  .transition-leaving .tl::before {
-    animation: none !important;
-    opacity: 1 !important;
-    transform: none !important;
-    max-height: none !important;
-  }
-
-  .tl-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-  }
-
-  /* ── Cover image area ───────────────────────────── */
-  .tl-card-img {
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    overflow: hidden;
-    background: var(--code-bg);
-  }
-
-  .tl-card-img :global(.cover-image-container) {
-    min-height: 0;
-    height: 100%;
-  }
-
-  .tl-card-img :global(img),
-  .tl-card-img :global(picture) {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  /* ── Text body ──────────────────────────────────── */
-  .tl-card-body {
-    padding: 0.4rem 0.65rem;
-  }
-
-  .tl-card-title {
-    margin: 0 0 0.2rem;
-    font-size: 0.82rem;
-    font-weight: 600;
+  .tl-eyebrow {
+    margin: 0 0 1rem;
+    font-family: var(--ip-mono);
+    font-size: 0.68rem;
     line-height: 1.4;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+    letter-spacing: 0.42em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--ip-ink) 58%, transparent);
+  }
+
+  .tl-title {
+    margin: 0;
+    /* 全站已加载的书法字体，做成不带背景的“艺术字” */
+    font-family: "Zhi Mang Xing", cursive;
+    font-size: clamp(3.2rem, 8.5vw, 5.8rem);
+    font-weight: 400;
+    line-height: 1.08;
+    letter-spacing: 0.05em;
+    color: var(--ip-ink);
+    /* 不靠面板，只用极淡的阴影把字从夜空里托出来 */
+    text-shadow: 0 0.12rem 1.5rem rgba(0, 0, 0, 0.3);
+  }
+
+  .tl-rule {
+    display: block;
+    width: 3rem;
+    height: 1px;
+    margin: 1.15rem 0 1rem;
+    background: var(--ip-warm);
+  }
+
+  .tl-desc {
+    margin: 0;
+    max-width: 34rem;
+    font-size: 0.95rem;
+    line-height: 1.9;
+    color: var(--ip-ink-soft);
+  }
+
+  .tl-meta {
+    margin: 0.9rem 0 0;
+    font-family: var(--ip-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ip-ink-faint);
+  }
+
+  /* ── 展示栏主体 ─────────────────────────────────────────────────────── */
+  .tb {
+    position: relative;
+    width: 100%;
+    padding-top: clamp(1.2rem, 2.6vw, 2.2rem);
+    padding-bottom: 3rem;
+
+    /* 灯线几何：灯线在灯列里的 x 位置 + 灯列宽（含日期） */
+    --tb-rail: 0.95rem;
+    --tb-rail-col: 6.4rem;
+  }
+
+  .tb-empty {
+    padding: 3rem 1rem;
+    color: var(--ip-ink-soft);
+  }
+
+  /* ── 年份筛选：不做成带边框的控件，就是一行字 ─────────────────────── */
+  .tb-filter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.4rem 1.9rem;
+    margin-bottom: 2.2rem;
+    padding-inline: 1rem;
+  }
+
+  .tb-chip {
+    padding: 0 0 0.4rem;
+    background: none;
+    border: 0;
+    font: inherit;
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    color: color-mix(in srgb, var(--ip-ink) 50%, transparent);
+    /* 选中态只用一条暖色下划线表示，不加边框、不加胶囊底 */
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.6rem;
+    cursor: pointer;
+    transition:
+      color 0.28s ease,
+      text-decoration-color 0.28s ease;
+  }
+
+  .tb-chip:hover {
+    color: var(--ip-ink);
+    text-decoration-color: color-mix(in srgb, var(--ip-ink) 26%, transparent);
+  }
+
+  .tb-chip.is-on {
+    color: var(--ip-ink);
+    text-decoration-color: var(--ip-warm);
+  }
+
+  .tb-chip:focus-visible {
+    outline: 2px solid var(--ip-warm);
+    outline-offset: 3px;
+    border-radius: 3px;
+  }
+
+  .tb-chip__n {
+    font-family: var(--ip-mono);
+    font-size: 0.68rem;
+    opacity: 0.6;
+  }
+
+  /* ── 灯线：一条纵向的细线，从第一盏灯贯到最后一盏 ─────────────────── */
+  .tb-line {
+    position: relative;
+    width: 100%;
+    max-width: 60rem;
+    margin-block: 0;
+    margin-inline: auto;
+    padding-inline: clamp(1rem, 3vw, 2rem);
+    list-style: none;
+  }
+
+  .tb-line::before {
+    content: "";
+    position: absolute;
+    top: 0.4rem;
+    bottom: 0.4rem;
+    left: calc(var(--tb-rail) + clamp(1rem, 3vw, 2rem));
+    width: 1px;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      color-mix(in srgb, var(--ip-ink) 24%, transparent) 3%,
+      color-mix(in srgb, var(--ip-ink) 24%, transparent) 97%,
+      transparent
+    );
+  }
+
+  /* ── 灯行：灯列（节点 + 日期）+ 灯牌 ───────────────────────────────── */
+  .tb-lamp,
+  .tb-yearmark {
+    position: relative;
+    display: grid;
+    grid-template-columns: var(--tb-rail-col) minmax(0, 1fr);
+    column-gap: 1.2rem;
+    align-items: start;
+  }
+
+  .tb-lamp {
+    padding: 0.35rem 0 1.5rem;
+  }
+
+  /* 灯线上的节点：默认是一粒暗淡的灯，点亮时转暖并发光
+     （li 的左缘就是灯线画布的内容缘，这里不需要再补 padding） */
+  .tb-lamp__node {
+    position: absolute;
+    left: var(--tb-rail);
+    top: 1.55rem;
+    width: 0.45rem;
+    height: 0.45rem;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--ip-ink) 34%, transparent);
+    transition:
+      background 0.35s ease,
+      box-shadow 0.35s ease;
+  }
+
+  .tb-lamp.is-lit .tb-lamp__node {
+    background: var(--ip-warm);
+    box-shadow:
+      0 0 0.6rem 0.1rem color-mix(in srgb, var(--ip-warm) 55%, transparent),
+      0 0 1.6rem 0.3rem color-mix(in srgb, var(--ip-warm) 25%, transparent);
+  }
+
+  /* 悬停行时节点同样点亮 —— 光跟着鼠标走 */
+  .tb-lamp:hover .tb-lamp__node {
+    background: var(--ip-warm);
+    box-shadow:
+      0 0 0.6rem 0.1rem color-mix(in srgb, var(--ip-warm) 55%, transparent),
+      0 0 1.6rem 0.3rem color-mix(in srgb, var(--ip-warm) 25%, transparent);
+  }
+
+  .tb-lamp__date {
+    grid-column: 1;
+    padding-top: 1.05rem;
+    font-family: var(--ip-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    color: var(--ip-ink-faint);
+    padding-left: calc(var(--tb-rail) + 0.85rem);
+  }
+
+  .tb-lamp.is-lit .tb-lamp__date {
+    color: color-mix(in srgb, var(--ip-ink) 62%, transparent);
+  }
+
+  /* ── 灯行：左侧纯文字介绍；封面平时藏在夜里，悬停整行时滑出 ────────── */
+  .tb-lamp__row {
+    grid-column: 2;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 1.4rem;
+    min-height: 5.4rem;
+    padding: 0.55rem 0;
+  }
+
+  .tb-lamp__body {
+    flex: 1;
+    min-width: 0;
+    max-width: 34rem;
+  }
+
+  .tb-lamp--plain .tb-lamp__body {
+    max-width: none;
+  }
+
+  /* 封面：平时藏在夜里；悬停时从文字后面向右滑出 ——
+     双层动效：右缘遮罩展开（照片「露出来」）+ 自身右移回正（「滑出来」），
+     落定时带一点甩角和暖光晕，像从档案袋里抽出一张照片 */
+  .tb-lamp__photo {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    width: clamp(13rem, 17vw, 16.5rem);
+    aspect-ratio: 16 / 10;
     overflow: hidden;
+    border-radius: 0.7rem;
+    border: 1px solid color-mix(in srgb, var(--ip-warm) 35%, transparent);
+    box-shadow:
+      0 1.1rem 2.4rem -1rem rgba(0, 0, 0, 0.75),
+      0 0 1.7rem -0.5rem color-mix(in srgb, var(--ip-warm) 32%, transparent);
+    transform: translateY(-50%) translateX(-2.4rem) rotate(5deg) scale(0.94);
+    opacity: 0;
+    clip-path: inset(0 55% 0 0 round 0.7rem);
+    pointer-events: none;
+    z-index: 6;
+    transition:
+      clip-path 0.5s cubic-bezier(0.19, 1, 0.22, 1),
+      transform 0.5s cubic-bezier(0.19, 1, 0.22, 1),
+      opacity 0.28s ease;
   }
 
-  .tl-card-date {
-    font-size: 0.76rem;
+  /* 封面里的 img 来自 CoverImage 子组件：要用 :global 才能穿透 Astro 样式作用域 */
+  .tb-lamp__photo :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scale(1.14) translateX(-6%);
+    filter: brightness(0.85);
+    transition:
+      transform 0.6s cubic-bezier(0.19, 1, 0.22, 1),
+      filter 0.45s ease;
+  }
+
+  .tb-lamp__photo :global(.cover-image-container) {
+    min-height: 0;
+    height: 100%;
+  }
+
+  .tb-lamp:hover .tb-lamp__photo,
+  .tb-lamp:has(.tb-lamp__link:focus-visible) .tb-lamp__photo {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0) rotate(-1.6deg) scale(1);
+    clip-path: inset(0 0 0 0 round 0.7rem);
+  }
+
+  .tb-lamp:hover .tb-lamp__photo :global(img),
+  .tb-lamp:has(.tb-lamp__link:focus-visible) .tb-lamp__photo :global(img) {
+    transform: scale(1.03) translateX(0);
+    filter: brightness(1);
+  }
+
+  /* 右缘的小图标：提示「这里面有图」，照片滑出时退场 */
+  .tb-lamp__hint {
+    position: absolute;
+    right: 0.2rem;
+    top: 50%;
+    display: inline-flex;
+    width: 1.15rem;
+    height: 1.15rem;
+    transform: translateY(-50%);
+    color: color-mix(in srgb, var(--ip-ink) 38%, transparent);
+    transition:
+      opacity 0.25s ease,
+      transform 0.3s ease,
+      color 0.25s ease;
+  }
+
+  .tb-lamp__hint svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .tb-lamp:hover .tb-lamp__hint {
+    opacity: 0;
+    transform: translateY(-50%) translateX(0.5rem);
+  }
+
+  .tb-lamp__title {
+    margin: 0;
+    font-size: 1.08rem;
+    font-weight: 600;
+    line-height: 1.6;
+    color: var(--ip-ink);
+  }
+
+  .tb-lamp__link {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.25s ease;
+  }
+
+  /* 链接的 ::after 撑满整行：可点区域与视觉区域一致 */
+  .tb-lamp__link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+
+  .tb-lamp__link:hover {
+    color: var(--ip-warm);
+  }
+
+  .tb-lamp__link:focus-visible {
+    outline: 2px solid var(--ip-warm);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  .tb-lamp__meta {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin: 0.55rem 0 0;
+    font-family: var(--ip-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    color: var(--ip-ink-faint);
+  }
+
+  /* 描述：两行截断，把牌面右侧填起来 */
+  .tb-lamp__desc {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    margin: 0.4rem 0 0;
+    font-size: 0.85rem;
+    line-height: 1.75;
+    color: var(--ip-ink-soft);
+  }
+
+  .tb-lamp__cat {
+    padding: 0.08em 0.55em;
+    font-size: 0.95em;
+    font-weight: 600;
+    color: var(--ip-warm);
+    background: color-mix(in srgb, var(--ip-warm) 14%, transparent);
+    border-radius: 0.3em;
+  }
+
+  /* 桌面端日期由灯列展示，牌面里只留分类 */
+  .tb-lamp__meta time {
+    display: none;
+  }
+
+  /* ── 年份分节：一粒更大的灯结 + 等宽年份 ───────────────────────────── */
+  .tb-yearmark {
+    padding: 2.4rem 0 1rem;
+  }
+
+  .tb-lamp:first-child {
+    padding-top: 1.4rem;
+  }
+
+  .tb-yearmark:first-child {
+    padding-top: 0.6rem;
+  }
+
+  .tb-yearmark__text {
+    grid-column: 2;
+    font-family: var(--ip-mono);
+    font-size: 1.02rem;
+    letter-spacing: 0.3em;
+    color: var(--ip-ink-faint);
+  }
+
+  .tb-yearmark .tb-lamp__node {
+    top: 3rem;
+  }
+
+  /* ── 筛选隐藏 ───────────────────────────────────────────────────────── */
+  .tb-lamp.is-off,
+  .tb-yearmark.is-off {
+    display: none;
+  }
+
+  /* ── 入场：一次性淡入上移；JS 未跑时（is-armed 缺席）内容直接可见 ──── */
+  .tb.is-armed .tb-lamp,
+  .tb.is-armed .tb-yearmark {
+    opacity: 0;
+    transform: translateY(0.9rem);
+    transition:
+      opacity 0.65s ease,
+      transform 0.65s cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  .tb.is-armed .tb-lamp.is-in,
+  .tb.is-armed .tb-yearmark.is-in {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* ── 响应式：窄屏收窄灯列，日期挪进牌面，灯牌改上下结构 ────────────── */
+  @media (max-width: 880px) {
+    .tb {
+      --tb-rail-col: 5rem;
+    }
+
+    /* 触屏没有悬停：封面退化为行尾的常驻小缩略图 */
+    .tb-lamp__photo {
+      position: static;
+      transform: none;
+      opacity: 1;
+      clip-path: none;
+      width: 7.2rem;
+      flex: none;
+    }
+
+    .tb-lamp__photo :global(img) {
+      transform: none;
+      filter: none;
+    }
+
+    .tb-lamp__hint {
+      display: none;
+    }
+
+    .tb-lamp__body {
+      max-width: none;
+    }
+  }
+
+  @media (max-width: 680px) {
+    .tb {
+      --tb-rail: 0.55rem;
+      --tb-rail-col: 2.2rem;
+    }
+
+    .tb-line::before {
+      left: calc(var(--tb-rail) + 1rem);
+    }
+
+    .tb-lamp__node {
+      left: var(--tb-rail);
+    }
+
+    .tb-lamp__date {
+      display: none;
+    }
+
+    .tb-lamp__meta time {
+      display: inline;
+    }
+
+    .tb-lamp__photo {
+      width: 6.2rem;
+    }
+  }
+
+  /* ── 减少动态效果：全部常亮常显，不做点亮过渡 ───────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .tb.is-armed .tb-lamp,
+    .tb.is-armed .tb-yearmark {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+
+    .tb-lamp__photo,
+    .tb-lamp__photo :global(img),
+    .tb-lamp__node,
+    .tb-lamp__hint {
+      transition: none !important;
+    }
   }
 
   /* ===================================================================
-     Responsive: mobile < 768 px
-     =================================================================== */
-  /* ===================================================================
-     Background image - full screen
+     固定背景：整面墙衬在星空壁纸上（复用站点已有的时间轴背景图）
      =================================================================== */
   #tl-bg {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
+    inset: 0;
     z-index: 0;
     overflow: hidden;
   }
+
   #tl-bg img {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
 
-  /* 禁用时间轴页面的弹性入场动画，使用自己的动画 */
-  :global(#content-wrapper) {
+  /* 一层素色薄雾：让灯牌与页头在星空上都有足够对比度 */
+  .tl-bg__veil {
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, var(--ip-paper) 40%, transparent);
+  }
+
+  .ip-timeline {
+    position: relative;
+    z-index: 1;
+    /* 整页铺满：页头与展示栏都从屏幕左边缘铺到右边缘 */
+    width: 100vw;
+    margin-inline: calc(50% - 50vw);
+    /* 顶部留白由首屏自己给（7rem），这里不再重复叠加 */
+    padding-top: 0;
+  }
+
+  /* 时间轴自己有入场节奏，关掉内容容器的一次性弹性动画 */
+  :global(#content-wrapper:has(.ip-timeline)) {
     animation: none !important;
     opacity: 1 !important;
   }
 
-  /* 始终显示右侧垂直滚动条，不显示底部水平滚动条，防止布局抖动 */
-  :global(html) {
-    overflow-y: scroll;
+  /* 溢出本页直接裁掉 */
+  :global(html:has(.ip-timeline)) {
     overflow-x: hidden;
   }
 
-  /* ===================================================================
-     Navbar: 半透明背景（无毛玻璃）
-     =================================================================== */
-  :global(#navbar-wrapper),
-  :global(#navbar > div) {
+  /* 展示栏页面：导航栏半透明，避免与星空糊在一起
+     （用 :has 限定在本页，Swup 切走后不会影响到别的页面） */
+  :global(body:has(.ip-timeline) #navbar-wrapper),
+  :global(body:has(.ip-timeline) #navbar > div) {
     background: color-mix(in srgb, var(--card-bg) 60%, transparent) !important;
-  }
-
-  /* ===================================================================
-     Semi-transparent: timeline cards
-     =================================================================== */
-  .tl-card {
-    background: color-mix(in srgb, var(--card-bg) 50%, transparent) !important;
-    border: 1px solid color-mix(in srgb, var(--line-divider) 20%, transparent);
-  }
-
-  /* Make the right sidebar background transparent */
-  .tl-card-body {
-    background: transparent !important;
-  }
-
-  /* ===================================================================
-     Suppress entrance animation during Swup page-leave
-     =================================================================== */
-
-  @media (max-width: 767px) {
-    /* Shift the timeline line to the left */
-    .tl::before {
-      left: 16px;
-    }
-
-    /* Year summary aligns left */
-    .tl-year-summary {
-      justify-content: flex-start;
-      padding-left: 2.4rem;
-    }
-
-    .tl-year-summary::before,
-    .tl-year-summary::after {
-      display: none;
-    }
-
-    /* Month summary aligns left (dot stays on the line) */
-    .tl-month-summary {
-      justify-content: flex-start;
-      padding-left: 2.4rem;
-    }
-
-    /* All cards stack on the right side, full-width */
-    .tl-card--left,
-    .tl-card--right {
-      width: 85%;
-      margin-left: 2.4rem !important;
-      margin-right: 0 !important;
-    }
-
-    /* Card dot aligns with the shifted timeline line */
-    .tl-card-dot {
-      left: 16px;
-    }
-
-    /* Slide-out image on small screens */
-    .tl-card-img-side {
-      border-radius: var(--radius-large);
-    }
-
-    .tl-card:hover .tl-card-img-side {
-      width: 100px;
-    }
   }
 </style>
 
 <script>
-  // ── Timeline toggle with fade animation ──────────────────────────────
-  document.querySelectorAll("[data-tl-toggle]").forEach((group) => {
-    const trigger = group.querySelector("[data-tl-trigger]");
-    const body = group.querySelector("[data-tl-body]");
-    if (!trigger || !body) return;
+  // ── 提灯夜行：年份筛选 + 滚动点亮 + 入场 ──────────────────────────────
+  // 所有副作用都是幂等的：Swup 换页后重新跑一遍 init，
+  // 先用 cleanup 拆掉上一份观察器，不残留。
+  let cleanup: (() => void) | null = null;
 
-    // Start expanded
-    group.dataset.tlExpanded = "true";
+  function initTimeline(): void {
+    const root = document.querySelector<HTMLElement>("[data-tb]");
 
-    trigger.addEventListener("click", () => {
-      const isExpanded = group.dataset.tlExpanded === "true";
+    // 当前这份 DOM 已经初始化过（Swup 与 astro:page-load 都可能触发）
+    if (root?.dataset.tbBound === "true") return;
 
-      if (isExpanded) {
-        // ── Collapse ──────────────────────────────────────────────
-        // Lock current height first (scrollHeight is valid while expanded)
-        body.style.maxHeight = body.scrollHeight + "px";
-        body.style.opacity = "1";
-        body.offsetHeight; // force reflow so the lock takes effect
-        // In the next frame, animate to 0
-        requestAnimationFrame(() => {
-          body.style.maxHeight = "0px";
-          body.style.opacity = "0";
-        });
-        group.dataset.tlExpanded = "false";
-      } else {
-        // ── Expand ────────────────────────────────────────────────
-        // Step 1: temporarily remove max-height to measure real content height
-        body.style.maxHeight = "none";
-        const realHeight = body.scrollHeight;
+    cleanup?.();
+    cleanup = null;
+    if (!root) return;
+    root.dataset.tbBound = "true";
 
-        // Step 2: set starting state (0) in this frame
-        body.style.maxHeight = "0px";
-        body.style.opacity = "0";
-        body.offsetHeight; // force reflow so the 0-state is committed
+    const lamps = Array.from(
+      root.querySelectorAll<HTMLElement>("[data-tb-lamp]"),
+    );
+    const marks = Array.from(
+      root.querySelectorAll<HTMLElement>("[data-tb-mark]"),
+    );
+    if (lamps.length === 0 && marks.length === 0) return;
 
-        // Step 3: in the NEXT frame, animate to real height
-        //          (must be a separate frame or the browser merges the two
-        //           maxHeight assignments and skips the transition)
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            body.style.maxHeight = realHeight + "px";
-            body.style.opacity = "1";
-            group.dataset.tlExpanded = "true";
+    // 入场：先「武装」（只有 JS 跑起来才允许隐藏初始态，无 JS 时内容直接可见），
+    // 再逐个观察，进入视口后一次性淡入，不重复播放。
+    root.classList.add("is-armed");
+    const ioIn = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          entry.target.classList.add("is-in");
+          // 入场即触发图片加载：别让首次悬停撞上还没加载完的空相框
+          for (const img of entry.target.querySelectorAll("img")) {
+            if (img.loading === "lazy") img.loading = "eager";
+          }
+          ioIn.unobserve(entry.target);
+        }
+      },
+      { threshold: 0.05, rootMargin: "0px 0px -5% 0px" },
+    );
+    for (const el of [...lamps, ...marks]) ioIn.observe(el);
 
-            // Step 4: after transition ends, clear max-height so content can grow
-            const onEnd = () => {
-              if (group.dataset.tlExpanded === "true") {
-                body.style.maxHeight = "none";
-              }
-              body.removeEventListener("transitionend", onEnd);
-            };
-            body.addEventListener("transitionend", onEnd);
-            setTimeout(onEnd, 600); // fallback safety
-          });
-        });
+    // 滚动点亮：与视口中线相交（±36% 的中央带）的灯是亮的。
+    // 最多同时点亮一两盏；筛选隐藏的灯 display:none，永远不相交，自然熄灭。
+    const ioLit = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          entry.target.classList.toggle("is-lit", entry.isIntersecting);
+        }
+      },
+      { rootMargin: "-40% 0px -40% 0px", threshold: 0 },
+    );
+    for (const lamp of lamps) ioLit.observe(lamp);
+
+    // ── 年份筛选：显示/隐藏整段年份 ───────────────────────────────────
+    const chips = Array.from(
+      root.querySelectorAll<HTMLButtonElement>("[data-tb-filter]"),
+    );
+
+    const applyFilter = (value: string): void => {
+      for (const chip of chips) {
+        const on = chip.dataset.tbFilter === value;
+        chip.classList.toggle("is-on", on);
+        chip.setAttribute("aria-pressed", on ? "true" : "false");
       }
-    });
-  });
+      for (const el of [...lamps, ...marks]) {
+        el.classList.toggle(
+          "is-off",
+          value !== "all" && el.dataset.tbYear !== value,
+        );
+      }
+    };
+
+    for (const chip of chips) {
+      chip.addEventListener("click", () => {
+        applyFilter(chip.dataset.tbFilter ?? "all");
+      });
+    }
+
+    cleanup = () => {
+      ioIn.disconnect();
+      ioLit.disconnect();
+    };
+  }
+
+  initTimeline();
+
+  // Swup 换页后重跑（幂等）；模块被重复执行时只注册一次监听。
+  const tbWindow = window as typeof window & { __tbBound?: boolean };
+  if (!tbWindow.__tbBound) {
+    tbWindow.__tbBound = true;
+    document.addEventListener("swup:contentReplaced", initTimeline);
+    document.addEventListener("astro:page-load", initTimeline);
+  }
 </script>

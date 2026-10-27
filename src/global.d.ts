@@ -8,6 +8,8 @@ declare global {
 	interface Window {
 		// biome-ignore lint/suspicious/noExplicitAny: External library
 		swup: any;
+		/** swup-lifecycle 的运行时状态，只应由该模块读写 */
+		__fireflySwupRuntime?: import("./types/swup").SwupRuntimeState;
 		live2dModelInitialized?: boolean;
 		spineModelInitialized?: boolean;
 		floatingTOCListenersInitialized?: boolean;

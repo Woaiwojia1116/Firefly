@@ -1,0 +1,16 @@
+---
+// 右下角浮动音乐面板
+// ---------------------------------------------------------------------------
+// 原本音乐播放器在侧栏（会被三栏布局占位），现在改为右下角浮动面板：
+// · 不占用页面布局，内页正文可以占满宽度（内容占大头）
+// · 面板常驻 DOM，只用 class 切换显示，开合不会打断正在播放的音乐
+// · 开关由 FloatingControls 快捷球里的音乐键负责（切换 .ip-fm 的 is-open 类），
+//   面板本体悬浮在快捷球扇形展开区的上方，二者不重叠。
+import Music from "@/components/widget/Music.astro";
+---
+
+<div class="ip-fm" data-ip-fm>
+  <div class="ip-fm__panel" data-ip-fm-panel>
+    <Music class="ip-fm__widget" />
+  </div>
+</div>

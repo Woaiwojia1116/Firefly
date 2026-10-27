@@ -14,6 +14,33 @@ let result: SearchResult[] = [];
 let isSearching = false;
 let initialized = false;
 let debounceTimer: NodeJS.Timeout;
+// 桌面端搜索默认收敛为图标，点击后展开输入框
+let desktopExpanded = false;
+let desktopInput: HTMLInputElement | undefined;
+
+const expandDesktopSearch = (): void => {
+	desktopExpanded = true;
+	// 等待宽度过渡开始后聚焦，保证键盘可直接输入
+	requestAnimationFrame(() => desktopInput?.focus());
+};
+
+const collapseDesktopSearch = (): void => {
+	desktopExpanded = false;
+	keywordDesktop = "";
+	setPanelVisibility(false, true);
+};
+
+const toggleDesktopSearch = (): void => {
+	if (desktopExpanded) collapseDesktopSearch();
+	else expandDesktopSearch();
+};
+
+const handleDesktopKeydown = (event: KeyboardEvent): void => {
+	if (event.key === "Escape") {
+		desktopInput?.blur();
+		collapseDesktopSearch();
+	}
+};
 
 // --- Mocks for Dev Mode ---
 const fakeResult: SearchResult[] = [
@@ -136,24 +163,29 @@ $: if (initialized && (keywordMobile || keywordMobile === "")) {
 }
 </script>
 
-<!-- search bar for desktop view -->
-<div id="search-bar" class="hidden lg:flex transition-all items-center h-11 mr-2 rounded-lg
-      bg-black/4 hover:bg-black/6 focus-within:bg-black/6
-      dark:bg-white/5 dark:hover:bg-white/10 dark:focus-within:bg-white/10
+<!-- search bar for desktop view：默认收敛为图标，点击后展开输入框 -->
+<div id="search-bar" class="hidden lg:flex transition-all duration-200 items-center justify-end h-9 rounded-lg
+      {desktopExpanded ? 'bg-black/5 dark:bg-white/10' : ''}
 ">
-    <Icon icon="material-symbols:search"
-          class="absolute text-[1.25rem] pointer-events-none ml-3 transition my-auto text-black/30 dark:text-white/30"></Icon>
-    <input placeholder="{i18n(I18nKey.search)}" bind:value={keywordDesktop}
+    <input bind:this={desktopInput} bind:value={keywordDesktop}
            on:focus={() => search(keywordDesktop, true)}
-           class="transition-all pl-10 text-sm bg-transparent outline-0
-         h-full w-40 active:w-60 focus:w-60 text-black/50 dark:text-white/50"
+           on:keydown={handleDesktopKeydown}
+           placeholder={i18n(I18nKey.search)}
+           aria-label={i18n(I18nKey.search)}
+           class="nav-search-input text-sm bg-transparent outline-0 h-full transition-all duration-200 text-(--navbar-fg)
+           {desktopExpanded ? 'w-40 pl-3 opacity-100' : 'w-0 pl-0 opacity-0 pointer-events-none'}"
     >
+    <button type="button" on:click={toggleDesktopSearch} aria-label={i18n(I18nKey.search)}
+            aria-expanded={desktopExpanded}
+            class="btn-plain scale-animation rounded-lg w-9 h-9 shrink-0 text-(--navbar-fg) active:scale-90">
+        <Icon icon="material-symbols:search" class="text-[1.15rem]"></Icon>
+    </button>
 </div>
 
 <!-- toggle btn for phone/tablet view -->
 <button on:click={togglePanel} aria-label="Search Panel" id="search-switch"
-        class="btn-plain scale-animation lg:hidden! rounded-lg w-11 h-11 active:scale-90">
-    <Icon icon="material-symbols:search" class="text-[1.25rem]"></Icon>
+        class="btn-plain scale-animation lg:hidden! rounded-lg w-9 h-9 text-(--navbar-fg) active:scale-90">
+    <Icon icon="material-symbols:search" class="text-[1.15rem]"></Icon>
 </button>
 
 <!-- search panel -->

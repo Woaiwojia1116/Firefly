@@ -1,0 +1,113 @@
+---
+import { createHash } from "node:crypto";
+import path from "node:path";
+import type { ImageMetadata } from "astro";
+import PageTitle from "@/components/layout/PageTitle.astro";
+import MomentsFeed from "@components/pages/Moments.svelte";
+import { commentConfig, profileConfig, siteConfig } from "@/config";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+
+// 检查页面是否启用
+if (!siteConfig.pages.moments) {
+	return Astro.redirect("/404/");
+}
+
+// 页面标题和描述
+const title = i18n(I18nKey.moments);
+const description = i18n(I18nKey.momentsDescription);
+
+// 动态数据源依赖 Twikoo；未配置时页面降级为提示卡片
+const isTwikooEnabled =
+	commentConfig?.type === "twikoo" && !!commentConfig.twikoo?.envId;
+
+const envId = commentConfig.twikoo?.envId ?? "";
+const masterNick = commentConfig.twikoo?.masterTag?.nickname ?? "";
+const masterEmail = (
+	commentConfig.twikoo?.masterTag?.email ?? ""
+).trim().toLowerCase();
+
+// 博主邮箱摘要：自建实例的 mailMd5 字段实测为 sha256，旧版部署为 md5，两种都比对。
+// 邮箱明文只在这里参与摘要计算，不会进入页面产物。
+const mailHashes = masterEmail
+	? [
+			createHash("md5").update(masterEmail).digest("hex"),
+			createHash("sha256").update(masterEmail).digest("hex"),
+		]
+	: [];
+
+// 博主头像：与 ImageWrapper.astro 同一套 src/public/url 判定，解析成 URL 传给孤岛
+let authorAvatar = "";
+const avatarConf = profileConfig.avatar ?? "";
+if (avatarConf.startsWith("/") || /^https?:/.test(avatarConf)) {
+	authorAvatar = avatarConf;
+} else if (avatarConf) {
+	// 本文件在 src/pages/ 下，比 ImageWrapper.astro（src/components/common/）深一层，
+	// 所以这里的 glob 基准是 "../**" 而不是 "../../**"
+	const files = import.meta.glob<ImageMetadata>("../**/*.{png,jpg,jpeg,webp,avif}", {
+		import: "default",
+	});
+	const normalizedPath = path
+		.normalize(path.join("../", avatarConf))
+		.replace(/\\/g, "/");
+	const file = files[normalizedPath];
+	if (file) {
+		authorAvatar = (await file()).src;
+	} else {
+		console.error(
+			`\n[ERROR] Moments avatar not found: ${normalizedPath.replace("../../", "src/")}`,
+		);
+	}
+}
+---
+
+<MainGridLayout title={title} description={description} hideSidebars={true}>
+  <div class="ip ip-moments">
+    <div class="ip-post-col">
+      <div>
+        <PageTitle
+          eyebrow="MOMENTS"
+          title={title}
+          desc={description}
+          icon="material-symbols:bolt"
+        />
+      </div>
+
+      {isTwikooEnabled ? (
+        <MomentsFeed
+          client:load
+          envId={envId}
+          masterNick={masterNick}
+          mailHashes={mailHashes}
+          authorName={profileConfig.name ?? masterNick}
+          authorAvatar={authorAvatar}
+          lang={siteConfig.lang}
+        />
+      ) : (
+        <div class="card-base p-8 mb-6 relative overflow-hidden">
+          <div class="text-center py-8 text-(--content-meta)">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-(--btn-regular-bg) flex items-center justify-center">
+              <svg class="w-8 h-8 text-(--primary)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+              </svg>
+            </div>
+            <p class="text-base">{i18n(I18nKey.commentNotConfigured)}</p>
+            <p class="text-sm text-(--content-meta) opacity-75 mt-2">
+              动态功能依赖 Twikoo 评论系统，请先在 commentConfig 中配置
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+</MainGridLayout>
+
+<style>
+  /* 内容列至少撑满首屏剩余高度（主面板 top 为 5.5rem），动态较少时
+     页脚也不会顶到屏幕中间；底部再留一段空白与页脚拉开距离 */
+  .ip-moments .ip-post-col {
+    min-height: calc(100vh - 5.5rem);
+    padding-bottom: 1.5rem;
+  }
+</style>

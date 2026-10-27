@@ -22,53 +22,15 @@ body.homepage {
   overflow-x: hidden;
 }
 
-/* 导航栏玻璃态增强 */
-#navbar-wrapper {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.4) 0%,
-    rgba(255, 255, 255, 0.2) 50%,
-    rgba(255, 240, 245, 0.3) 100%
-  ) !important;
-  backdrop-filter: blur(20px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-  border: none !important;
-  box-shadow:
-    0 8px 32px rgba(255, 182, 193, 0.3),
-    0 2px 8px rgba(0, 0, 0, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.7) !important;
-}
-
-/* 导航栏隐藏时移除毛玻璃效果 */
+/* 导航栏不再使用玻璃态胶囊造型与厚重阴影：
+   表面、圆角与前景交由 navbar.css 统一处理，这里仅确保外层不叠加装饰 */
+#navbar-wrapper,
 #navbar-wrapper:has(#navbar.navbar-hidden) {
   background: transparent !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  box-shadow: none !important;
-  transition: none !important;
-}
-
-:root.dark #navbar-wrapper {
-  background: linear-gradient(
-    135deg,
-    rgba(40, 35, 50, 0.5) 0%,
-    rgba(35, 30, 45, 0.4) 50%,
-    rgba(45, 35, 55, 0.4) 100%
-  ) !important;
   border: none !important;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    0 2px 8px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-}
-
-/* 暗色主题导航栏隐藏时移除毛玻璃效果 */
-:root.dark #navbar-wrapper:has(#navbar.navbar-hidden) {
-  background: transparent !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
   box-shadow: none !important;
-  transition: none !important;
 }
 
 /* 卡片玻璃态效果增强（降低 blur 以减少 GPU 负载） */

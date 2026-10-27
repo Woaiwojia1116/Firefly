@@ -1,0 +1,2318 @@
+---
+// 首页 · 雨夜山城（仅首页第 1 页 /）
+// ---------------------------------------------------------------------------
+// 整页压在同一张背景照片上（雨夜窗前的山城灯火）：首屏是全屏画面 + 视差，
+// 向下滚动后由固定的全页背景层接住，关于我 → 最新文章 → 分类与入口都浸在
+// 同一张夜色照片里（文字固定为米白夜色系，不随主题翻转）。
+// 最新文章为主卡 + 行卡布局：左侧 1 张大图精选卡，右侧其余文章的行卡列表。
+//
+// 样式统一以 #fyh-home / .fyh-* 限定，色彩全部取自 tokens.css 的 --fy-*。
+import type { CollectionEntry } from "astro:content";
+import dayjs from "dayjs";
+import { createHash } from "node:crypto";
+import { Icon } from "astro-icon/components";
+import ImageWrapper from "@/components/common/ImageWrapper.astro";
+import { cinematicHomeConfig, commentConfig, profileConfig, siteConfig } from "@/config";
+import { announcementConfig } from "@/config/announcementConfig";
+import { formatDateToYYYYMMDD } from "@/utils/date-utils";
+import { getCategoryList, getSortedPosts } from "@/utils/content-utils";
+import {
+  getCategoryUrl,
+  getFileDirFromPath,
+  getPostUrlBySlug,
+  url,
+} from "@/utils/url-utils";
+
+interface Props {
+	/** 首页第 1 页的真实文章（来自 [...page].astro 的 page.data） */
+	posts?: CollectionEntry<"posts">[];
+}
+
+const { posts = [] } = Astro.props;
+
+const cfg = cinematicHomeConfig;
+const hero = cfg.hero;
+const about = cfg.about;
+const articles = cfg.articles;
+const entries = cfg.entries;
+
+// ── 首屏 ────────────────────────────────────────────────────────────────
+const heroImage = hero.image?.trim() ?? "";
+const hasHeroImage = heroImage !== "";
+const heroBg = hero.background?.trim() ?? "";
+const hasHeroBg = heroBg !== "";
+const noteLines = hero.note ?? [];
+
+// ── 便签实时化：展示「动态」页最新一条（拉取失败回退上面的默认文案） ──
+// 开关在 homeConfig.hero.noteLive；还要求动态页与 Twikoo 都启用
+const noteTwikooReady =
+	siteConfig.pages.moments &&
+	commentConfig?.type === "twikoo" &&
+	!!commentConfig.twikoo?.envId;
+const noteLive = hero.noteLive !== false && noteTwikooReady;
+const noteEnvId = commentConfig.twikoo?.envId ?? "";
+const noteMasterNick = commentConfig.twikoo?.masterTag?.nickname ?? "";
+const noteMasterEmail = (
+	commentConfig.twikoo?.masterTag?.email ?? ""
+).trim().toLowerCase();
+// 邮箱摘要：自建 Twikoo 的 mailMd5 实测为 sha256，旧版为 md5，两种都比对；明文不进前端
+const noteMailHashes = noteMasterEmail
+	? [
+			createHash("md5").update(noteMasterEmail).digest("hex"),
+			createHash("sha256").update(noteMasterEmail).digest("hex"),
+		].join(",")
+	: "";
+const polaroids = (hero.polaroids ?? []).slice(0, 2);
+const quickLinks = cfg.quickLinks ?? [];
+// target 以 # 开头 → 本页锚点（脚本平滑滚动）；否则按站内路径处理
+const ctaHref = (t: string): string => (t.startsWith("#") ? t : url(t));
+const windowImage = cfg.images.window?.trim() ?? "";
+const hasWindowImage = windowImage !== "";
+
+// ── 关于我：真实个人资料 + 公告 ──────────────────────────────────────────
+const aboutLines =
+	about.lines.length > 0
+		? about.lines
+		: [profileConfig.bio ?? ""].filter(Boolean);
+const avatar = profileConfig.avatar ?? "";
+const socialLinks = (profileConfig.links ?? []).filter((link) => link.url);
+
+const notice = announcementConfig;
+const noticeLink =
+	notice.link && notice.link.enable !== false && notice.link.url
+		? notice.link
+		: null;
+
+// ── 最新文章 ─────────────────────────────────────────────────────────────
+const featured = posts.slice(
+	0,
+	Math.min(cfg.featuredCount, posts.length),
+);
+// 左侧一张主卡 + 右侧若干行小卡
+const lead = featured[0];
+const rest = featured.slice(1);
+
+const hasCover = (image?: string): boolean =>
+	!!image && image !== "api" && image.trim() !== "";
+
+const coverBasePath = (id: string): string =>
+	getFileDirFromPath(`src/content/posts/${id}`);
+
+// 无封面时按分类 / 标题派生一个稳定的低饱和色相，避免灰块
+function hueFromText(text: string): number {
+	let h = 0;
+	for (let i = 0; i < text.length; i++) {
+		h = (h * 31 + text.charCodeAt(i)) % 360;
+	}
+	return h;
+}
+
+// ── 分类与入口 ───────────────────────────────────────────────────────────
+// 「我在折腾」词条：配置驱动（homeConfig.exploreTags），
+// 篇数按文章分类实时统计，计数为 0 的词条自动隐藏。
+const categoryCounts = new Map(
+	(await getCategoryList()).map((c) => [c.name, c.count]),
+);
+const exploreTags = cfg.exploreTags
+	.map((tag) => ({ ...tag, count: categoryCounts.get(tag.category) ?? 0 }))
+	.filter((tag) => tag.count > 0);
+
+const allPosts = await getSortedPosts();
+const totalPosts = allPosts.length;
+
+// ── 全站总字数：去掉代码块与内联代码后，按中文字符 + 英文字母累计 ────────
+let totalWords = 0;
+for (const post of allPosts) {
+	if (!post.body) continue;
+	const text = post.body
+		.replace(/```[\s\S]*?```/g, "")
+		.replace(/`[^`]*`/g, "")
+		.replace(/\s+/g, " ")
+		.trim();
+	totalWords +=
+		(text.match(/[\u4e00-\u9fa5]/g)?.length ?? 0) +
+		(text.match(/[a-zA-Z]/g)?.length ?? 0);
+}
+// 过万折成「N.N 万」，不足万按千位分隔展示
+const totalWordsLabel =
+	totalWords >= 10000
+		? `${(totalWords / 10000).toFixed(1).replace(/\.0$/, "")} 万`
+		: totalWords.toLocaleString();
+
+const lastPost = allPosts[0];
+const lastUpdate = lastPost
+	? formatDateToYYYYMMDD(lastPost.data.published).replace(/-/g, ".")
+	: "—";
+const runningDays = Math.max(
+	0,
+	dayjs().diff(dayjs(siteConfig.siteStartDate), "day"),
+);
+
+const dateLabel = (date: Date): string =>
+	formatDateToYYYYMMDD(date).replace(/-/g, ".");
+
+const categoryOf = (entry: CollectionEntry<"posts">): string => {
+	const c = entry.data.category;
+	return c ? String(c).trim() : "";
+};
+---
+
+<div class="fyh" id="fyh-home" data-fyh>
+  {/* ══ 全页背景：雨夜窗前的山城灯火，整页固定不随滚动 ════════════════ */}
+  <div class="fyh-pagebg" aria-hidden="true">
+    {hasHeroBg && (
+      <ImageWrapper
+        class="fyh-pagebg__img"
+        src={heroBg}
+        alt=""
+        position={hero.backgroundPosition ?? "center 58%"}
+        loading="lazy"
+        widths={[1280, 1920, 2560]}
+        sizes="100vw"
+      />
+    )}
+    <i class="fyh-pagebg__shade"></i>
+  </div>
+  {/* ══ 01 · 首屏：雨夜山城 ══════════════════════════════════════════ */}
+  <section class="fyh-hero" data-fyh-hero aria-labelledby="fyh-hero-title">
+    {/* 背景：雨夜窗前的山城灯火，滚动时以更慢的速度掠过（视差） */}
+    <div class="fyh-hero__bg" aria-hidden="true">
+      <div class="fyh-hero__bg-move" data-hero-bg>
+        {hasHeroBg && (
+          <ImageWrapper
+            class="fyh-hero__bg-img"
+            src={heroBg}
+            alt=""
+            position={hero.backgroundPosition ?? "center 58%"}
+            loading="eager"
+            fetchpriority="high"
+            widths={[1280, 1920, 2560]}
+            sizes="100vw"
+          />
+        )}
+      </div>
+      {/* 压暗 + 底部过渡：上端保证导航可读，底端融进下一段的夜幕 */}
+      <i class="fyh-hero__shade" aria-hidden="true"></i>
+    </div>
+
+    <div class="fyh-hero__inner">
+      <div class="fyh-hero__text">
+        <p class="fyh-eyebrow">
+          {hero.eyebrow}
+          <i class="fyh-eyebrow__line" aria-hidden="true"></i>
+        </p>
+        <h1 id="fyh-hero-title" class="fyh-hero__title">
+          {hero.titleLines.map((line) => (
+            <span class="fyh-hero__line">
+              <span class="fyh-hero__line-in">{line}</span>
+            </span>
+          ))}
+        </h1>
+        <p class="fyh-hero__sub">{hero.subtitle}</p>
+
+        <div class="fyh-hero__cta fyh-extra">
+          {hero.primaryCta && (
+            <a class="fyh-btn" href={ctaHref(hero.primaryCta.target)} data-scroll-to>
+              {hero.primaryCta.label}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 12h15" /><path d="M13 6l6 6-6 6" />
+              </svg>
+            </a>
+          )}
+          {hero.secondaryCta && (
+            <a class="fyh-plainlink" href={ctaHref(hero.secondaryCta.target)} data-scroll-to>
+              {hero.secondaryCta.label}
+            </a>
+          )}
+        </div>
+      </div>
+
+      <figure class="fyh-hero__side" data-hero-side>
+        <div class="fyh-hero__win" data-fyh-hero-win>
+          <div class="fyh-hero__arch">
+            {hasHeroImage ? (
+              <ImageWrapper
+                class="fyh-hero__media"
+                src={heroImage}
+                alt={hero.imageAlt}
+                position={hero.imagePosition}
+                loading="eager"
+                fetchpriority="high"
+                widths={[480, 720, 960]}
+                sizes="(min-width: 900px) 24vw, 60vw"
+              />
+            ) : (
+              <div class="fyh-win-blank" aria-hidden="true">
+                <span>YSDY</span>
+              </div>
+            )}
+            <i class="fyh-hero__sheen" aria-hidden="true"></i>
+          </div>
+        </div>
+
+        {noteLines.length > 0 && (
+          <span class="fyh-hero__note fyh-extra" aria-hidden="true">
+            <i
+              class="fyh-hero__note-paper"
+              data-live={noteLive ? "true" : undefined}
+              data-env-id={noteLive ? noteEnvId : undefined}
+              data-master-nick={noteLive ? noteMasterNick : undefined}
+              data-mail-hashes={noteLive ? noteMailHashes : undefined}
+              data-moments-url={url("/moments/")}
+            >
+              {noteLines.map((line) => <span>{line}</span>)}
+            </i>
+          </span>
+        )}
+
+        {polaroids[0] && (
+          <span class="fyh-hero__polaroid fyh-hero__polaroid--a fyh-extra" aria-hidden="true">
+            <i class="fyh-hero__polaroid-frame">
+              <ImageWrapper
+                class="fyh-hero__polaroid-img"
+                src={polaroids[0].image}
+                alt=""
+                position={polaroids[0].position}
+                loading="lazy"
+                widths={[160, 320]}
+                sizes="110px"
+              />
+            </i>
+          </span>
+        )}
+        {polaroids[1] && (
+          <span class="fyh-hero__polaroid fyh-hero__polaroid--b fyh-extra" aria-hidden="true">
+            <i class="fyh-hero__polaroid-frame">
+              <ImageWrapper
+                class="fyh-hero__polaroid-img"
+                src={polaroids[1].image}
+                alt=""
+                position={polaroids[1].position}
+                loading="lazy"
+                widths={[160, 320]}
+                sizes="84px"
+              />
+            </i>
+          </span>
+        )}
+
+        {hero.windowCaption && (
+          <figcaption class="fyh-hero__winlabel fyh-extra" aria-hidden="true">
+            {hero.windowCaption}
+          </figcaption>
+        )}
+      </figure>
+    </div>
+
+    {/* 首屏底部：三张快捷卡片 */}
+    {quickLinks.length > 0 && (
+      <nav class="fyh-quick" aria-label="首页快捷入口">
+        {quickLinks.map((q) => (
+          <a class="fyh-quick__card fyh-extra" href={q.target ? ctaHref(q.target) : url(q.url ?? "/")}>
+            <span class="fyh-quick__thumb">
+              {q.image && (
+                <ImageWrapper
+                  class="fyh-quick__img"
+                  src={q.image}
+                  alt=""
+                  position="center 55%"
+                  loading="lazy"
+                  widths={[160, 320]}
+                  sizes="80px"
+                />
+              )}
+            </span>
+            <span class="fyh-quick__body">
+              <b>
+                {q.title}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M4 12h15" /><path d="M13 6l6 6-6 6" />
+                </svg>
+              </b>
+              <small>{q.desc}</small>
+            </span>
+          </a>
+        ))}
+      </nav>
+    )}
+
+    <div class="fyh-hero__scroll fyh-mono" aria-hidden="true">
+      <span class="fyh-hero__mouse"><i></i></span>
+      <span class="fyh-hero__scroll-label">
+        <i></i>{hero.scrollLabel}<i></i>
+      </span>
+    </div>
+  </section>
+
+  <p class="fyh-bridge" aria-hidden="true">{cfg.bridges.toAbout}</p>
+
+  {/* ══ 02 · 关于我 ══════════════════════════════════════════════════ */}
+  <section class="fyh-about" id="fyh-about" data-fyh-about aria-labelledby="fyh-about-title">
+    <div class="fyh-about__body">
+      <h2 id="fyh-about-title" class="fyh-h2">{about.title}</h2>
+
+      <div class="fyh-about__lines">
+        {aboutLines.map((line) => <p data-fyh-rise>{line}</p>)}
+      </div>
+
+      <div class="fyh-identity" data-fyh-rise>
+        <div class="fyh-identity__avatar">
+          {avatar && (
+            <ImageWrapper
+              src={avatar}
+              alt={profileConfig.name}
+              loading="lazy"
+              widths={[96, 160]}
+              sizes="56px"
+            />
+          )}
+        </div>
+        <div class="fyh-identity__meta">
+          <p class="fyh-identity__name">{profileConfig.name}</p>
+          {profileConfig.bio && (
+            <p class="fyh-identity__bio">{profileConfig.bio}</p>
+          )}
+          {socialLinks.length > 0 && (
+            <ul class="fyh-identity__links">
+              {socialLinks.map((link) => (
+                <li>
+                  <a
+                    href={link.url}
+                    target={link.url.startsWith("http") ? "_blank" : "_self"}
+                    rel={link.url.startsWith("http")
+                      ? "noopener noreferrer"
+                      : undefined}
+                    aria-label={link.name}
+                  >
+                    <Icon name={link.icon} />
+                    {link.showName && <span>{link.name}</span>}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      <aside class="fyh-notice" data-fyh-rise>
+        <p class="fyh-notice__label fyh-mono">{about.noticeLabel}</p>
+        <p class="fyh-notice__text">{notice.content}</p>
+        {noticeLink && (
+          <a
+            class="fyh-notice__link"
+            href={noticeLink.url}
+            target={noticeLink.external ? "_blank" : "_self"}
+            rel={noticeLink.external ? "noopener noreferrer" : undefined}
+          >
+            {noticeLink.text}
+          </a>
+        )}
+      </aside>
+    </div>
+
+    <div class="fyh-about__media">
+      <div class="fyh-about__win" data-fyh-about-win>
+        {hasWindowImage && (
+          <ImageWrapper
+            class="fyh-about__media-img"
+            src={windowImage}
+            alt=""
+            position="center 45%"
+            loading="lazy"
+            widths={[640, 960, 1440]}
+            sizes="(min-width: 1024px) 44vw, 92vw"
+          />
+        )}
+        <canvas
+          class="fyh-about__glass"
+          data-fyh-glass
+          aria-hidden="true"
+        ></canvas>
+      </div>
+      <p class="fyh-caption fyh-mono">
+        <span class="fyh-caption__line" aria-hidden="true"></span>
+        {about.caption}
+      </p>
+    </div>
+  </section>
+
+  <p class="fyh-bridge" aria-hidden="true">{cfg.bridges.toArticles}</p>
+
+  {/* ══ 03 · 最新文章 ════════════════════════════════════════════════ */}
+  <section
+    class="fyh-articles"
+    id="fyh-latest"
+    data-fyh-articles
+    aria-labelledby="fyh-articles-title"
+  >
+    <header class="fyh-head-row">
+      <div>
+        <h2 id="fyh-articles-title" class="fyh-h2">
+          <span class="fyh-mask"><span class="fyh-mask__in">{articles.title}</span></span>
+        </h2>
+        <p class="fyh-head-desc">{articles.description}</p>
+      </div>
+      <a class="fyh-more" href={articles.archiveUrl}>
+        {articles.moreLabel}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 12h15" /><path d="M13 6l6 6-6 6" />
+        </svg>
+      </a>
+    </header>
+
+    {/* 主卡 + 行卡：左 1 张大图，右侧其余文章列表 */}
+    <div class="fyh-latest">
+      {lead && (
+        <a
+          class="fyh-lead"
+          href={getPostUrlBySlug(lead.id)}
+          aria-label={`${lead.data.title} · ${dateLabel(lead.data.published)}`}
+        >
+          <div class="fyh-lead__frame">
+            {hasCover(lead.data.image) ? (
+              <ImageWrapper
+                class="fyh-lead__cover"
+                src={lead.data.image}
+                alt=""
+                basePath={coverBasePath(lead.id)}
+                loading="lazy"
+                widths={[720, 960, 1440]}
+                sizes="(min-width: 900px) 56vw, 92vw"
+              />
+            ) : (
+              <div
+                class="fyh-lead__fallback"
+                style={`--fyh-hue:${hueFromText(categoryOf(lead) || lead.data.title)};`}
+                aria-hidden="true"
+              >
+                <span>{categoryOf(lead) || lead.data.title}</span>
+              </div>
+            )}
+            <div class="fyh-lead__band">
+              <p class="fyh-lead__date fyh-mono">
+                {dateLabel(lead.data.published)}
+              </p>
+              <h3 class="fyh-lead__title">{lead.data.title}</h3>
+              {categoryOf(lead) && (
+                <p class="fyh-lead__cat">
+                  <i aria-hidden="true"></i>
+                  {categoryOf(lead)}
+                </p>
+              )}
+            </div>
+          </div>
+        </a>
+      )}
+
+      {rest.length > 0 && (
+        <ul class="fyh-side">
+          {rest.map((entry) => {
+            const cover = entry.data.image;
+            const category = categoryOf(entry);
+            return (
+              <li>
+                <a
+                  class="fyh-side__row"
+                  href={getPostUrlBySlug(entry.id)}
+                >
+                  <span class="fyh-side__thumb">
+                    {hasCover(cover) ? (
+                      <ImageWrapper
+                        class="fyh-side__img"
+                        src={cover}
+                        alt=""
+                        basePath={coverBasePath(entry.id)}
+                        loading="lazy"
+                        widths={[320, 480]}
+                        sizes="(min-width: 900px) 15vw, 36vw"
+                      />
+                    ) : (
+                      <div
+                        class="fyh-side__fallback"
+                        style={`--fyh-hue:${hueFromText(category || entry.data.title)};`}
+                        aria-hidden="true"
+                      ></div>
+                    )}
+                  </span>
+                  <span class="fyh-side__body">
+                    <time class="fyh-mono">{dateLabel(entry.data.published)}</time>
+                    <b>{entry.data.title}</b>
+                    {category && <em>{category}</em>}
+                  </span>
+                  <svg class="fyh-side__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M4 12h15" /><path d="M13 6l6 6-6 6" />
+                  </svg>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  </section>
+
+  <p class="fyh-bridge" aria-hidden="true">{cfg.bridges.toEntries}</p>
+
+  {/* ══ 04 · 分类与入口 ══════════════════════════════════════════════ */}
+  <section
+    class="fyh-entries"
+    data-fyh-entries
+    aria-labelledby="fyh-entries-title"
+  >
+    <header class="fyh-head-row">
+      <h2 id="fyh-entries-title" class="fyh-h2">{entries.title}</h2>
+      <span class="fyh-note-inline fyh-mono">{entries.note}</span>
+    </header>
+
+    {/* 夜航站牌：每个去处一行，翻牌入场；悬停底色由滑动高亮层统一负责 */}
+    <div class="fyh-board-wrap">
+      <span class="fyh-board__hl" aria-hidden="true"></span>
+      <div class="fyh-board" role="list">
+        {cfg.departures.map((dep, i) => (
+          <a
+            class="fyh-board__row"
+            data-fyh-tile
+            role="listitem"
+            href={dep.url}
+          >
+            <span class="fyh-board__no fyh-mono" aria-hidden="true">
+              {String(i + 1).padStart(2, "0")}
+            </span>
+            <span class="fyh-board__main">
+              <span class="fyh-board__name">{dep.name}</span>
+              <span class="fyh-board__desc">{dep.desc}</span>
+            </span>
+            <span class="fyh-board__leader" aria-hidden="true"></span>
+            <span class="fyh-board__arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 12h15" /><path d="M13 6l6 6-6 6" />
+              </svg>
+            </span>
+          </a>
+        ))}
+      </div>
+    </div>
+
+    <div class="fyh-pills" data-fyh-rise>
+      {exploreTags.map((tag) => (
+        <a class="fyh-pill" href={getCategoryUrl(tag.category)}>
+          <Icon name={tag.icon} class="fyh-pill__icon" aria-hidden="true" />
+          <span class="fyh-pill__name">{tag.name}</span>
+          <span class="fyh-pill__desc">{tag.desc}</span>
+          <i class="fyh-mono">×{tag.count}</i>
+        </a>
+      ))}
+    </div>
+
+    <div class="fyh-stats fyh-mono" data-fyh-rise>
+      <span>文章<b>{totalPosts}</b></span>
+      <span>总字数<b>{totalWordsLabel}</b></span>
+      <span>运行<b>{runningDays} 天</b></span>
+      <span>最近更新<b>{lastUpdate}</b></span>
+      <a href="/rss.xml">订阅<b>RSS</b></a>
+    </div>
+  </section>
+</div>
+
+<script>
+  import { initHomeCinematic } from "@/utils/home-cinematic";
+
+  initHomeCinematic();
+</script>
+
+<script>
+  // 首屏视差与锚点平滑滚动。
+  // 仅动 transform，不碰布局；reduced-motion 时完全静止。
+  // Swup 换页后由 astro:page-load 重新绑定，旧的滚动监听先解除。
+  function bindHomeHero() {
+    const win = window as Window & { __fyhHeroClean?: () => void };
+    win.__fyhHeroClean?.();
+    const root = document.getElementById("fyh-home");
+    if (!root) return;
+
+    const reduce = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const hero = root.querySelector<HTMLElement>("[data-fyh-hero]");
+    const bg = root.querySelector<HTMLElement>("[data-hero-bg]");
+    const side = root.querySelector<HTMLElement>("[data-hero-side]");
+
+    const controller = new AbortController();
+    win.__fyhHeroClean = () => controller.abort();
+
+    if (!reduce && hero && bg) {
+      let ticking = false;
+      const update = () => {
+        ticking = false;
+        const y = window.scrollY;
+        if (y <= hero.offsetHeight) {
+          bg.style.transform = `translate3d(0, ${(y * 0.14).toFixed(1)}px, 0)`;
+          if (side) {
+            side.style.transform = `translate3d(0, ${(y * 0.06).toFixed(1)}px, 0)`;
+          }
+        }
+      };
+      window.addEventListener(
+        "scroll",
+        () => {
+          if (!ticking) {
+            ticking = true;
+            requestAnimationFrame(update);
+          }
+        },
+        { passive: true, signal: controller.signal },
+      );
+      update();
+    }
+
+    if (!reduce) {
+      // 自实现的平滑滚动：内嵌 webview 可能禁用原生的 behavior:"smooth"
+      const smoothScrollTo = (target: HTMLElement) => {
+        const start = window.scrollY;
+        const end =
+          start + target.getBoundingClientRect().top - 76;
+        const dist = end - start;
+        if (Math.abs(dist) < 2) return;
+        const dur = Math.min(1100, Math.max(500, Math.abs(dist) * 0.32));
+        const t0 = performance.now();
+        const ease = (t: number) => 1 - Math.pow(1 - t, 3);
+        const step = (now: number) => {
+          const p = Math.min(1, (now - t0) / dur);
+          window.scrollTo(0, start + dist * ease(p));
+          if (p < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      };
+      root.addEventListener("click", (e) => {
+        const anchor = (e.target as HTMLElement | null)?.closest(
+          'a[href^="#fyh-"]',
+        );
+        if (!anchor) return;
+        const target = document.getElementById(
+          anchor.getAttribute("href")!.slice(1),
+        );
+        if (!target) return;
+        e.preventDefault();
+        smoothScrollTo(target);
+      }, { signal: controller.signal });
+    }
+  }
+
+  const w = window as Window & { __fyhHeroBound?: boolean };
+  if (!w.__fyhHeroBound) {
+    w.__fyhHeroBound = true;
+    document.addEventListener("astro:page-load", bindHomeHero);
+  }
+  bindHomeHero();
+
+  // ── 分类与入口·夜航站牌：滑动高亮层 ────────────────────────────────
+  // 与归档页同一套 magic highlight：整条列表只有一个高亮背景，
+  // 鼠标从 01 往返划到 05 时在行间平滑流动，而不是逐行硬切。
+  function bindBoardHighlight() {
+    const win = window as Window & { __fyhBoardClean?: () => void };
+    win.__fyhBoardClean?.();
+
+    const wrap = document.querySelector<HTMLElement>(".fyh-board-wrap");
+    const hl = wrap?.querySelector<HTMLElement>(".fyh-board__hl");
+    if (!wrap || !hl) return;
+    // 仅 hover 设备启用（触屏没有 mouseover 流）
+    if (!window.matchMedia("(hover: hover)").matches) return;
+
+    const move = (e: MouseEvent) => {
+      const row = (e.target as HTMLElement | null)?.closest?.(
+        ".fyh-board__row",
+      ) as HTMLElement | null;
+      if (!row || !wrap.contains(row)) return;
+      // 相对容器坐标：页面滚动时两边矩形同步偏移，差值恒定，无需监听滚动
+      const rowRect = row.getBoundingClientRect();
+      const baseRect = wrap.getBoundingClientRect();
+      hl.style.transform = `translateY(${(rowRect.top - baseRect.top).toFixed(1)}px)`;
+      hl.style.height = `${rowRect.height}px`;
+      hl.classList.add("is-visible");
+    };
+    const hide = () => hl.classList.remove("is-visible");
+
+    wrap.addEventListener("mouseover", move);
+    wrap.addEventListener("mouseleave", hide);
+    win.__fyhBoardClean = () => {
+      wrap.removeEventListener("mouseover", move);
+      wrap.removeEventListener("mouseleave", hide);
+    };
+  }
+
+  const wb = window as Window & { __fyhBoardBound?: boolean };
+  if (!wb.__fyhBoardBound) {
+    wb.__fyhBoardBound = true;
+    document.addEventListener("astro:page-load", bindBoardHighlight);
+  }
+  bindBoardHighlight();
+</script>
+
+<script>
+  // 便签实时化：拉取「动态」页最新一条博主动态，替换手写便签的文案。
+  // 模块脚本整个文档只执行一次：首次进首页靠立即调用，swup 回到首页时
+  // 便签 DOM 已被缓存 HTML 重建，由 astro:page-load 再拉一次。拉取失败
+  // 静默保留 SSR 的默认文案。
+  import { fetchLatestMoment } from "@/utils/twikoo-moments";
+  import { getSwup } from "@/utils/swup-lifecycle";
+
+  function bindNoteMoment() {
+    const paper = document.querySelector<HTMLElement>(
+      "#fyh-home .fyh-hero__note-paper",
+    );
+    if (!paper || paper.dataset.live !== "true") return;
+    const envId = paper.dataset.envId ?? "";
+    const masterNick = paper.dataset.masterNick ?? "";
+    const mailHashes = (paper.dataset.mailHashes ?? "")
+      .split(",")
+      .filter(Boolean);
+    if (!envId || !masterNick) return;
+
+    // 点击便签跳转动态页（有 swup 走平滑切换，否则直接跳）
+    const momentsUrl = paper.dataset.momentsUrl || "/moments/";
+    paper.addEventListener("click", () => {
+      const swup = getSwup();
+      if (swup?.navigate) swup.navigate(momentsUrl);
+      else window.location.href = momentsUrl;
+    });
+
+    fetchLatestMoment({ envId, author: { masterNick, mailHashes } })
+      .then((m) => {
+        // 请求期间可能已换页离开首页，便签不再连着文档就放弃
+        if (!m || !paper.isConnected) return;
+        // 便签很窄：约 7 字一行、最多 4 行，第一行留给心情 emoji；
+        // 截断时省略号要占掉末行一个字位，保证它不会被行数上限挤掉
+        const perLine = 7;
+        const maxLines = 4;
+        const availLines = m.mood ? maxLines - 1 : maxLines;
+        const maxChars = availLines * perLine;
+        const body =
+          m.text.length > maxChars
+            ? `${m.text.slice(0, maxChars - 1)}…`
+            : m.text;
+        const lines: string[] = [];
+        if (m.mood) lines.push(m.mood);
+        for (
+          let i = 0;
+          i < body.length && lines.length < maxLines;
+          i += perLine
+        ) {
+          lines.push(body.slice(i, i + perLine));
+        }
+        if (lines.length === 0) return;
+        paper.replaceChildren(
+          ...lines.map((t) => {
+            const s = document.createElement("span");
+            s.textContent = t;
+            return s;
+          }),
+        );
+        paper.closest(".fyh-hero__note")?.classList.add("fyh-note-live");
+      })
+      .catch(() => {
+        /* Twikoo 不可达时保留默认文案 */
+      });
+  }
+
+  const noteWin = window as Window & { __fyhNoteBound?: boolean };
+  if (!noteWin.__fyhNoteBound) {
+    noteWin.__fyhNoteBound = true;
+    document.addEventListener("astro:page-load", bindNoteMoment);
+  }
+  bindNoteMoment();
+</script>
+
+<style is:global>
+  /* ══════════════════════════════════════════════════════════════════
+     首页 · 萤火 · 夜航 —— 结构样式
+     色彩全部取自 tokens.css 的 --fy-*，夜 / 昼自动切换；
+     所有选择器以 .fyh 限定，不污染其它页面。
+     ══════════════════════════════════════════════════════════════════ */
+
+  .fyh {
+    position: relative;
+    isolation: isolate;
+    color: var(--fy-ink);
+    font-family: var(--fy-sans, system-ui, sans-serif);
+    /* 整页压在雨夜照片上：文字与线条固定为夜色米白系，不随明暗主题翻转 */
+    --fy-ink: #efe8da;
+    --fy-ink-soft: rgba(239, 232, 218, 0.74);
+    --fy-ink-faint: rgba(239, 232, 218, 0.48);
+    --fy-line: rgba(239, 232, 218, 0.3);
+    --fy-line-soft: rgba(239, 232, 218, 0.16);
+    --fy-bg-0: #0a0b14;
+    --fy-bg-1: #0e1019;
+    --fy-bg-2: #141624;
+    /* 兜底底色：照片加载前与无图环境下的连续夜幕 */
+    background: linear-gradient(
+      180deg,
+      var(--fy-bg-0) 0%,
+      var(--fy-bg-1) 46%,
+      var(--fy-bg-2) 64%,
+      var(--fy-bg-1) 82%,
+      var(--fy-bg-0) 100%
+    );
+  }
+
+  /* ── 全页背景：雨夜窗前的山城灯火 ─────────────────────────────────
+     fixed 定位铺满视口，滚动时所有段落都浸在同一张照片里；
+     首屏自带的视差背景层画在其上，二者为同一张图，观感连续。 */
+  .fyh .fyh-pagebg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .fyh .fyh-pagebg__img,
+  .fyh .fyh-pagebg__img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .fyh .fyh-pagebg__shade {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(
+        180deg,
+        rgba(9, 10, 18, 0.3) 0%,
+        rgba(9, 10, 18, 0.52) 42%,
+        rgba(9, 10, 18, 0.6) 100%
+      ),
+      radial-gradient(
+        120% 90% at 50% 0%,
+        rgba(9, 10, 18, 0) 42%,
+        rgba(9, 10, 18, 0.34) 100%
+      );
+  }
+
+  .fyh-mono {
+    font-family: var(--fy-mono);
+  }
+
+  /* 首屏 CTA 指向的两个锚点：预留导航栏高度 */
+  .fyh .fyh-about,
+  .fyh .fyh-articles {
+    scroll-margin-top: 84px;
+  }
+
+  /* 首页不叠加全站樱花（樱花开关联闭时本来也不渲染） */
+  html body.homepage .sakura-canvas {
+    display: none;
+  }
+
+  /* ── 01 · 首屏：雨夜山城 ──────────────────────────────────────────
+     整幕背景照片 + 左侧文案 + 右侧拱窗 + 底部三张快捷卡片。
+     首屏永远是一张夜景照片：文字取固定的米白系（不随主题翻转），
+     底部用渐变融进下一段的夜幕（昼间主题则过渡到纸面）。 */
+  .fyh .fyh-hero {
+    --hero-ink: #efe8da;
+    --hero-ink-soft: rgba(239, 232, 218, 0.74);
+    --hero-ink-faint: rgba(239, 232, 218, 0.48);
+    --hero-line: rgba(239, 232, 218, 0.42);
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    min-height: 100vh;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    padding: clamp(88px, 13vh, 140px) clamp(20px, 6.5vw, 92px)
+      clamp(18px, 3.4vh, 34px);
+    color: var(--hero-ink);
+  }
+
+  /* 背景：整幕照片（内层多留余量，供滚动视差移动） */
+  .fyh .fyh-hero__bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .fyh .fyh-hero__bg-move {
+    position: absolute;
+    left: 0;
+    top: -12%;
+    width: 100%;
+    height: 124%;
+    will-change: transform;
+  }
+
+  .fyh .fyh-hero__bg-img {
+    width: 100%;
+    height: 100%;
+  }
+
+  .fyh .fyh-hero__shade {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(
+        180deg,
+        rgba(9, 10, 18, 0.5) 0%,
+        rgba(9, 10, 18, 0.12) 20%,
+        rgba(9, 10, 18, 0) 42%,
+        rgba(9, 10, 18, 0.24) 76%,
+        rgba(9, 10, 18, 0.55) 100%
+      ),
+      linear-gradient(
+        97deg,
+        rgba(9, 10, 18, 0.56) 0%,
+        rgba(9, 10, 18, 0.3) 34%,
+        rgba(9, 10, 18, 0.02) 64%
+      );
+  }
+
+  .fyh .fyh-hero__inner,
+  .fyh .fyh-quick,
+  .fyh .fyh-hero__scroll {
+    position: relative;
+    z-index: 1;
+  }
+
+  .fyh .fyh-hero__inner {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: clamp(28px, 5vw, 80px);
+  }
+
+  .fyh .fyh-hero__text {
+    max-width: 36rem;
+  }
+
+  .fyh .fyh-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 0 0 clamp(16px, 2.8vh, 28px);
+    font-family: var(--fy-serif);
+    font-size: clamp(12px, 1.2vw, 14px);
+    font-weight: 600;
+    letter-spacing: 0.34em;
+    color: var(--hero-ink-soft);
+  }
+
+  .fyh .fyh-eyebrow__line {
+    width: clamp(36px, 4vw, 64px);
+    height: 1px;
+    background: linear-gradient(90deg, var(--hero-line), transparent);
+  }
+
+  .fyh .fyh-hero__title {
+    margin: 0;
+    font-family: "Playfair Display", var(--fy-serif);
+    font-weight: 700;
+    font-size: clamp(3.3rem, 8.4vw, 6.9rem);
+    line-height: 1.06;
+    color: var(--hero-ink);
+    text-shadow: 0 2px 44px rgba(4, 6, 14, 0.55);
+  }
+
+  .fyh .fyh-hero__line {
+    display: block;
+    overflow: hidden;
+    padding-bottom: 0.09em;
+    margin-bottom: -0.09em;
+  }
+
+  .fyh .fyh-hero__line-in {
+    display: block;
+  }
+
+  .fyh .fyh-hero__sub {
+    margin: clamp(16px, 3vh, 28px) 0 0;
+    font-family: var(--fy-serif);
+    font-size: clamp(15px, 1.55vw, 19px);
+    letter-spacing: 0.14em;
+    color: var(--hero-ink-soft);
+  }
+
+  .fyh .fyh-hero__cta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: clamp(22px, 3vw, 42px);
+    margin-top: clamp(26px, 5vh, 46px);
+  }
+
+  .fyh .fyh-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0.82em 1.8em;
+    border: 1px solid var(--hero-line);
+    border-radius: 999px;
+    background: rgba(10, 12, 20, 0.22);
+    font-size: clamp(13px, 1.25vw, 15px);
+    letter-spacing: 0.2em;
+    color: var(--hero-ink);
+    text-decoration: none;
+    transition:
+      background var(--fy-dur-fast) var(--fy-ease),
+      border-color var(--fy-dur-fast) var(--fy-ease);
+  }
+
+  .fyh .fyh-btn svg {
+    width: 1.15em;
+    height: 1.15em;
+    transition: transform var(--fy-dur-fast) var(--fy-ease);
+  }
+
+  .fyh .fyh-btn:hover {
+    border-color: var(--hero-ink);
+    background: rgba(239, 232, 218, 0.14);
+  }
+
+  .fyh .fyh-btn:hover svg {
+    transform: translateX(4px);
+  }
+
+  .fyh .fyh-plainlink {
+    padding-bottom: 7px;
+    border-bottom: 1px solid var(--hero-line);
+    font-size: clamp(13px, 1.25vw, 15px);
+    letter-spacing: 0.2em;
+    color: var(--hero-ink-soft);
+    text-decoration: none;
+    transition:
+      color var(--fy-dur-fast) var(--fy-ease),
+      border-color var(--fy-dur-fast) var(--fy-ease);
+  }
+
+  .fyh .fyh-plainlink:hover {
+    color: var(--hero-ink);
+    border-color: var(--hero-ink);
+  }
+
+  /* ── 拱窗：夜里唯一亮着的窗 ──────────────────────────────────────── */
+  .fyh .fyh-hero__side {
+    position: relative;
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-right: clamp(0px, 2vw, 40px);
+  }
+
+  .fyh .fyh-hero__win {
+    width: clamp(230px, 23vw, 330px);
+    aspect-ratio: 10 / 14;
+  }
+
+  .fyh .fyh-hero__arch {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    border-radius: 999px 999px 18px 18px;
+    border: 1px solid rgba(240, 232, 214, 0.35);
+    background: #181a26;
+    box-shadow:
+      0 0 0 6px rgba(240, 232, 214, 0.06),
+      0 0 74px 6px rgba(255, 226, 170, 0.14),
+      0 32px 84px -26px rgba(2, 3, 8, 0.8);
+  }
+
+  .fyh .fyh-hero__media,
+  .fyh .fyh-hero__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* 玻璃斜高光：一道静止的柔光落在拱窗上 */
+  .fyh .fyh-hero__sheen {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      112deg,
+      transparent 36%,
+      rgba(255, 255, 255, 0.1) 47%,
+      rgba(255, 255, 255, 0.02) 56%,
+      transparent 66%
+    );
+  }
+
+  /* 手写便签：贴在拱窗左上的一张小纸 */
+  .fyh .fyh-hero__note {
+    position: absolute;
+    left: clamp(-72px, -5.5vw, -44px);
+    top: 3%;
+    z-index: 2;
+    filter: drop-shadow(0 10px 20px rgba(2, 3, 8, 0.5));
+  }
+
+  .fyh .fyh-hero__note-paper {
+    display: block;
+    width: clamp(96px, 9vw, 126px);
+    padding: 15px 8px 17px;
+    background: linear-gradient(168deg, #f6efdc 0%, #ecdfc4 100%);
+    color: #4d4438;
+    font-family: "Zhi Mang Xing", var(--fy-serif);
+    font-size: clamp(15px, 1.4vw, 19px);
+    line-height: 1.5;
+    text-align: center;
+    letter-spacing: 0.06em;
+    transform: rotate(-7deg);
+    clip-path: polygon(3% 5%, 97% 0%, 100% 95%, 0% 100%);
+  }
+
+  .fyh .fyh-hero__note-paper span {
+    display: block;
+  }
+
+  /* 便签展示动态后可点击进入动态页 */
+  .fyh .fyh-hero__note.fyh-note-live {
+    cursor: pointer;
+  }
+
+  /* 拍立得：散落在拱窗边的小照片 */
+  .fyh .fyh-hero__polaroid {
+    position: absolute;
+    z-index: 2;
+    filter: drop-shadow(0 12px 22px rgba(2, 3, 8, 0.55));
+  }
+
+  .fyh .fyh-hero__polaroid-frame {
+    display: block;
+    padding: 4px 4px 16px;
+    background: #f2ecdf;
+    transform: rotate(-9deg);
+  }
+
+  .fyh .fyh-hero__polaroid-img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 5 / 4;
+  }
+
+  .fyh .fyh-hero__polaroid--a {
+    left: -15%;
+    bottom: 15%;
+    width: clamp(76px, 7.4vw, 106px);
+  }
+
+  .fyh .fyh-hero__polaroid--b {
+    right: -17%;
+    bottom: -13%;
+    width: clamp(58px, 5.6vw, 80px);
+  }
+
+  .fyh .fyh-hero__polaroid--b .fyh-hero__polaroid-frame {
+    transform: rotate(8deg);
+  }
+
+  /* 窗注：拱窗下的一行小字，两侧细线 */
+  .fyh .fyh-hero__winlabel {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    margin: clamp(16px, 2.6vh, 26px) 0 0;
+    font-family: var(--fy-serif);
+    font-size: 12px;
+    letter-spacing: 0.3em;
+    color: var(--hero-ink-faint);
+    white-space: nowrap;
+  }
+
+  .fyh .fyh-hero__winlabel::before,
+  .fyh .fyh-hero__winlabel::after {
+    content: "";
+    width: 34px;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.55;
+  }
+
+  /* 无图回退：纯色拱窗 + 站名 */
+  .fyh .fyh-win-blank {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+      radial-gradient(
+        120% 90% at 70% 10%,
+        rgba(255, 226, 170, 0.12),
+        transparent 60%
+      ),
+      #181a26;
+    color: var(--hero-ink-faint);
+    font-family: var(--fy-mono);
+    font-size: 13px;
+    letter-spacing: 0.3em;
+  }
+
+  /* ── 首屏底部：三张快捷卡片 ──────────────────────────────────────── */
+  .fyh .fyh-quick {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(18px, 4.5vw, 72px);
+    width: 100%;
+    max-width: 1180px;
+    margin: clamp(20px, 4vh, 40px) auto 0;
+  }
+
+  .fyh .fyh-quick__card {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    border-radius: 16px;
+    color: var(--hero-ink);
+    text-decoration: none;
+    transition: background var(--fy-dur-med) var(--fy-ease);
+  }
+
+  .fyh .fyh-quick__card:hover {
+    background: rgba(239, 232, 218, 0.07);
+  }
+
+  .fyh .fyh-quick__thumb {
+    flex: none;
+    width: clamp(56px, 5.4vw, 78px);
+    aspect-ratio: 1;
+    overflow: hidden;
+    border-radius: 14px;
+    border: 1px solid rgba(239, 232, 218, 0.24);
+  }
+
+  .fyh .fyh-quick__img {
+    width: 100%;
+    height: 100%;
+  }
+
+  .fyh .fyh-quick__body b {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-family: var(--fy-serif);
+    font-weight: 600;
+    font-size: clamp(15px, 1.45vw, 17px);
+    letter-spacing: 0.14em;
+    color: var(--hero-ink);
+  }
+
+  .fyh .fyh-quick__body b svg {
+    width: 1.1em;
+    height: 1.1em;
+    opacity: 0.65;
+    transition:
+      transform var(--fy-dur-fast) var(--fy-ease),
+      opacity var(--fy-dur-fast) var(--fy-ease);
+  }
+
+  .fyh .fyh-quick__card:hover b svg {
+    transform: translateX(4px);
+    opacity: 1;
+  }
+
+  .fyh .fyh-quick__body small {
+    display: block;
+    margin-top: 7px;
+    font-size: clamp(11.5px, 1.1vw, 13px);
+    line-height: 1.75;
+    letter-spacing: 0.05em;
+    color: var(--hero-ink-faint);
+  }
+
+  /* ── 滚动提示：小鼠标 + SCROLL ──────────────────────────────────── */
+  .fyh .fyh-hero__scroll {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin: clamp(16px, 3vh, 32px) auto 0;
+  }
+
+  .fyh .fyh-hero__mouse {
+    display: flex;
+    justify-content: center;
+    width: 21px;
+    height: 34px;
+    padding-top: 6px;
+    border: 1.5px solid var(--hero-line);
+    border-radius: 12px;
+  }
+
+  .fyh .fyh-hero__mouse i {
+    width: 3px;
+    height: 7px;
+    border-radius: 2px;
+    background: var(--hero-ink-soft);
+    animation: fyh-wheel 2.2s ease-in-out infinite;
+  }
+
+  @keyframes fyh-wheel {
+    0% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    55% {
+      transform: translateY(9px);
+      opacity: 0;
+    }
+    70% {
+      transform: translateY(0);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .fyh .fyh-hero__scroll-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 10px;
+    letter-spacing: 0.42em;
+    text-indent: 0.42em;
+    color: var(--hero-ink-faint);
+  }
+
+  .fyh .fyh-hero__scroll-label i {
+    width: 44px;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.45;
+  }
+
+  /* ── 衔接句：一句话 + 两条细线 ───────────────────────────────────── */
+  .fyh .fyh-bridge {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 0 clamp(20px, 6vw, 84px);
+    margin: 0;
+    color: var(--fy-ink-faint);
+    font-size: 13px;
+  }
+
+  .fyh .fyh-bridge::before,
+  .fyh .fyh-bridge::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--fy-line-soft);
+  }
+
+  /* ── 通用标题行 ─────────────────────────────────────────────────── */
+  .fyh .fyh-h2 {
+    font-family: var(--fy-serif);
+    font-weight: 700;
+    font-size: clamp(1.5rem, 3vw, 2.1rem);
+    line-height: 1.3;
+    color: var(--fy-ink);
+    margin: 0;
+  }
+
+  .fyh .fyh-head-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .fyh .fyh-head-desc {
+    margin: 8px 0 0;
+    font-size: 13px;
+    color: var(--fy-ink-faint);
+  }
+
+  .fyh .fyh-note-inline {
+    font-size: 11px;
+    color: var(--fy-ink-faint);
+  }
+
+  /* 标题遮罩：进场时文字从遮罩内上移落定（JS 编排驱动，无 JS 直接可见） */
+  .fyh .fyh-mask {
+    display: block;
+    overflow: hidden;
+    padding-bottom: 0.09em;
+    margin-bottom: -0.09em;
+  }
+
+  .fyh .fyh-mask__in {
+    display: block;
+  }
+
+  .fyh .fyh-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--fy-ink-soft);
+    text-decoration: none;
+    border-bottom: 1px solid var(--fy-line);
+    padding-bottom: 2px;
+    transition:
+      color var(--fy-dur-fast) var(--fy-ease),
+      border-color var(--fy-dur-fast) var(--fy-ease);
+  }
+
+  .fyh .fyh-more svg {
+    width: 1.15em;
+    height: 1.15em;
+    transition: transform var(--fy-dur-fast) var(--fy-ease);
+  }
+
+  .fyh .fyh-more:hover svg {
+    transform: translateX(4px);
+  }
+
+  .fyh .fyh-more:hover {
+    color: var(--fy-accent);
+    border-color: var(--fy-accent);
+  }
+
+  /* ── 02 · 关于我 ────────────────────────────────────────────────── */
+  .fyh .fyh-about {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: clamp(28px, 5vw, 72px);
+    align-items: center;
+    padding: clamp(72px, 12vh, 140px) clamp(20px, 6vw, 84px);
+  }
+
+  .fyh .fyh-about__lines p {
+    margin: 14px 0 0;
+    max-width: 30em;
+    font-size: clamp(13px, 1.4vw, 15px);
+    color: var(--fy-ink-soft);
+    line-height: 1.85;
+  }
+
+  .fyh .fyh-identity {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 26px;
+    padding-top: 22px;
+    border-top: 1px solid var(--fy-line-soft);
+  }
+
+  .fyh .fyh-identity__avatar {
+    width: 56px;
+    height: 56px;
+    flex: none;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 1px solid var(--fy-line);
+  }
+
+  .fyh .fyh-identity__avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .fyh .fyh-identity__name {
+    font-family: var(--fy-serif);
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--fy-ink);
+  }
+
+  .fyh .fyh-identity__bio {
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--fy-ink-faint);
+  }
+
+  .fyh .fyh-identity__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+  }
+
+  .fyh .fyh-identity__links a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--fy-ink-soft);
+    text-decoration: none;
+    transition: color var(--fy-dur-fast) var(--fy-ease);
+  }
+
+  .fyh .fyh-identity__links a:hover {
+    color: var(--fy-accent);
+  }
+
+  .fyh .fyh-identity__links svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .fyh .fyh-notice {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 22px;
+    padding: 12px 18px;
+    border: 1px solid var(--fy-line-soft);
+    border-radius: 10px;
+  }
+
+  .fyh .fyh-notice__label {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--fy-accent);
+  }
+
+  .fyh .fyh-notice__text {
+    flex: 1 1 12em;
+    margin: 0;
+    font-size: 13px;
+    color: var(--fy-ink-soft);
+    line-height: 1.7;
+  }
+
+  .fyh .fyh-notice__link {
+    font-size: 12px;
+    color: var(--fy-ink-faint);
+    text-decoration: none;
+    border-bottom: 1px solid var(--fy-line);
+  }
+
+  .fyh .fyh-notice__link:hover {
+    color: var(--fy-accent);
+    border-color: var(--fy-accent);
+  }
+
+  .fyh .fyh-about__media {
+    position: relative;
+  }
+
+  .fyh .fyh-about__win {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    border: 1px solid var(--fy-line);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--fy-bg-2);
+    box-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.55);
+    transition: opacity var(--fy-dur-med) var(--fy-ease);
+  }
+
+  /* 窗玻璃水珠：只画在窗内 canvas 上，被窗框遮罩约束 */
+  .fyh .fyh-about__glass {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  .fyh.fyh-live .fyh-about__win {
+    opacity: 0;
+  }
+
+  .fyh .fyh-about__media-img,
+  .fyh .fyh-about__media-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .fyh .fyh-caption {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 12px 0 0;
+    font-size: 11px;
+    color: var(--fy-ink-faint);
+  }
+
+  .fyh .fyh-caption__line {
+    flex: none;
+    width: 28px;
+    height: 1px;
+    background: var(--fy-line);
+  }
+
+  /* ── 03 · 最新文章 ──────────────────────────────────────────────── */
+  .fyh .fyh-articles {
+    position: relative;
+    z-index: 2;
+    padding: clamp(72px, 12vh, 140px) 0;
+  }
+
+  .fyh .fyh-articles .fyh-head-row {
+    padding: 0 clamp(20px, 6vw, 84px);
+    margin-bottom: clamp(28px, 5vh, 48px);
+  }
+
+  /* 主卡 + 行卡网格：左大图卡，右文章行 */
+  .fyh .fyh-latest {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: clamp(28px, 4.5vw, 64px);
+    align-items: start;
+    padding: 0 clamp(20px, 6vw, 84px);
+  }
+
+  /* 左侧主卡：大图 + 底部日期 / 标题 / 分类 */
+  .fyh .fyh-lead {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .fyh .fyh-lead__frame {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    border: 1px solid var(--fy-line);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--fy-bg-2);
+    transition: box-shadow var(--fy-dur-slow) var(--fy-ease);
+  }
+
+  .fyh .fyh-lead:hover .fyh-lead__frame {
+    box-shadow:
+      0 0 0 1px var(--fy-accent),
+      0 14px 48px -14px var(--fy-glow);
+  }
+
+  .fyh .fyh-lead__cover,
+  .fyh .fyh-lead__cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.7s var(--fy-ease);
+  }
+
+  .fyh .fyh-lead:hover .fyh-lead__cover img {
+    transform: scale(1.03);
+  }
+
+  .fyh .fyh-lead__fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    padding: 16px;
+    background: linear-gradient(
+      160deg,
+      hsl(var(--fyh-hue) 18% 22%) 0%,
+      hsl(var(--fyh-hue) 14% 14%) 100%
+    );
+  }
+
+  .fyh .fyh-lead__fallback span {
+    font-family: var(--fy-mono);
+    font-size: 12px;
+    color: var(--fy-ink-faint);
+  }
+
+  .fyh .fyh-lead__band {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: clamp(48px, 7vw, 88px) 24px 20px;
+    background: linear-gradient(
+      transparent,
+      color-mix(in srgb, var(--fy-bg-0) 88%, transparent)
+    );
+  }
+
+  .fyh .fyh-lead__date {
+    margin: 0;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    color: var(--fy-ink-faint);
+  }
+
+  .fyh .fyh-lead__title {
+    margin: 8px 0 0;
+    font-family: var(--fy-serif);
+    font-weight: 700;
+    font-size: clamp(20px, 2.5vw, 29px);
+    line-height: 1.38;
+    color: var(--fy-ink);
+  }
+
+  .fyh .fyh-lead__cat {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 12px 0 0;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    color: var(--fy-ink-faint);
+  }
+
+  .fyh .fyh-lead__cat i {
+    width: 30px;
+    height: 1px;
+    background: var(--fy-line);
+  }
+
+  /* 右侧行卡：缩略图 + 日期 / 标题 / 分类 + 箭头 */
+  .fyh .fyh-side {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .fyh .fyh-side__row {
+    position: relative;
+    display: grid;
+    grid-template-columns: clamp(132px, 13.5vw, 200px) 1fr auto;
+    gap: clamp(14px, 1.6vw, 22px);
+    align-items: stretch;
+    padding: clamp(14px, 2.2vh, 22px) 0;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  /* 行分隔线：伪元素绘制，进场时从左向右展开（JS 驱动 --fy-rule-x） */
+  .fyh .fyh-side__row::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: var(--fy-line-soft);
+    transform: scaleX(var(--fy-rule-x, 1));
+    transform-origin: left center;
+  }
+
+  .fyh .fyh-side__thumb {
+    display: block;
+    align-self: start;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    border: 1px solid var(--fy-line-soft);
+    border-radius: 8px;
+    background: var(--fy-bg-2);
+  }
+
+  .fyh .fyh-side__img,
+  .fyh .fyh-side__img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .fyh .fyh-side__fallback {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      160deg,
+      hsl(var(--fyh-hue) 18% 22%) 0%,
+      hsl(var(--fyh-hue) 14% 14%) 100%
+    );
+  }
+
+  .fyh .fyh-side__body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    padding-top: 2px;
+  }
+
+  .fyh .fyh-side__body time {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--fy-ink-faint);
+  }
+
+  .fyh .fyh-side__body b {
+    font-family: var(--fy-serif);
+    font-weight: 600;
+    font-size: clamp(15px, 1.6vw, 19px);
+    line-height: 1.45;
+    color: var(--fy-ink);
+    transition: color var(--fy-dur-fast) var(--fy-ease);
+  }
+
+  .fyh .fyh-side__body em {
+    font-style: normal;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    color: var(--fy-ink-faint);
+  }
+
+  .fyh .fyh-side__arrow {
+    align-self: end;
+    width: 20px;
+    height: 20px;
+    color: var(--fy-ink-faint);
+    transition:
+      transform var(--fy-dur-fast) var(--fy-ease),
+      color var(--fy-dur-fast) var(--fy-ease);
+  }
+
+  .fyh .fyh-side__row:hover .fyh-side__body b {
+    color: var(--fy-accent);
+  }
+
+  .fyh .fyh-side__row:hover .fyh-side__arrow {
+    color: var(--fy-accent);
+    transform: translateX(4px);
+  }
+
+  /* ── 04 · 分类与入口 ────────────────────────────────────────────── */
+  .fyh .fyh-entries {
+    position: relative;
+    z-index: 2;
+    padding: clamp(72px, 12vh, 140px) clamp(20px, 6vw, 84px);
+  }
+
+  .fyh .fyh-entries .fyh-head-row {
+    margin-bottom: clamp(28px, 5vh, 44px);
+  }
+
+  /* ══ 夜航站牌 ══
+     悬停底色不逐行硬切：整条列表只有一个滑动高亮层，
+     鼠标从 01 往返划到 05 时在行间平滑流动（与归档页同一套 magic highlight）。 */
+  .fyh .fyh-board-wrap {
+    position: relative;
+    margin-top: clamp(18px, 3vh, 28px);
+    border-top: 1px solid var(--fy-line-soft);
+  }
+
+  .fyh .fyh-board__hl {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 0;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--fy-accent) 5%, transparent);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 0;
+    will-change: transform, height;
+    /* 弹簧曲线带轻微过冲，划过连续行时高亮像液体一样流过去 */
+    transition:
+      transform 0.42s cubic-bezier(0.32, 1.18, 0.38, 1),
+      height 0.42s cubic-bezier(0.32, 1.18, 0.38, 1),
+      opacity 0.2s ease-out;
+  }
+
+  /* 左侧暖色指示条：高亮出现时从中间生长，随高亮一同滑动 */
+  .fyh .fyh-board__hl::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 2px;
+    height: 0;
+    border-radius: 2px;
+    background: var(--fy-accent);
+    transform: translateY(-50%);
+    transition: height 0.3s cubic-bezier(0.32, 1.18, 0.38, 1);
+  }
+
+  .fyh .fyh-board__hl.is-visible {
+    opacity: 1;
+  }
+
+  .fyh .fyh-board__hl.is-visible::before {
+    height: 55%;
+  }
+
+  /* 触屏没有 mouseover 流，滑动高亮整层不渲染 */
+  @media (hover: none) {
+    .fyh .fyh-board__hl {
+      display: none;
+    }
+  }
+
+  .fyh .fyh-board__row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 8px;
+    text-decoration: none;
+    color: inherit;
+    border-bottom: 1px dashed var(--fy-line);
+    overflow: hidden;
+    /* 悬停底色交给 .fyh-board__hl 滑动高亮层统一负责；
+       触屏没有 mouseover 流，点按反馈退回 :active */
+  }
+
+  .fyh .fyh-board__row:active {
+    background: color-mix(in srgb, var(--fy-accent) 5%, transparent);
+  }
+
+  /* 一列火车：悬停时车厢光带自左向右驶过整行 */
+  .fyh .fyh-board__row::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 260%;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 22px,
+      color-mix(in srgb, var(--fy-accent) 14%, transparent) 40px,
+      color-mix(in srgb, var(--fy-accent) 4%, transparent) 104px,
+      transparent 134px
+    );
+    transform: translateX(-104%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .fyh .fyh-board__row:hover::before {
+    animation: fyhTrainPass 1.15s cubic-bezier(0.45, 0.05, 0.35, 0.95) forwards;
+  }
+
+  @keyframes fyhTrainPass {
+    0% {
+      transform: translateX(-104%);
+      opacity: 1;
+    }
+    90% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(40%);
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fyh .fyh-board__row::before {
+      display: none;
+    }
+
+    .fyh .fyh-board__no,
+    .fyh .fyh-board__main,
+    .fyh .fyh-board__desc,
+    .fyh .fyh-board__arrow {
+      transition: none;
+    }
+
+    .fyh .fyh-board__row:hover .fyh-board__no,
+    .fyh .fyh-board__row:hover .fyh-board__main,
+    .fyh .fyh-board__row:hover .fyh-board__arrow {
+      transform: none;
+    }
+
+    .fyh .fyh-board__leader {
+      animation: none;
+    }
+
+    .fyh .fyh-board__hl,
+    .fyh .fyh-board__hl::before {
+      transition: none;
+    }
+  }
+
+  /* 站台号：01 起的等宽编号 */
+  .fyh .fyh-board__no {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--fy-line);
+    border-radius: 7px;
+    font-size: 11px;
+    font-style: normal;
+    color: var(--fy-ink-faint);
+    transition:
+      color var(--fy-dur-fast) var(--fy-ease),
+      border-color var(--fy-dur-fast) var(--fy-ease),
+      transform var(--fy-dur-fast) var(--fy-ease);
+  }
+
+  .fyh .fyh-board__row:hover .fyh-board__no {
+    color: var(--fy-accent);
+    border-color: var(--fy-accent);
+    /* 丝滑联动第一拍：编号先探一小步 */
+    transform: translateX(3px);
+  }
+
+  .fyh .fyh-board__main {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    transition: transform var(--fy-dur-med) var(--fy-ease);
+  }
+
+  .fyh .fyh-board__row:hover .fyh-board__main {
+    /* 第二拍：标题整块跟进来，比编号慢半拍，形成波浪 */
+    transform: translateX(6px);
+  }
+
+  .fyh .fyh-board__name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--fy-ink);
+    transition: color var(--fy-dur-fast) var(--fy-ease);
+  }
+
+  .fyh .fyh-board__desc {
+    font-size: 12px;
+    color: var(--fy-ink-faint);
+    transition: color var(--fy-dur-fast) var(--fy-ease);
+  }
+
+  .fyh .fyh-board__row:hover .fyh-board__name {
+    color: var(--fy-accent);
+  }
+
+  .fyh .fyh-board__row:hover .fyh-board__desc {
+    color: var(--fy-ink-soft);
+  }
+
+  /* 点线引导：时刻表式的虚线填充 */
+  .fyh .fyh-board__leader {
+    flex: 1;
+    height: 1px;
+    margin: 0 8px;
+    background-image: linear-gradient(
+      90deg,
+      var(--fy-line) 0 4px,
+      transparent 4px 9px
+    );
+    background-size: 9px 1px;
+    background-repeat: repeat-x;
+  }
+
+  .fyh .fyh-board__row:hover .fyh-board__leader {
+    /* 第三拍：虚线转暖并朝箭头方向流动（位移恰好一个虚线周期，无缝循环） */
+    background-image: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--fy-accent) 55%, transparent) 0 4px,
+      transparent 4px 9px
+    );
+    animation: fyhDashFlow 0.5s linear infinite;
+  }
+
+  @keyframes fyhDashFlow {
+    to {
+      background-position: -9px 0;
+    }
+  }
+
+  .fyh .fyh-board__arrow {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    color: var(--fy-ink-faint);
+    transition:
+      color var(--fy-dur-fast) var(--fy-ease),
+      transform var(--fy-dur-med) var(--fy-ease);
+  }
+
+  .fyh .fyh-board__arrow svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .fyh .fyh-board__row:hover .fyh-board__arrow {
+    /* 第四拍：箭头最后滑出，行程最长，收尾柔和 */
+    color: var(--fy-accent);
+    transform: translateX(7px);
+  }
+
+  .fyh .fyh-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: clamp(24px, 4vh, 36px);
+  }
+
+  .fyh .fyh-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--fy-ink-soft);
+    text-decoration: none;
+    border: 1px solid var(--fy-line);
+    border-radius: 999px;
+    padding: 7px 16px 7px 12px;
+    transition:
+      color var(--fy-dur-fast) var(--fy-ease),
+      border-color var(--fy-dur-fast) var(--fy-ease),
+      background var(--fy-dur-fast) var(--fy-ease),
+      transform var(--fy-dur-fast) var(--fy-ease);
+  }
+
+  .fyh .fyh-pill:hover {
+    color: var(--fy-accent);
+    border-color: var(--fy-accent);
+    background: color-mix(in srgb, var(--fy-accent) 8%, transparent);
+    transform: translateY(-1px);
+  }
+
+  .fyh .fyh-pill__icon {
+    font-size: 15px;
+    color: var(--fy-accent);
+    opacity: 0.85;
+    flex-shrink: 0;
+  }
+
+  .fyh .fyh-pill__name {
+    font-weight: 600;
+    color: var(--fy-ink);
+  }
+
+  .fyh .fyh-pill__desc {
+    font-size: 11px;
+    color: var(--fy-ink-faint);
+  }
+
+  @media (max-width: 720px) {
+    .fyh .fyh-pill__desc {
+      display: none;
+    }
+  }
+
+  .fyh .fyh-pill i {
+    font-style: normal;
+    font-size: 11px;
+    color: var(--fy-ink-faint);
+  }
+
+  .fyh .fyh-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 34px;
+    margin-top: clamp(24px, 4vh, 36px);
+    padding-top: 20px;
+    border-top: 1px solid var(--fy-line-soft);
+    font-size: 12px;
+    color: var(--fy-ink-faint);
+  }
+
+  .fyh .fyh-stats b {
+    margin-left: 6px;
+    color: var(--fy-ink-soft);
+    font-weight: 500;
+  }
+
+  .fyh .fyh-stats a {
+    color: var(--fy-ink-faint);
+    text-decoration: none;
+  }
+
+  .fyh .fyh-stats a:hover {
+    color: var(--fy-accent);
+  }
+
+  /* ── 响应式 ─────────────────────────────────────────────────────── */
+  @media (max-width: 899px) {
+    .fyh .fyh-hero {
+      padding-top: 92px;
+    }
+
+    .fyh .fyh-hero__inner {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 36px;
+    }
+
+    .fyh .fyh-hero__side {
+      align-self: center;
+      margin-right: 0;
+    }
+
+    .fyh .fyh-hero__win {
+      width: min(56vw, 240px);
+    }
+
+    .fyh .fyh-hero__note {
+      left: -48px;
+    }
+
+    .fyh .fyh-hero__polaroid--a {
+      left: -34px;
+    }
+
+    .fyh .fyh-hero__polaroid--b {
+      display: none;
+    }
+
+    .fyh .fyh-quick {
+      grid-template-columns: 1fr;
+      gap: 2px;
+    }
+
+    .fyh .fyh-about {
+      grid-template-columns: 1fr;
+    }
+
+    .fyh .fyh-about__media {
+      order: -1;
+    }
+
+    .fyh .fyh-latest {
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+
+    .fyh .fyh-side__row {
+      grid-template-columns: clamp(96px, 26vw, 132px) 1fr auto;
+    }
+
+    .fyh .fyh-side__body b {
+      font-size: 14px;
+    }
+
+    .fyh .fyh-board {
+      margin-top: 14px;
+    }
+
+    .fyh .fyh-board__row {
+      gap: 10px;
+      padding: 12px 4px;
+    }
+
+    .fyh .fyh-board__no {
+      width: 28px;
+      height: 28px;
+    }
+
+    .fyh .fyh-board__name {
+      font-size: 14px;
+    }
+
+    .fyh .fyh-board__leader {
+      margin: 0 4px;
+    }
+  }
+
+  /* ── 动效降级：氛围动画全部静止 ─────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .fyh .fyh-hero__mouse i {
+      animation: none;
+    }
+  }
+</style>

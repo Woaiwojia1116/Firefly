@@ -151,3 +151,130 @@
 		padding-left: 1.34rem;
 	}
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   航线图式目录：一条纵向轨道贯穿所有标题，每个标题是轨道上的站点。
+   · 轨道：.toc-content::before 的细线，颜色随滚动状态无关，纯装饰；
+   · 站点：所有级别的标记（编号牌 / 圆点）统一对齐到轨道同一列；
+   · 行灯：复用 JS 定位的 .toc-active-indicator，改成贴在轨道上滑动的
+     暖色光段（top/height 由 ScrollSpy 写入，滚动时像列车驶过站点）。 */
+.toc-content::before {
+	content: "";
+	position: absolute;
+	left: 1.18rem;
+	top: 0.65rem;
+	bottom: 0.65rem;
+	width: 2px;
+	border-radius: 1px;
+	background: linear-gradient(
+		180deg,
+		transparent 0,
+		color-mix(in oklab, var(--primary) 30%, transparent) 7%,
+		color-mix(in oklab, var(--primary) 30%, transparent) 93%,
+		transparent 100%
+	);
+	pointer-events: none;
+	z-index: 0;
+}
+
+/* 所有级别共用同一标记列，层级改由字重与字号表达 */
+.toc-content .toc-item {
+	padding-left: 2.1rem;
+}
+
+.toc-content .toc-item.toc-level-1,
+.toc-content .toc-item.toc-level-2 {
+	padding-left: 2.1rem;
+}
+
+.toc-content .toc-label {
+	max-width: calc(100% - 0.5rem);
+}
+
+/* 标记统一挂到轨道上 */
+.toc-content .toc-badge {
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%);
+	margin: 0;
+}
+
+.toc-content .toc-badge-index {
+	left: 0.55rem;
+}
+
+.toc-content .toc-badge-dot {
+	left: 0.99rem;
+}
+
+.toc-content .toc-badge-dot-sm {
+	left: 1.06rem;
+}
+
+/* 二三级站名略小，维持层级感 */
+.toc-content .toc-item.toc-level-2 .toc-label {
+	font-size: 0.8rem;
+}
+
+.toc-content .toc-item.toc-level-3 .toc-label {
+	font-size: 0.76rem;
+}
+
+/* 已读站点：圆点点亮并带一圈光晕 */
+.toc-item.visible .toc-badge-dot,
+.toc-item.visible .toc-badge-dot-sm {
+	background: var(--ip-warm, var(--primary));
+	box-shadow: 0 0 0 3px
+		color-mix(in oklab, var(--ip-warm, var(--primary)) 16%, transparent);
+}
+
+/* 行灯：贴轨滑动的暖色光段（JS 只写 top/height/opacity） */
+.toc-active-indicator {
+	left: 1.13rem;
+	right: auto;
+	width: 4px;
+	border-radius: 2px;
+	background: linear-gradient(
+		180deg,
+		transparent 0,
+		var(--ip-warm, var(--primary)) 16%,
+		var(--ip-warm, var(--primary)) 84%,
+		transparent 100%
+	);
+	box-shadow:
+		0 0 10px 1px
+			color-mix(in oklab, var(--ip-warm, var(--primary)) 42%, transparent);
+	z-index: 1;
+	transition:
+		top 0.26s cubic-bezier(0.22, 1, 0.36, 1),
+		height 0.26s cubic-bezier(0.22, 1, 0.36, 1),
+		opacity 0.2s ease;
+}
+
+@media (max-width: 768px) {
+	.toc-content::before {
+		left: 1.02rem;
+	}
+
+	.toc-content .toc-item,
+	.toc-content .toc-item.toc-level-1,
+	.toc-content .toc-item.toc-level-2 {
+		padding-left: 1.9rem;
+	}
+
+	.toc-content .toc-badge-index {
+		left: 0.42rem;
+	}
+
+	.toc-content .toc-badge-dot {
+		left: 0.86rem;
+	}
+
+	.toc-content .toc-badge-dot-sm {
+		left: 0.93rem;
+	}
+
+	.toc-active-indicator {
+		left: 0.97rem;
+	}
+}

@@ -1,0 +1,65 @@
+---
+// 内页页头组件 —— 与参考站 MzMing/my-blog 的 page-title 同一套结构：
+// [方框图标] + [眉标 / 标题 / 描述 / 统计行]
+// 比例要点：图标 3rem、与文字同轴心、标题 clamp(1.7–2.6rem)、描述限宽 34rem。
+import { Icon } from "astro-icon/components";
+
+interface Props {
+	/** 眉标（英文小字，会转成大写） */
+	eyebrow?: string;
+	/** 页面标题 */
+	title: string;
+	/** 标题下的说明 */
+	desc?: string;
+	/** 可选图标（astro-icon 名称） */
+	icon?: string;
+	/** 可选统计行，例如 ["9 篇文章", "1 年份"] */
+	meta?: string[];
+	class?: string;
+	/** 居中排列（用于时间轴这类全宽页面） */
+	center?: boolean;
+}
+
+const {
+	eyebrow,
+	title,
+	desc,
+	icon,
+	meta = [],
+	class: className = "",
+	center = false,
+} = Astro.props;
+---
+
+<header
+  class:list={["ip-head", "ip-page-title", center && "ip-page-title--center", className]}
+>
+  <div class="ip-page-title__row">
+    {
+      icon && (
+        <span class="ip-page-title__icon" aria-hidden="true">
+          <Icon name={icon} />
+        </span>
+      )
+    }
+
+    <div class="ip-page-title__body">
+      {eyebrow && <p class="ip-eyebrow">{eyebrow}</p>}
+      {!icon && <span class="ip-title-mark"></span>}
+      <p class="ip-title">{title}</p>
+      {desc && <p class="ip-desc">{desc}</p>}
+      {
+        meta.length > 0 && (
+          <p class="ip-meta">
+            {meta.map((item, index) => (
+              <>
+                {index > 0 && <span class="ip-sep">·</span>}
+                <span>{item}</span>
+              </>
+            ))}
+          </p>
+        )
+      }
+    </div>
+  </div>
+</header>

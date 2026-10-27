@@ -7,14 +7,27 @@ import type { SearchResult } from "@/global";
 import { url as formatUrl } from "@/utils/url-utils";
 
 // --- Props ---
-export let title = i18n(I18nKey.search);
-export let description = "";
+// 示例查询：search.astro 在服务端取最新几篇真实文章标题传入，
+// 空状态的邀请胶囊和输入框的 placeholder 轮播共用这一份
+export let examples: string[] = [];
 
 // --- State ---
 let keyword = "";
 let results: SearchResult[] = [];
 let isSearching = false;
+let elapsedMs = 0;
 let initialized = false;
+let searchInput: HTMLInputElement | undefined = undefined;
+let shortcutLabel = "Ctrl+K";
+
+// placeholder 轮播：4.5s 换一篇真实文章标题，输入中无感知（placeholder 只在空值时可见）
+let placeholderIdx = 0;
+let currentPlaceholder = i18n(I18nKey.search);
+const rotatePlaceholder = (): void => {
+	const pool = examples.length ? examples : [i18n(I18nKey.search)];
+	placeholderIdx = (placeholderIdx + 1) % pool.length;
+	currentPlaceholder = pool[placeholderIdx];
+};
 
 // 在客户端获取 URL 参数
 const getInitialKeyword = (): string => {
@@ -46,6 +59,7 @@ const search = async () => {
 		return;
 	}
 	isSearching = true;
+	const startedAt = performance.now();
 
 	try {
 		if (import.meta.env.PROD && window.pagefind) {
@@ -66,12 +80,33 @@ const search = async () => {
 		console.error("Search error:", error);
 		results = [];
 	} finally {
+		elapsedMs = Math.max(1, Math.round(performance.now() - startedAt));
 		isSearching = false;
 	}
 };
 
 // --- Initialization onMount ---
 onMount(() => {
+	// Mac 上键帽显示 ⌘（与导航栏工具面板的口径一致）
+	if (/Mac|iPhone|iPad|iPod/.test(navigator.userAgent)) {
+		shortcutLabel = "⌘K";
+	}
+
+	const placeholderTimer = setInterval(rotatePlaceholder, 4500);
+
+	// Ctrl/Cmd+K 在搜索页只做「聚焦 / 失焦输入框」切换。
+	// 必须用捕获阶段拦截并 stopPropagation，否则导航栏的全局监听
+	// 会照常触发，把已经在本页的用户又跳转（刷新）一次 /search/
+	const onGlobalKey = (event: KeyboardEvent) => {
+		if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+			event.preventDefault();
+			event.stopPropagation();
+			if (document.activeElement === searchInput) searchInput?.blur();
+			else searchInput?.focus();
+		}
+	};
+	document.addEventListener("keydown", onGlobalKey, true);
+
 	const initialize = async () => {
 		initialized = true;
 
@@ -100,6 +135,11 @@ onMount(() => {
 			});
 		}
 	}
+
+	return () => {
+		document.removeEventListener("keydown", onGlobalKey, true);
+		clearInterval(placeholderTimer);
+	};
 });
 
 let debounceTimer: NodeJS.Timeout;
@@ -109,83 +149,100 @@ const handleInput = () => {
 		search();
 	}, 300);
 };
+
+// 输入框内键位：Enter 立即搜索（跳过防抖），Esc 清空并失焦
+const handleKeydown = (event: KeyboardEvent) => {
+	if (event.key === "Enter") {
+		event.preventDefault();
+		clearTimeout(debounceTimer);
+		search();
+	} else if (event.key === "Escape") {
+		event.preventDefault();
+		keyword = "";
+		results = [];
+		searchInput?.blur();
+	}
+};
+
+// 点示例查询胶囊：填入关键词立即检索，并把焦点还回输入框
+const runExample = (query: string) => {
+	keyword = query;
+	clearTimeout(debounceTimer);
+	search();
+	searchInput?.focus();
+};
 </script>
 
-<div class="card-base px-6 py-6 md:px-9 md:py-6 mb-4 rounded-(--radius-large)">
-    <!-- Title Section -->
-    <div class="mb-4">
-        <div class="flex items-center gap-3 mb-3">
-            <div class="h-8 w-8 rounded-lg bg-(--primary) flex items-center justify-center text-white dark:text-black/70">
-                <Icon icon="material-symbols:search" class="text-[1.5rem]"></Icon>
-            </div>
-            <div class="text-3xl font-bold text-90">
-                {title}
-            </div>
-        </div>
-        {#if description}
-            <p class="text-base text-50 leading-relaxed">
-                {description}
-            </p>
-        {/if}
-    </div>
-
-    <!-- Search Bar -->
-    <div class="relative flex">
-        <div class="relative flex-1">
-            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                <Icon icon="material-symbols:search" class="text-2xl text-50" />
-            </div>
-            <input
-                type="text"
-                class="block w-full p-4 pl-10 text-sm bg-transparent border border-black/10 dark:border-white/10 rounded-lg focus:ring-2 focus:ring-(--primary) focus:border-(--primary) hover:border-black/20 dark:hover:border-white/20 text-75 placeholder:opacity-50 transition-colors outline-hidden"
-                placeholder={i18n(I18nKey.search)}
-                bind:value={keyword}
-                on:input={handleInput}
-            >
-        </div>
-    </div>
+<!-- 检索条：真正的胶囊（surface-2 玻璃底 + 细线边框），聚焦时一圈萤火暖光 -->
+<div class="ip-search-bar">
+    <input
+        type="text"
+        class="ip-search-input"
+        placeholder={currentPlaceholder}
+        aria-label={i18n(I18nKey.search)}
+        bind:value={keyword}
+        bind:this={searchInput}
+        on:input={handleInput}
+        on:keydown={handleKeydown}
+    >
+    <Icon icon="material-symbols:search" class="ip-search-icon" />
 </div>
 
-<div class="grid grid-cols-1 gap-4">
-    <!-- Results Area -->
-    <div>
-        {#if isSearching}
-            <div class="flex justify-center py-10">
-                <Icon icon="svg-spinners:ring-resize" class="text-4xl text-(--primary)" />
-            </div>
-        {:else if results.length > 0}
-            <div class="space-y-4">
-                {#each results as result}
-                    <div class="card-base p-6 block rounded-(--radius-large)">
-                        <a href={result.url} class="block group">
-                            <h5 class="mb-2 text-2xl font-bold tracking-tight text-90 group-hover:text-(--primary) transition-colors">
+<!-- 键位提示：紧贴检索条下方；整页没有「关闭」概念，ESC 是清空 -->
+<div class="ip-search-hints">
+    <span class="ip-hint"><kbd>ESC</kbd>{i18n(I18nKey.searchClear)}</span>
+    <span class="ip-hint"><kbd>ENTER</kbd>{i18n(I18nKey.search)}</span>
+    <span class="ip-hint"><kbd>{shortcutLabel}</kbd>{i18n(I18nKey.searchFocus)}</span>
+</div>
+
+<!-- 结果区：等宽统计行 + 编号索引记录流；空态是邀请而非死胡同 -->
+<div class="ip-results">
+    {#if isSearching}
+        <div class="ip-search-loading">
+            <Icon icon="svg-spinners:ring-resize" class="text-4xl text-(--ip-warm)" />
+        </div>
+    {:else if results.length > 0}
+        <p class="ip-search-stats">{results.length} HITS · {elapsedMs} MS</p>
+        <ol class="ip-result-list">
+            {#each results as result, i}
+                <li class="ip-result">
+                    <a href={result.url}>
+                        <span class="ip-result-idx" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
+                        <span class="ip-result-body">
+                            <span class="ip-result-title">
                                 {@html result.meta.title}
-                            </h5>
-                            <p class="font-normal text-75">
-                                {@html result.excerpt}
-                            </p>
-                        </a>
-                    </div>
-                {/each}
-            </div>
-        {:else if keyword}
-            <div class="card-base p-10 text-center text-50 rounded-(--radius-large)">
-                {i18n(I18nKey.searchNoResults)}
-            </div>
-        {:else}
-             <div class="card-base p-10 text-center text-50 rounded-(--radius-large)">
-                {i18n(I18nKey.searchTypeSomething)}
-            </div>
-        {/if}
-    </div>
+                                <Icon icon="fa7-solid:chevron-right" class="ip-result-arrow" />
+                            </span>
+                            {#if result.excerpt.includes('<mark>')}
+                                <span class="ip-result-excerpt">{@html result.excerpt}</span>
+                            {/if}
+                            {#if result.content && result.content.includes('<mark>')}
+                                <span class="ip-result-content">
+                                    <em class="ip-result-badge">{i18n(I18nKey.searchContent)}</em>{@html result.content}
+                                </span>
+                            {/if}
+                        </span>
+                    </a>
+                </li>
+            {/each}
+        </ol>
+    {:else}
+        <div class="ip-search-empty">
+            {#if !keyword.trim()}
+                <i class="ip-search-firefly" aria-hidden="true"></i>
+            {/if}
+            <p class="ip-search-empty-text">
+                {keyword ? i18n(I18nKey.searchNoResults) : i18n(I18nKey.searchTypeSomething)}
+            </p>
+            {#if examples.length}
+                <div class="ip-search-examples">
+                    {#each examples.slice(0, 4) as example}
+                        <button type="button" class="ip-search-example" on:click={() => runExample(example)}>
+                            {example}
+                        </button>
+                    {/each}
+                </div>
+            {/if}
+        </div>
+    {/if}
 </div>
-
-<style>
-    /* 关键字高亮效果 - 主题色 */
-    :global(mark) {
-        background: transparent;
-        color: var(--primary);
-        font-weight: 600;
-        padding: 0 0.1em;
-    }
-</style>

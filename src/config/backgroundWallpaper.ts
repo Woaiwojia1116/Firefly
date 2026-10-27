@@ -3,9 +3,9 @@ import type { BackgroundWallpaperConfig } from "@/types/config";
 
 export const backgroundWallpaper: BackgroundWallpaperConfig = {
 	// 壁纸模式："banner" 横幅壁纸，"overlay" 全屏透明，"none" 纯色背景无壁纸
-	mode: "overlay",
+	mode: "none",
 	// 是否允许用户通过导航栏切换壁纸模式，设为false可提升性能（只渲染当前模式）
-	switchable: true,
+	switchable: false,
 	/**
 	 * 背景图片配置
 	 * 图片路径支持三种格式：
@@ -161,6 +161,21 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 		blur: 4,
 		// 卡片透明度，0-1之间，值越小越透明
 		cardOpacity: 0.15,
+	},
+	// 全站模拟雨丝特效
+	rain: {
+		// 是否启用全站雨丝特效
+		enable: true,
+		// 是否在首页显示（首页有自己的画布背景，默认关闭）
+		showOnHomepage: false,
+		// 移动端是否完整启用（false 时移动端降级为半密度，兼顾性能）
+		enableOnMobile: false,
+		// 雨丝密度系数，1 为默认，可调 0.2 ~ 3
+		density: 1,
+		// 雨丝倾斜角度（度，正数向右倾斜，0 为竖直）
+		angle: 12,
+		// 雨丝颜色，RGB 三元组字符串
+		color: "188, 212, 240",
 	},
 	// 时间轴页面背景图（可选，留空则不显示）
 	timelineBg: "assets/images/DesktopWallpaper/d17.jpg",

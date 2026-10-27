@@ -1,0 +1,2096 @@
+/* ==========================================================================
+   全站内页设计系统 —— 与首页（沉浸式动漫叙事页）同一套视觉语言
+   --------------------------------------------------------------------------
+   作用域：`body:not(.homepage)`。首页 body.homepage 有独立的画布规则，
+           这里的所有规则都不会命中首页，首页不会出现视觉回归。
+   色板：直接沿用首页 .cn-home 的真实取值，保证全站是同一套颜色：
+         墨色 #2a232c / 纸色 #fbf7f4 / 细线 rgba(42,35,44,.14) / 暖调 #d98a5a
+         暗色主题：墨色 #ece5ea / 纸色 #16131a / 暖调 #e6a173
+   语汇：细线分隔、等宽眉标与大写小标签、编号索引、短虚线段、胶囊标签、
+         以“纸面 + 细线”代替原本的圆角玻璃卡片。
+   页面差异：各页用自己的布局语汇（列表＝杂志式记录流、详情＝阅读栏、
+             时间轴＝纵向时间线、归档＝年月索引、图库＝图墙、番剧＝封面墙…），
+             这里只提供共享的令牌与元件。
+   ========================================================================== */
+
+/* ── 令牌 ─────────────────────────────────────────────────────────────── */
+:root {
+  --ip-ink: #2a232c;
+  --ip-ink-soft: rgba(42, 35, 44, 0.68);
+  --ip-ink-faint: rgba(42, 35, 44, 0.44);
+  --ip-paper: #fbf7f4;
+  --ip-paper-2: #f4eee8;
+  --ip-surface: rgba(251, 247, 244, 0.95);
+  --ip-surface-2: rgba(244, 238, 232, 0.92);
+  --ip-line: rgba(42, 35, 44, 0.14);
+  --ip-line-soft: rgba(42, 35, 44, 0.075);
+  --ip-warm: #d98a5a;
+  --ip-mono: ui-monospace, "SFMono-Regular", "Menlo", "Consolas", monospace;
+  --ip-max: 78rem;
+  --ip-gutter: clamp(1.25rem, 5vw, 4.5rem);
+  --ip-read: 44rem;
+  --ip-gap: clamp(1.75rem, 4.5vw, 3.25rem);
+  --ip-radius: 0.85rem;
+  --ip-radius-sm: 0.4rem;
+  --ip-shadow: 0 1px 2px rgba(42, 35, 44, 0.05), 0 18px 40px -26px rgba(42, 35, 44, 0.35);
+}
+
+:root.dark {
+  --ip-ink: #ece5ea;
+  --ip-ink-soft: rgba(236, 229, 234, 0.64);
+  --ip-ink-faint: rgba(236, 229, 234, 0.4);
+  --ip-paper: #16131a;
+  --ip-paper-2: #1e1a24;
+  --ip-surface: rgba(24, 21, 30, 0.94);
+  --ip-surface-2: rgba(32, 27, 39, 0.9);
+  --ip-line: rgba(236, 229, 234, 0.14);
+  --ip-line-soft: rgba(236, 229, 234, 0.07);
+  --ip-warm: #e6a173;
+  --ip-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 20px 44px -28px rgba(0, 0, 0, 0.8);
+}
+
+/* ── 页面外壳：与首页一致的栅格宽度、左右留白与底色 ──────────────────── */
+body:not(.homepage) {
+  --page-bg: var(--ip-paper);
+  /* 内页是单列画布，沿用站点默认的 100rem（1600px）会把内容拉得又宽又空，
+     这里收紧到 76rem（1216px），导航栏 / 页脚 / 正文一起变窄，比例才对。
+     首页 body.homepage 不受影响，仍是全宽画布。 */
+  --page-width: 76rem;
+}
+
+/* 内页正文一律使用设计系统的墨色，避免继承到旧主题的深色文字 */
+body:not(.homepage) #content-wrapper {
+  color: var(--ip-ink);
+}
+
+/* 保险：内页是单列画布，强制整条内容链走满宽度并居中。
+   用 !important 是必须的 —— Swup 首次进入时可能有残留的内联样式 / 旧类名
+   把正文压成靠左的一条窄栏，只有 !important 能盖住内联样式。
+   各页自己的居中仍由 .ip-archive-page / .ip-post-col 等的
+   max-width + margin-inline:auto 负责（它们在更深一层，不受这里的 max-width 影响）。 */
+body:not(.homepage) .absolute.w-full.z-30 > .relative {
+  width: 100% !important;
+  max-width: var(--page-width) !important;
+  margin-inline: auto !important;
+}
+
+body:not(.homepage) #main-grid {
+  display: block !important;
+  width: 100% !important;
+  padding-inline: clamp(0.5rem, 1vw, 1rem) !important;
+}
+
+body:not(.homepage) #main-grid > * {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+body:not(.homepage) #swup-container,
+body:not(.homepage) #content-wrapper {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-inline: 0 !important;
+}
+
+/* 关键：内页根容器与面板本身也强制满宽。
+   否则一旦切页时残留了让它们「收缩到内容宽度」的状态（fit-content / 被当成
+   flex·grid 子项 / inline-block 等），就算祖先链是满宽，正文仍会缩成靠左一条窄栏。
+   这里不设 max-width，各页自己的 max-width + margin-inline:auto 仍然生效。 */
+body:not(.homepage) #content-wrapper > * {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+body:not(.homepage) .card-base {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* 归档页的索引列单独限宽居中（62rem） */
+body:not(.homepage) .ip-archive-page {
+  width: 100% !important;
+  max-width: 62rem;
+  margin-inline: auto;
+}
+
+/* 文章详情页：整列（正文卡片、更新时间卡、上下篇、相关推荐、评论）收窄到
+   屏幕中间约三分之二并居中，复刻归档页 .ip-archive-page 的 max-width +
+   margin-inline:auto 机制。
+   限宽必须做在 #content-wrapper 的【直接子节点】上，不能做在 #content-wrapper
+   本身：上面第 89-94 行对 #content-wrapper 有 max-width:100% !important，
+   其特异性 (1,1,1) 高于 #content-wrapper.post-narrow (1,1,0)，写在容器上永远会被压死。
+   而第 100-103 行的 `#content-wrapper > *` 只设 width、不设 max-width，
+   所以子节点的 max-width 仍然生效。
+   这里只用 66vw（≈2/3）不加 rem 上限：外层列已被 --page-width:76rem 约束，
+   再加一个较小的 rem 上限会在宽屏上提前生效，比例就不再是三分之二了。
+   .post-narrow 只在文章详情页出现，归档 / 时间轴 / 图库等内页不受影响。 */
+body:not(.homepage) #content-wrapper.post-narrow > * {
+  max-width: 66vw;
+  margin-inline: auto;
+}
+
+/* ── 文章右侧目录（索引框）───────────────────────────────────────────────
+   ≥1280px：正文与目录组成两栏，目录吸附在右侧并跟随滚动；窄屏隐藏该栏，
+   交给右下角的浮动目录按钮（FloatingTOC）接管。
+   注意：MainGridLayout 的主列带 overflow:hidden，会成为 sticky 的滚动容器
+   导致吸附失效（与友链页同一问题）；这里只对包含 .post-shell 的主列放开裁剪。 */
+body:not(.homepage) #main-grid .overflow-hidden:has(.post-shell) {
+  overflow: visible;
+}
+
+body:not(.homepage) #content-wrapper.post-narrow > .post-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 15rem;
+  gap: clamp(1.25rem, 2.4vw, 2.25rem);
+  align-items: start;
+  max-width: min(100%, 68rem);
+  margin-inline: auto;
+}
+
+.post-shell > .post-main {
+  min-width: 0;
+}
+
+.post-outline {
+  position: sticky;
+  top: 5rem;
+  align-self: start;
+}
+
+/* WidgetLayout 默认是行内自定义元素，这里改回块级，让目录卡片的纸面 / 细线成完整方块 */
+.post-outline > widget-layout {
+  display: block;
+}
+
+/* 文章没有任何标题时不渲染目录栏，整列回退到原来的居中单栏宽度 */
+body:not(.homepage) #content-wrapper.post-narrow > .post-shell.post-shell--no-outline {
+  display: block;
+  max-width: 66vw;
+}
+
+.post-shell--no-outline .post-outline {
+  display: none;
+}
+
+@media (max-width: 1279px) {
+  body:not(.homepage) #content-wrapper.post-narrow > .post-shell {
+    display: block;
+    max-width: 66vw;
+  }
+
+  .post-outline {
+    display: none;
+  }
+}
+
+body:not(.homepage) #main-grid {
+  gap: clamp(1rem, 2.5vw, 1.5rem);
+}
+
+body:not(.homepage) .footer {
+  border-top: 1px solid var(--ip-line);
+  margin-top: clamp(2.5rem, 6vw, 4.5rem);
+  padding-top: clamp(1.5rem, 3vw, 2.25rem);
+  color: var(--ip-ink-soft);
+}
+
+/* ── 面板：内页里的 card-base 从“圆角玻璃卡片”改为“暖纸面 + 细线” ─────
+   必须用 !important：overlay 壁纸模式下 `.wallpaper-transparent .card-base`
+   带着 !important 的 background-color 会盖掉这里的纸面与文字对比度。 */
+body:not(.homepage) .card-base {
+  border-radius: var(--ip-radius) !important;
+  background: var(--ip-surface) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid var(--ip-line) !important;
+  box-shadow: var(--ip-shadow) !important;
+  color: var(--ip-ink);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* 悬停不再抬升位移（会与列表入场动画打架），只强化细线 */
+body:not(.homepage) .card-base:hover {
+  transform: none !important;
+  border-color: rgba(42, 35, 44, 0.22) !important;
+}
+
+:root.dark body:not(.homepage) .card-base:hover {
+  border-color: rgba(236, 229, 234, 0.24) !important;
+}
+
+body:not(.homepage) .card-base:focus-within {
+  border-color: var(--ip-warm) !important;
+}
+
+/* ── 页头：眉标 / 标题 / 描述 / 编号 ────────────────────────────────── */
+.ip-head {
+  margin-bottom: var(--ip-gap);
+}
+
+.ip-head-center {
+  text-align: center;
+}
+
+.ip-head-center .ip-title-mark,
+.ip-head-center .ip-desc {
+  margin-inline: auto;
+}
+
+.ip-eyebrow {
+  margin: 0 0 0.85rem;
+  font-family: var(--ip-mono);
+  font-size: 0.7rem;
+  line-height: 1.4;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--ip-ink-faint);
+}
+
+.ip-title {
+  margin: 0;
+  font-size: clamp(1.7rem, 4vw, 2.6rem);
+  line-height: 1.24;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ip-ink);
+  text-wrap: balance;
+}
+
+/* 标题前的短横线：首页 .cn-line::before 的同族装饰 */
+.ip-title-mark {
+  display: block;
+  width: 0.62rem;
+  height: 1px;
+  margin-bottom: 1.05rem;
+  background: var(--ip-warm);
+}
+
+.ip-desc {
+  margin: 1.05rem 0 0;
+  max-width: 34rem;
+  font-size: 0.95rem;
+  line-height: 1.9;
+  color: var(--ip-ink-soft);
+}
+
+/* 编号索引（01 / 02 …），与首页的 cn-record-index 一致 */
+.ip-index {
+  margin: 0 0 0.6rem;
+  font-family: var(--ip-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.3em;
+  color: var(--ip-ink-faint);
+}
+
+/* ── 分隔线 ───────────────────────────────────────────────────────────── */
+.ip-rule {
+  height: 1px;
+  border: 0;
+  margin: var(--ip-gap) 0;
+  background: var(--ip-line-soft);
+}
+
+.ip-rule-tight {
+  margin: 0.7rem 0 0;
+}
+
+/* ── 元信息（日期 / 分类 / 标签 / 字数），等宽小字 ──────────────────── */
+.ip-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1.1rem;
+  font-size: 0.76rem;
+  font-family: var(--ip-mono);
+  letter-spacing: 0.09em;
+  color: var(--ip-ink-soft);
+}
+
+.ip-meta a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color 0.25s ease, border-color 0.25s ease;
+}
+
+.ip-meta a:hover {
+  color: var(--ip-ink);
+  border-bottom-color: var(--ip-line);
+}
+
+.ip-head .ip-meta {
+  margin-top: 0.9rem;
+}
+
+/* ── 页头组件（PageTitle）────────────────────────────────────────────────
+   结构：[方框图标] + [眉标 / 标题 / 描述 / 统计行]。
+   参考站 page-title 的比例：图标 3rem、图标与文字同轴心、描述限宽 34rem。 */
+.ip-page-title__row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.ip-page-title__icon {
+  width: 3rem;
+  height: 3rem;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--ip-ink);
+  border-radius: var(--ip-radius);
+  background: transparent;
+  color: var(--ip-ink);
+}
+
+.ip-page-title__icon svg {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+.ip-page-title__body {
+  min-width: 0;
+  flex: 1;
+}
+
+.ip-page-title .ip-title {
+  margin: 0;
+}
+
+/* 有图标时不再用短横线，避免两种装饰叠在一起 */
+.ip-page-title__icon ~ .ip-page-title__body .ip-title-mark {
+  display: none;
+}
+
+.ip-page-title--center .ip-page-title__row {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.ip-page-title--center .ip-desc {
+  margin-inline: auto;
+}
+
+@media (max-width: 768px) {
+  .ip-page-title__icon {
+    width: 2.6rem;
+    height: 2.6rem;
+  }
+}
+
+.ip-sep {
+  opacity: 0.45;
+}
+
+/* ── 胶囊标签（首页 .cn-cat / .cn-social-link 同族） ────────────────── */
+.ip-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  padding: 0.5rem 1.05rem;
+  font-size: 0.88rem;
+  letter-spacing: 0.03em;
+  color: var(--ip-ink);
+  text-decoration: none;
+  background: transparent;
+  border: 1px solid var(--ip-line);
+  border-radius: 999px;
+  transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+}
+
+.ip-chip:hover {
+  border-color: var(--ip-ink-faint);
+  background: var(--ip-surface-2);
+}
+
+.ip-chip-count {
+  font-family: var(--ip-mono);
+  font-size: 0.72rem;
+  opacity: 0.6;
+}
+
+.ip-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+/* ── 尾部“查看更多” ─────────────────────────────────────────────────── */
+.ip-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.88rem;
+  letter-spacing: 0.18em;
+  color: var(--ip-ink);
+  text-decoration: none;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--ip-line);
+  transition: border-color 0.3s ease;
+}
+
+.ip-more:hover {
+  border-color: var(--ip-ink);
+}
+
+/* ── 纸面上的索引行（参考站与首页共有的“标题 + 摘要 + 元信息”行） ───── */
+.ip-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--ip-line);
+}
+
+.ip-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.35rem 0 1.5rem;
+  border-bottom: 1px solid var(--ip-line-soft);
+  position: relative;
+}
+
+.ip-row-title {
+  margin: 0;
+  font-size: clamp(1.05rem, 1.6vw, 1.22rem);
+  line-height: 1.5;
+  font-weight: 600;
+  color: var(--ip-ink);
+}
+
+.ip-row-title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.ip-row-title a:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.28em;
+}
+
+.ip-row-desc {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.85;
+  color: var(--ip-ink-soft);
+}
+
+/* 行内的短虚线段，呼应首页 .cn-line::before */
+.ip-dash {
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.ip-dash::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 0.62rem;
+  height: 1px;
+  background: var(--ip-ink-faint);
+}
+
+/* ── 文章详情：阅读栏 ────────────────────────────────────────────────── */
+.ip-post-head {
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--ip-line);
+  margin-bottom: clamp(1.75rem, 4vw, 2.5rem);
+}
+
+/* 文章页把「阅读栏」的内层限宽打开：整列已经是 66vw（屏幕三分之二），
+   若正文再受 .ip-post-col 的 44rem 限制，宽屏上就会变成「外框变宽、文字不动」。
+   这一条只作用于文章页（.ip-post），关于页 / 动态页仍保留 44rem 的阅读行宽。
+   标题区与正文卡片共用同一套横向内边距（px-6 md:px-10），内层限宽取消后两者
+   自然同宽，标题左边缘与正文左边缘对齐，不需要再额外补偿。 */
+body:not(.homepage) .ip-post .ip-post-col {
+  max-width: none;
+}
+
+.ip-post-title {
+  display: block;
+  margin: 0 0 1.15rem;
+  font-size: clamp(1.6rem, 3.8vw, 2.35rem);
+  line-height: 1.28;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ip-ink);
+  text-wrap: balance;
+}
+
+.ip-post-col {
+  max-width: var(--ip-read);
+  margin-inline: auto;
+}
+
+/* 详情页的元信息（PostMeta 组件）与字数行：等宽小字 + 细线 */
+body:not(.homepage) .ip-post .post-meta-root {
+  font-family: var(--ip-mono);
+  gap: 0.4rem 1.05rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--ip-line-soft);
+}
+
+body:not(.homepage) .ip-post .post-meta-root .text-50,
+body:not(.homepage) .ip-post .post-meta-root .text-sm {
+  font-size: 0.76rem;
+  letter-spacing: 0.07em;
+}
+
+body:not(.homepage) .ip-post .post-meta-root .meta-icon {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+body:not(.homepage) .ip-post .post-meta-root .pinned-btn {
+  background: transparent;
+  border: 1px solid var(--ip-line);
+  border-radius: 999px;
+  font-weight: 500;
+  padding: 0.2rem 0.6rem;
+}
+
+body:not(.homepage) .ip-post .ip-post-head .ip-meta {
+  margin-top: 0.95rem;
+}
+
+.ip-reading {
+  font-size: 1rem;
+  line-height: 2;
+  color: var(--ip-ink);
+}
+
+@media (min-width: 768px) {
+  .ip-reading {
+    font-size: 1.02rem;
+  }
+}
+
+.ip-reading img {
+  border-radius: var(--ip-radius-sm);
+}
+
+/* 正文标题层级：与首页一致的“细线 + 编号感” */
+.ip-reading :is(h2, h3) {
+  letter-spacing: 0.01em;
+}
+
+.ip-reading h2 {
+  margin-top: 2.6em;
+  padding-top: 0.9em;
+  border-top: 1px solid var(--ip-line-soft);
+}
+
+.ip-reading blockquote {
+  border-left: 2px solid var(--ip-warm);
+  background: transparent;
+  padding-left: 1.1rem;
+  color: var(--ip-ink-soft);
+}
+
+.ip-reading hr {
+  border: 0;
+  height: 1px;
+  background: var(--ip-line);
+}
+
+/* ── 文章列表：杂志式记录流（列表模式下封面左右交错、编号、无卡片底） ── */
+.ip-list-records {
+  --ip-rec-gutter: clamp(1.25rem, 4vw, 3.5rem);
+  counter-reset: ip-rec;
+}
+
+/* 去掉原来的圆角卡片底，改为细线记录行 */
+body:not(.homepage) .ip-list-records.list-mode .post-card-wrapper,
+body:not(.homepage) .ip-list-records.grid-mode .post-card-wrapper {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--ip-line-soft);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+body:not(.homepage) .ip-list-records .post-card-wrapper:hover {
+  border-color: var(--ip-line-soft);
+}
+
+/* 列表模式：改成 图 42% + 文 50% 的杂志记录行。
+   说明：PostCard.astro 对 list/grid 模式的这些属性本来就带 !important，
+         要改写它们只能用 !important —— 这是本文件里唯一需要 !important 的地方。 */
+@media (min-width: 1024px) {
+  body:not(.homepage) .ip-list-records.list-mode .post-card-item {
+    width: auto;
+    margin-left: 0;
+  }
+
+  body:not(.homepage) .ip-list-records.list-mode .post-card-wrapper {
+    flex-direction: row !important;
+    align-items: center;
+    gap: clamp(1.5rem, 4vw, 3rem);
+    padding: clamp(1.75rem, 3.5vw, 2.75rem) 0;
+  }
+
+  /* 奇偶交错：偶数条封面换到左侧并整体下沉，形成杂志节奏 */
+  body:not(.homepage) .ip-list-records.list-mode .post-card-item:nth-child(even) .post-card-wrapper {
+    flex-direction: row-reverse !important;
+    margin-top: clamp(0.5rem, 2vw, 1.75rem);
+  }
+
+  body:not(.homepage) .ip-list-records.list-mode .has-cover .post-card-content {
+    width: auto !important;
+    flex: 1 1 50%;
+    padding: 0 !important;
+  }
+
+  body:not(.homepage) .ip-list-records.list-mode .has-cover .post-card-image {
+    position: relative !important;
+    top: auto !important;
+    bottom: auto !important;
+    right: auto !important;
+    left: auto !important;
+    width: 100% !important;
+    flex: 0 0 42%;
+    aspect-ratio: 16 / 11 !important;
+    border-radius: var(--ip-radius-sm) !important;
+    margin: 0 !important;
+  }
+
+  body:not(.homepage) .ip-list-records.list-mode .no-cover .post-card-content {
+    width: 100% !important;
+    padding: 0 !important;
+  }
+
+  body:not(.homepage) .ip-list-records .post-card-enter-btn {
+    display: none !important;
+  }
+
+  /* 标题：取消原来的竖条装饰，改用编号索引 */
+  body:not(.homepage) .ip-list-records .post-card-title {
+    font-size: clamp(1.15rem, 2vw, 1.45rem) !important;
+    line-height: 1.42 !important;
+    font-weight: 600;
+    margin-bottom: 0.7rem !important;
+  }
+
+  body:not(.homepage) .ip-list-records .post-card-title::before {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  body:not(.homepage) .ip-list-records.list-mode .post-card-item::before {
+    counter-increment: ip-rec;
+    content: counter(ip-rec, decimal-leading-zero);
+    display: block;
+    font-family: var(--ip-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    color: var(--ip-ink-faint);
+    padding-top: clamp(1.75rem, 3.5vw, 2.75rem);
+  }
+}
+
+/* 摘要与元信息的层级 */
+body:not(.homepage) .ip-list-records .description {
+  font-size: 0.92rem !important;
+  line-height: 1.9;
+  color: var(--ip-ink-soft);
+}
+
+body:not(.homepage) .ip-list-records .post-meta {
+  gap: 0.4rem 0.9rem !important;
+}
+
+body:not(.homepage) .ip-list-records .post-meta .meta-icon {
+  width: 1.05rem !important;
+  height: 1.05rem !important;
+}
+
+body:not(.homepage) .ip-list-records .post-meta .text-50 {
+  font-size: 0.76rem;
+  font-family: var(--ip-mono);
+  letter-spacing: 0.08em;
+}
+
+/* 网格模式：仍然保留网格，但去掉卡片底与抬升 */
+body:not(.homepage) .ip-list-records.grid-mode .post-card-image {
+  border-radius: var(--ip-radius-sm) var(--ip-radius-sm) 0 0;
+}
+
+body:not(.homepage) .ip-list-records.grid-mode .post-card-wrapper {
+  border: 1px solid var(--ip-line-soft);
+  border-radius: var(--ip-radius-sm);
+  overflow: hidden;
+}
+
+/* ── 归档：年份 / 月份索引 ───────────────────────────────────────────── */
+body:not(.homepage) .ip-archive .ip-year-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.9rem;
+  padding: 1.5rem 0 0.75rem;
+  border-top: 1px solid var(--ip-line);
+  margin-top: clamp(1.5rem, 4vw, 2.5rem);
+}
+
+body:not(.homepage) .ip-archive .ip-year-head:first-child {
+  border-top: 0;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+body:not(.homepage) .ip-archive .ip-year-num {
+  font-size: clamp(1.6rem, 3.4vw, 2.4rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.05;
+  color: var(--ip-ink);
+}
+
+body:not(.homepage) .ip-archive .ip-year-count {
+  font-family: var(--ip-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.14em;
+  color: var(--ip-ink-faint);
+}
+
+body:not(.homepage) .ip-archive .ip-month-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  padding: 1.15rem 0 0.35rem;
+  font-family: var(--ip-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.2em;
+  color: var(--ip-ink-faint);
+}
+
+body:not(.homepage) .ip-archive .ip-month-head::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--ip-line-soft);
+}
+
+/* ── 归档行：滑动高亮层（magic highlight）────────────────────────────
+   鼠标划过列表时，单个高亮背景在行间平滑滑动，替代逐行硬切的背景色。
+   位置由 ArchivePanel.svelte 计算，这里只负责过渡；弹簧曲线带轻微过冲，
+   划过连续行时高亮像液体一样流过去。 */
+body:not(.homepage) .ip-archive {
+  position: relative;
+}
+
+body:not(.homepage) .ip-archive .ip-arc-highlight {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 0;
+  border-radius: var(--ip-radius-sm);
+  background: var(--ip-surface-2);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform;
+  transition:
+    transform 0.42s cubic-bezier(0.32, 1.18, 0.38, 1),
+    height 0.42s cubic-bezier(0.32, 1.18, 0.38, 1),
+    opacity 0.2s ease-out;
+}
+
+/* 左侧暖色指示条：高亮首次出现时从中间生长，随高亮一同滑动 */
+body:not(.homepage) .ip-archive .ip-arc-highlight::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 2px;
+  height: 0;
+  border-radius: 2px;
+  background: var(--ip-warm);
+  transform: translateY(-50%);
+  transition: height 0.3s cubic-bezier(0.32, 1.18, 0.38, 1);
+}
+
+body:not(.homepage) .ip-archive .ip-arc-highlight.is-visible {
+  opacity: 1;
+}
+
+body:not(.homepage) .ip-archive .ip-arc-highlight.is-visible::before {
+  height: 55%;
+}
+
+body:not(.homepage) .ip-archive .ip-arc-row {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.62rem 0.4rem 0.62rem 0;
+  border-radius: var(--ip-radius-sm);
+  text-decoration: none;
+  color: inherit;
+  position: relative; /* 行内容画在滑动高亮层之上 */
+}
+
+/* 悬停高亮交给滑动层（仅 hover 设备渲染）；触屏点按保留原反馈 */
+body:not(.homepage) .ip-archive .ip-arc-row:active {
+  background: var(--ip-surface-2);
+}
+
+body:not(.homepage) .ip-archive .ip-arc-date {
+  font-family: var(--ip-mono);
+  font-size: 0.76rem;
+  letter-spacing: 0.06em;
+  color: var(--ip-ink-faint);
+  transition: transform 0.4s cubic-bezier(0.32, 1.18, 0.38, 1), color 0.25s ease;
+}
+
+body:not(.homepage) .ip-archive .ip-arc-title {
+  font-size: 0.98rem;
+  font-weight: 500;
+  color: var(--ip-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: transform 0.4s cubic-bezier(0.32, 1.18, 0.38, 1), color 0.25s ease;
+}
+
+/* 行内微位移：日期小幅让位、标题向右轻推，与高亮的滑动同一节奏 */
+body:not(.homepage) .ip-archive .ip-arc-row:hover .ip-arc-date {
+  transform: translateX(3px);
+  color: var(--ip-warm);
+}
+
+body:not(.homepage) .ip-archive .ip-arc-row:hover .ip-arc-title {
+  color: var(--ip-warm);
+  transform: translateX(6px);
+}
+
+body:not(.homepage) .ip-archive .ip-arc-tags {
+  font-family: var(--ip-mono);
+  font-size: 0.72rem;
+  color: var(--ip-ink-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 16rem;
+}
+
+@media (max-width: 767px) {
+  body:not(.homepage) .ip-archive .ip-arc-row {
+    grid-template-columns: 4rem minmax(0, 1fr);
+  }
+
+  body:not(.homepage) .ip-archive .ip-arc-tags {
+    display: none;
+  }
+}
+
+/* ── 时间轴：悬挂明信片展示栏 ───────────────────────────────────────────
+   时间轴是「一条长绳横向滑动的明信片展示栏」：页头（不垫面板的艺术字）、
+   筛选胶囊、纸面、木夹、吊线与摆动全部是 timeline.astro 内的作用域样式，
+   这里不再给 .tl-head 垫任何背景/边框，避免它又变成一块突兀的面板。 */
+
+/* ── 搜索：标准页头（PageTitle）+ 胶囊检索条 + 键位提示 + 编号记录流 ─────
+   页头走全站 PageTitle 组件（search.astro），这里只管检索面板本身：
+   真·胶囊输入框（夜色玻璃底 + 细线，聚焦时一圈萤火暖光，呼应站名 Firefly）、
+   等宽统计行、编号索引结果行（与全局搜索弹窗同一套行内语汇）、
+   以及一个会明灭的萤火空态 —— 空态是邀请（可点的示例查询），不是死胡同。 */
+body:not(.homepage) .ip-search-page {
+  width: 100% !important;
+  max-width: 46rem;
+  margin-inline: auto;
+}
+
+/* 检索条：surface-2 玻璃胶囊，聚焦时暖色描边 + 一圈萤火光晕 */
+body:not(.homepage) .ip-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.8rem 1.4rem;
+  background: var(--ip-surface-2);
+  border: 1px solid var(--ip-line);
+  border-radius: 999px;
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+body:not(.homepage) .ip-search-bar:hover {
+  border-color: color-mix(in srgb, var(--ip-ink) 30%, transparent);
+}
+
+body:not(.homepage) .ip-search-bar:focus-within {
+  border-color: var(--ip-warm);
+  box-shadow:
+    0 0 0 0.2rem color-mix(in srgb, var(--ip-warm) 16%, transparent),
+    0 0 1.6rem -0.2rem color-mix(in srgb, var(--ip-warm) 45%, transparent);
+}
+
+body:not(.homepage) .ip-search-icon {
+  flex: none;
+  font-size: 1.3rem;
+  color: var(--ip-ink-faint);
+  transition: color 0.25s ease;
+}
+
+body:not(.homepage) .ip-search-bar:focus-within .ip-search-icon {
+  color: var(--ip-warm);
+}
+
+body:not(.homepage) .ip-search-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--ip-ink);
+  background: transparent;
+  border: 0;
+  outline: none;
+  appearance: none;
+}
+
+body:not(.homepage) .ip-search-input::placeholder {
+  color: var(--ip-ink-faint);
+  opacity: 1;
+}
+
+/* 键位提示行：键帽 + 说明文字 */
+body:not(.homepage) .ip-search-hints {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 1.75rem;
+  margin-top: 1.15rem;
+  font-size: 0.8rem;
+  color: var(--ip-ink-faint);
+}
+
+body:not(.homepage) .ip-search-hints .ip-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+body:not(.homepage) .ip-search-hints kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.65rem;
+  padding: 0.14rem 0.42rem;
+  font-family: var(--ip-mono);
+  font-size: 0.68rem;
+  line-height: 1.4;
+  letter-spacing: 0.05em;
+  color: var(--ip-ink-soft);
+  background: var(--ip-surface-2);
+  border: 1px solid var(--ip-line);
+  border-bottom-width: 2px;
+  border-radius: 0.35rem;
+}
+
+/* 结果区 */
+body:not(.homepage) .ip-results {
+  margin-top: 1.9rem;
+}
+
+/* 等宽检索记录行：几条命中、耗时多少 */
+body:not(.homepage) .ip-search-stats {
+  margin: 0 0 0.15rem;
+  font-family: var(--ip-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  color: var(--ip-ink-faint);
+}
+
+body:not(.homepage) .ip-result-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--ip-line);
+}
+
+body:not(.homepage) .ip-result {
+  border-bottom: 1px solid var(--ip-line-soft);
+}
+
+body:not(.homepage) .ip-result > a {
+  display: grid;
+  grid-template-columns: 2.4rem 1fr;
+  gap: 0 0.75rem;
+  padding: 1.15rem 0.35rem;
+  text-decoration: none;
+}
+
+body:not(.homepage) .ip-result-idx {
+  font-family: var(--ip-mono);
+  font-size: 0.78rem;
+  line-height: 2;
+  color: var(--ip-ink-faint);
+}
+
+body:not(.homepage) .ip-result-body {
+  min-width: 0;
+}
+
+body:not(.homepage) .ip-result-title {
+  display: block;
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.55;
+  color: var(--ip-ink);
+  transition: color 0.25s ease;
+}
+
+body:not(.homepage) .ip-result-arrow {
+  font-size: 0.7rem;
+  color: var(--ip-warm);
+  opacity: 0;
+  transform: translateX(-0.3rem);
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+
+body:not(.homepage) .ip-result > a:hover .ip-result-title,
+body:not(.homepage) .ip-result > a:focus-visible .ip-result-title {
+  color: var(--ip-warm);
+}
+
+body:not(.homepage) .ip-result > a:hover .ip-result-arrow,
+body:not(.homepage) .ip-result > a:focus-visible .ip-result-arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+body:not(.homepage) .ip-result-excerpt {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.9rem;
+  line-height: 1.85;
+  color: var(--ip-ink-soft);
+}
+
+/* 正文命中：「内容」徽标 + 最多三行，超出截断 */
+body:not(.homepage) .ip-result-content {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  margin-top: 0.45rem;
+  font-size: 0.85rem;
+  line-height: 1.8;
+  color: var(--ip-ink-soft);
+}
+
+body:not(.homepage) .ip-result-badge {
+  display: inline-block;
+  margin-right: 0.5em;
+  padding: 0.08em 0.5em;
+  font-style: normal;
+  font-size: 0.68em;
+  font-weight: 600;
+  color: var(--ip-warm);
+  background: color-mix(in srgb, var(--ip-warm) 14%, transparent);
+  border-radius: 0.3em;
+}
+
+/* 空态：一只明灭的萤火 + 可点的示例查询 */
+body:not(.homepage) .ip-search-empty {
+  padding: 2.6rem 0.5rem 1.5rem;
+  text-align: center;
+}
+
+body:not(.homepage) .ip-search-firefly {
+  display: block;
+  width: 0.45rem;
+  height: 0.45rem;
+  margin: 0 auto 1.1rem;
+  border-radius: 50%;
+  background: var(--ip-warm);
+  box-shadow:
+    0 0 0.6rem 0.1rem color-mix(in srgb, var(--ip-warm) 55%, transparent),
+    0 0 1.8rem 0.3rem color-mix(in srgb, var(--ip-warm) 22%, transparent);
+  animation: ip-firefly 3.6s ease-in-out infinite;
+}
+
+@keyframes ip-firefly {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0.15rem) scale(0.85);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateY(-0.2rem) scale(1);
+  }
+}
+
+body:not(.homepage) .ip-search-empty-text {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ip-ink-faint);
+}
+
+body:not(.homepage) .ip-search-examples {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1.2rem;
+}
+
+body:not(.homepage) .ip-search-example {
+  padding: 0.35rem 0.95rem;
+  font-family: inherit;
+  font-size: 0.85rem;
+  color: var(--ip-ink-soft);
+  background: var(--ip-surface-2);
+  border: 1px solid var(--ip-line);
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    color 0.25s ease,
+    border-color 0.25s ease,
+    background 0.25s ease;
+}
+
+body:not(.homepage) .ip-search-example:hover {
+  color: var(--ip-warm);
+  border-color: var(--ip-warm);
+  background: color-mix(in srgb, var(--ip-warm) 8%, transparent);
+}
+
+body:not(.homepage) .ip-search-example:active {
+  transform: scale(0.97);
+}
+
+body:not(.homepage) .ip-search-example:focus-visible {
+  outline: 1px solid var(--ip-warm);
+  outline-offset: 2px;
+}
+
+body:not(.homepage) .ip-result > a:focus-visible {
+  outline: 1px solid var(--ip-warm);
+  outline-offset: -1px;
+  border-radius: var(--ip-radius-sm);
+}
+
+body:not(.homepage) .ip-search-loading {
+  display: flex;
+  justify-content: center;
+  padding: 2.5rem 0;
+}
+
+body:not(.homepage) mark {
+  background: transparent;
+  color: var(--ip-warm);
+  font-weight: 600;
+  padding: 0 0.1em;
+}
+
+/* ── 图库：以图片为主体 ──────────────────────────────────────────────── */
+body:not(.homepage) .ip-gallery .album-card {
+  border-radius: var(--ip-radius-sm);
+  box-shadow: none;
+}
+
+body:not(.homepage) .ip-gallery .album-card:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+body:not(.homepage) .ip-gallery .album-card .aspect-4\/3 img {
+  transition: transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+body:not(.homepage) .ip-gallery .album-card:hover img {
+  transform: scale(1.035);
+}
+
+/* ── 公共组件：分类栏 / 侧栏 / 评论 / 代码块 ────────────────────────── */
+body:not(.homepage) #category-bar-wrapper {
+  margin-bottom: clamp(1.25rem, 3vw, 2rem);
+}
+
+body:not(.homepage) #category-bar-wrapper .card-base,
+body:not(.homepage) #category-bar-wrapper > div {
+  background: var(--ip-surface);
+  border: 1px solid var(--ip-line);
+  border-radius: var(--ip-radius-sm);
+  box-shadow: none;
+}
+
+/* 侧栏组件统一为纸面 + 细线，避免与主内容出现两套语言 */
+body:not(.homepage) #left-sidebar-wrapper .card-base,
+body:not(.homepage) #right-sidebar-static .card-base,
+body:not(.homepage) #left-sidebar-dynamic .card-base,
+body:not(.homepage) #right-sidebar-dynamic .card-base,
+body:not(.homepage) #mobile-bottom-sidebar .card-base,
+body:not(.homepage) [id$="-sidebar-sticky"] .card-base {
+  background: var(--ip-surface);
+  border: 1px solid var(--ip-line);
+  border-radius: var(--ip-radius-sm);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+/* 评论区与相关区域 */
+body:not(.homepage) #comment,
+body:not(.homepage) .comment-card {
+  border-radius: var(--ip-radius);
+}
+
+/* ── 归档页：只保留文章列表本身（页头 + 年月索引）
+   不再有壁纸带 / 统计条 / 年份竖轨 / 页底信息带 ─────────────────────── */
+body:not(.homepage) .ip-archive-page {
+  max-width: 62rem;
+  margin-inline: auto;
+}
+
+/* （归档页的壁纸带 / 统计条已移除，归档只保留文章列表） */
+
+/* 归档索引锚点：年份区块留出滚动偏移 */
+body:not(.homepage) .ip-arc-section {
+  scroll-margin-top: 6rem;
+}
+
+/* 右下角浮动音乐面板：开关在 FloatingControls 快捷球的音乐键上，
+   面板悬浮在快捷球扇形展开区（半径 4.5rem + 按键高）的上方，二者不重叠 */
+.ip-fm {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 9rem;
+  z-index: 999;
+  pointer-events: none;
+}
+
+.ip-fm > * {
+  pointer-events: auto;
+}
+
+.ip-fm__panel {
+  display: none;
+  width: min(20rem, 82vw);
+}
+
+.ip-fm.is-open .ip-fm__panel {
+  display: block;
+}
+
+/* 提高特异度压过 body:not(.homepage) .card-base 的 !important 夜色规则；
+   不透明底（夜色 rgb(16,18,28) / 亮色白） */
+.ip-fm .ip-fm__panel .card-base,
+.ip-fm .ip-fm__panel .widget-card {
+  background: rgb(16 18 28) !important;
+  border: none !important;
+  border-radius: 1.25rem !important;
+  box-shadow: 0 0.65rem 1.8rem rgb(0 0 0 / 0.12) !important;
+}
+
+:root:not(.dark) .ip-fm .ip-fm__panel .card-base,
+:root:not(.dark) .ip-fm .ip-fm__panel .widget-card {
+  background: #fff !important;
+}
+
+/* 歌词视图已移除：整块隐藏（控制器引用保留） */
+.ip-fm .lrc-drawer {
+  display: none !important;
+}
+
+/* 旧 widget 标题（"音乐"）与旧抽屉开关按钮：保留 DOM（控制器引用）仅隐藏 */
+.ip-fm .widget-title,
+.ip-fm .btn-drawer-toggle,
+.ip-fm .btn-lrc-toggle {
+  display: none !important;
+}
+
+/* ── 布局：列表抽屉在上、信息条贴底，封面骑在左下角 ── */
+.ip-fm .music-player-widget {
+  display: flex;
+  flex-direction: column;
+}
+
+.ip-fm .playlist-drawer {
+  order: -1;
+}
+
+/* 封面：骑在面板左下角的旋转唱片 */
+.ip-fm .music-player-widget .group.shrink-0 {
+  position: absolute !important;
+  bottom: 0.5rem;
+  left: 0.875rem;
+  z-index: 5;
+}
+
+/* 信息行 / 进度行 / 控制行给唱片让出左侧空间 */
+.ip-fm .music-player-widget > div:nth-of-type(1),
+.ip-fm .music-player-widget > div:has(> .progress-container),
+.ip-fm .music-player-widget > div:has(> .btn-play) {
+  padding-left: 4.5rem;
+}
+
+/* ── 列表收起/展开开关：面板右上角，箭头随开合旋转 ── */
+.ip-fm .music-list-toggle {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.625rem;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  cursor: pointer;
+  color: var(--content-meta);
+  background: transparent;
+  border: none;
+  border-radius: 9999px;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.ip-fm .music-list-toggle:hover {
+  color: var(--primary);
+  background: var(--btn-plain-bg-hover);
+}
+
+.ip-fm .music-list-toggle svg {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* 收起时箭头朝下（提示向下展开） */
+.ip-fm .music-list-toggle.is-collapsed svg {
+  transform: rotate(180deg);
+}
+
+/* 封面：唱片质感——厚实浅色描边，无阴影 */
+.ip-fm .music-player-widget .group > div:first-child > div {
+  border: 2px solid var(--float-panel-bg) !important;
+  box-shadow: none !important;
+}
+
+/* 曲名 / 歌手 / 时间 */
+.ip-fm .music-title {
+  color: var(--deep-text) !important;
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.ip-fm .music-artist {
+  color: var(--content-meta) !important;
+  font-size: 0.75rem;
+}
+
+.ip-fm .music-player-widget .text-\[10px\] {
+  color: var(--content-meta) !important;
+  font-size: 0.6875rem !important;
+}
+
+/* 进度条 / 音量条：deep-text 14% 细轨 + primary 填充，拇指悬停浮现 */
+.ip-fm .progress-container,
+.ip-fm .vol-container {
+  background-color: color-mix(in oklch, var(--deep-text) 14%, transparent) !important;
+}
+
+.ip-fm .progress-bar,
+.ip-fm .vol-bar {
+  background-color: var(--primary) !important;
+}
+
+.ip-fm .progress-thumb {
+  background-color: var(--primary) !important;
+  box-shadow: 0 0 0 2px var(--float-panel-bg);
+  --tw-ring-color: transparent;
+}
+
+/* 控制按钮：2.25rem 圆形热区，content-meta → 悬停 primary + 淡底 */
+.ip-fm .btn-repeat,
+.ip-fm .btn-mute,
+.ip-fm .btn-drawer-toggle,
+.ip-fm .btn-lrc-toggle,
+.ip-fm .btn-prev,
+.ip-fm .btn-next {
+  color: var(--content-meta) !important;
+  border-radius: 9999px;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.ip-fm .btn-repeat:hover,
+.ip-fm .btn-mute:hover,
+.ip-fm .btn-drawer-toggle:hover,
+.ip-fm .btn-lrc-toggle:hover,
+.ip-fm .btn-prev:hover,
+.ip-fm .btn-next:hover {
+  color: var(--primary) !important;
+  background: var(--btn-plain-bg-hover) !important;
+}
+
+/* 播放键：2.75rem，无底色，deep-text → 悬停 primary */
+.ip-fm .btn-play {
+  width: 2.75rem !important;
+  height: 2.75rem !important;
+  color: var(--deep-text) !important;
+  background: transparent !important;
+  border: none;
+  transition: color 0.2s ease, transform 0.15s ease;
+}
+
+.ip-fm .btn-play:hover {
+  color: var(--primary) !important;
+  background: transparent !important;
+}
+
+/* 歌词 / 播放列表抽屉分隔线 */
+.ip-fm .lrc-drawer .border-t,
+.ip-fm .playlist-drawer .border-t {
+  border-color: var(--line-divider) !important;
+}
+
+/* 播放列表条目：0.625rem 圆角、淡底悬停、primary 点亮 */
+.ip-fm .playlist-item {
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.625rem;
+}
+
+.ip-fm .playlist-item:hover {
+  background: var(--btn-plain-bg-hover) !important;
+}
+
+.ip-fm .playlist-item .item-title {
+  color: var(--deep-text) !important;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.ip-fm .playlist-item:hover .item-title {
+  color: var(--primary) !important;
+}
+
+.ip-fm .playlist-item .item-artist {
+  color: var(--content-meta) !important;
+  font-size: 0.6875rem;
+}
+
+.ip-fm .playlist-item .item-cover {
+  border-radius: 0.375rem;
+}
+
+.ip-fm .playlist-item .w-8.h-8 {
+  width: 2rem !important;
+  height: 2rem !important;
+  background: color-mix(in oklch, var(--deep-text) 10%, transparent);
+}
+
+/* 正在播放的条目：primary 25% 蒙层 */
+.ip-fm .playlist-item .item-active-overlay {
+  background: color-mix(in oklch, var(--primary) 25%, transparent) !important;
+}
+
+.ip-fm .playlist-item .item-active-overlay svg {
+  color: var(--primary) !important;
+}
+
+/* ── 友链：宫格平铺 ───────────────────────────────────────────────
+   所有友链卡片一次性平铺成响应式宫格，随容器宽度自动换列。 */
+
+/* 友链页与归档页同宽：整块面板限宽 62rem 并居中，边界与归档页对齐 */
+body:not(.homepage) .ip-friends {
+  width: 100% !important;
+  max-width: 62rem;
+  margin-inline: auto;
+}
+
+body:not(.homepage) .friends-intro {
+  margin-bottom: 0.25rem;
+}
+
+body:not(.homepage) .friends-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: 0.85rem;
+  align-items: stretch;
+  margin-top: 1.25rem;
+}
+
+body:not(.homepage) .friend-stop {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border-radius: var(--ip-radius);
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.25s ease;
+}
+
+body:not(.homepage) .friend-stop:hover {
+  transform: translateY(-3px);
+}
+
+body:not(.homepage) .friend-stop__cover {
+  position: relative;
+  margin: 0;
+  width: 100%;
+  height: 7.5rem;
+  border-radius: var(--ip-radius);
+  overflow: hidden;
+  background: var(--ip-surface-2);
+}
+
+body:not(.homepage) .friend-stop__cover img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+body:not(.homepage) .friend-stop__body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.8rem 0.9rem 0.95rem;
+}
+
+body:not(.homepage) .friend-stop__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-family: var(--ip-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ip-ink-faint);
+}
+
+body:not(.homepage) .friend-stop__title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  color: var(--ip-ink);
+}
+
+body:not(.homepage) .friend-stop__desc {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--ip-ink-soft);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+body:not(.homepage) .friend-stop__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.15rem;
+}
+
+body:not(.homepage) .friend-stop__tags span {
+  padding: 0.15rem 0;
+  font-family: var(--ip-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  color: var(--ip-ink-faint);
+}
+
+body:not(.homepage) .friend-stop__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: auto;
+  padding-top: 0.55rem;
+  font-family: var(--ip-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ip-warm);
+}
+
+body:not(.homepage) .friend-stop:hover .friend-stop__title {
+  color: var(--ip-warm);
+}
+
+body:not(.homepage) .friends-empty {
+  margin-top: 1.25rem;
+  padding: 2rem;
+  text-align: center;
+  color: var(--ip-ink-faint);
+}
+
+/* 整页去卡片化：友链 / 关于页里仍在用 card-base 的壳层
+   （评论区、评论未配置占位框等）也去掉面板，直接融进背景。
+   内页通用的 .card-base 规则带着 !important，这里用更高特异性压掉，
+   只作用于这两个页面，其他页面保持纸面卡片。
+   （动态页 .ip-moments 不在此列：动态流卡片需要保留卡片质感） */
+body:not(.homepage) .ip-friends .card-base,
+body:not(.homepage) .ip-about .card-base {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+
+body:not(.homepage) .ip-friends .card-base:hover,
+body:not(.homepage) .ip-friends .card-base:focus-within,
+body:not(.homepage) .ip-about .card-base:hover,
+body:not(.homepage) .ip-about .card-base:focus-within {
+  border: none !important;
+}
+
+/* 手机上退成单列，封面相应压矮 */
+@media (max-width: 767px) {
+  body:not(.homepage) .friends-grid {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+    margin-top: 1rem;
+  }
+
+  body:not(.homepage) .friend-stop__cover {
+    height: 6.5rem;
+  }
+}
+
+/* ── 图库 / 番剧的筛选按钮：统一成胶囊细线 ─────────────────────────── */
+body:not(.homepage) gallery-filter button,
+body:not(.homepage) friend-filter button,
+body:not(.homepage) .ip-bangumi button[data-filter] {
+  border-radius: 999px;
+  font-family: var(--ip-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  padding: 0.35rem 0.9rem;
+}
+
+/* ── 番剧：条目卡统一成纸面细线，突出真实封面 ───────────────────────── */
+body:not(.homepage) .ip-bangumi .bangumi-masonry > div > .card-base,
+body:not(.homepage) .ip-bangumi .card-base {
+  border-radius: var(--ip-radius-sm);
+  background: var(--ip-surface);
+  border: 1px solid var(--ip-line);
+  box-shadow: none;
+}
+
+body:not(.homepage) .ip-bangumi .bangumi-masonry {
+  gap: 0.85rem !important;
+}
+
+/* ── 404：与全站同一套语汇 ──────────────────────────────────────────── */
+body:not(.homepage) .ip-404 .text-8xl,
+body:not(.homepage) .ip-404 .md\:text-9xl {
+  font-family: var(--ip-mono);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--ip-warm);
+  opacity: 0.32;
+}
+
+body:not(.homepage) .ip-404 .text-3xl,
+body:not(.homepage) .ip-404 .md\:text-4xl {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+body:not(.homepage) .ip-404 a[href$="/"] {
+  border-radius: 999px;
+  font-size: 0.86rem;
+  letter-spacing: 0.1em;
+}
+
+/* ── 减少动态效果 ─────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  body:not(.homepage) .card-base,
+  body:not(.homepage) .friend-stop,
+  body:not(.homepage) .ip-chip,
+  body:not(.homepage) .ip-more,
+  body:not(.homepage) .ip-meta a,
+  body:not(.homepage) .ip-search-bar,
+  body:not(.homepage) .ip-result-title,
+  body:not(.homepage) .ip-result-arrow,
+  body:not(.homepage) .ip-search-example,
+  body:not(.homepage) .ip-arc-row,
+  body:not(.homepage) .ip-archive .ip-arc-highlight,
+  body:not(.homepage) .ip-archive .ip-arc-highlight::before,
+  body:not(.homepage) .ip-archive .ip-arc-date,
+  body:not(.homepage) .ip-archive .ip-arc-title {
+    transition: none !important;
+  }
+
+  body:not(.homepage) .friend-stop:hover {
+    transform: none;
+  }
+
+  body:not(.homepage) .ip-search-firefly {
+    animation: none;
+    opacity: 0.85;
+  }
+
+  body:not(.homepage) .ip-gallery .album-card:hover img {
+    transform: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   文章详情页（深色模式）：去框化 —— 让卡片、文字与页面背景融为一体。
+   作用域 .post-shell（= 正文列 + 右侧目录，评论 / 相关推荐 / 上下篇都在其中）。
+   1) 线色变量在作用域内置为透明，一次性掐掉所有用 --ip-line / --ip-line-soft
+      画的 1px 框线（卡片描边、页头分隔线、元信息分隔线、置顶按钮、引用细线等）；
+   2) card-base 去底色 / 阴影 / 圆角 / 悬停描边，文字直接落在页面背景上；
+   3) 引用块的左侧竖条单独去掉（引用底色保留以维持可辨识）；
+   4) 表格格线与上下篇按钮底框一并去除。
+   仅深色模式生效：浅色模式保留纸面卡片（深色文字落在浅底上才有对比度）。
+   !important 仅用于压过同样带 !important 的 .card-base 纸面规则。 */
+html.dark body:not(.homepage) .post-shell {
+  --ip-line: transparent;
+  --ip-line-soft: transparent;
+}
+
+html.dark body:not(.homepage) .post-shell .card-base {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-radius: 0 !important;
+  transition: none !important;
+}
+
+html.dark body:not(.homepage) .post-shell .card-base:hover,
+html.dark body:not(.homepage) .post-shell .card-base:focus-within {
+  border: none !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* 引用块：去左侧竖条与顶部细线，底色保留 */
+html.dark body:not(.homepage) .ip-post .ip-reading blockquote {
+  border: none;
+}
+
+/* 表格：去格线（表头底色保留以维持层级） */
+html.dark body:not(.homepage) .ip-post .markdown-content :is(table, th, td) {
+  border-color: transparent;
+}
+
+/* 上下篇按钮：去底融框，保留悬停变色反馈 */
+html.dark body:not(.homepage) .ip-post .btn-card {
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.dark body:not(.homepage) .post-shell .card-base,
+  html.dark body:not(.homepage) .ip-post .btn-card {
+    transition: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   文章页 · 接驳班次（相关文章 / 随机文章）
+   延续首页「夜航站牌」的行语言：编号 → 站名 → 点线 → 箭头，
+   悬停时一列暖色车厢光带自左向右驶过（与首页站牌同款）。
+   必须用全局样式：随机文章一栏的行是客户端脚本生成的，拿不到 scoped 标记。 */
+.ip-xfer {
+  --xfer-line: rgba(42, 35, 44, 0.2);
+  --xfer-ink: var(--ip-ink);
+  --xfer-ink-faint: var(--ip-ink-faint);
+}
+
+:root.dark .ip-xfer {
+  --xfer-line: rgba(236, 229, 234, 0.16);
+}
+
+.ip-xfer__head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-bottom: 10px;
+  margin-bottom: 2px;
+}
+
+.ip-xfer__icon {
+  font-size: 20px;
+  color: var(--ip-warm);
+}
+
+.ip-xfer__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--xfer-ink);
+}
+
+.ip-xfer__badge {
+  margin-left: auto;
+  font-size: 11px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ip-warm) 12%, transparent);
+  color: var(--ip-warm);
+}
+
+.ip-xfer__row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 10px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  overflow: hidden;
+  transition: background 0.5s ease 0.5s;
+}
+
+.ip-xfer__row + .ip-xfer__row {
+  border-top: 1px dashed var(--xfer-line);
+}
+
+.ip-xfer__row:hover {
+  background: color-mix(in srgb, var(--ip-warm) 5%, transparent);
+}
+
+.ip-xfer__no {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--xfer-line);
+  border-radius: 7px;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 11px;
+  color: var(--xfer-ink-faint);
+  transition:
+    color 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.ip-xfer__row:hover .ip-xfer__no {
+  color: var(--ip-warm);
+  border-color: var(--ip-warm);
+}
+
+.ip-xfer__main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  max-width: 70%;
+}
+
+.ip-xfer__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--xfer-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.25s ease;
+}
+
+.ip-xfer__row:hover .ip-xfer__name {
+  color: var(--ip-warm);
+}
+
+.ip-xfer__meta {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--xfer-ink-faint);
+  min-width: 0;
+}
+
+.ip-xfer__cat {
+  flex-shrink: 0;
+  font-style: normal;
+  font-weight: 600;
+  color: var(--ip-warm);
+  opacity: 0.8;
+}
+
+.ip-xfer__desc {
+  font-style: normal;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ip-xfer__leader {
+  flex: 1;
+  height: 1px;
+  margin: 0 4px;
+  background-image: linear-gradient(
+    90deg,
+    var(--xfer-line) 0 4px,
+    transparent 4px 9px
+  );
+  background-size: 9px 1px;
+  background-repeat: repeat-x;
+}
+
+.ip-xfer__arrow {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: var(--xfer-ink-faint);
+  transition:
+    color 0.25s ease,
+    transform 0.25s ease;
+}
+
+.ip-xfer__arrow svg {
+  width: 100%;
+  height: 100%;
+}
+
+.ip-xfer__row:hover .ip-xfer__arrow {
+  color: var(--ip-warm);
+  transform: translateX(3px);
+}
+
+/* 火车驶过（与首页站牌同款光带） */
+.ip-xfer__row::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 260%;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent 22px,
+    color-mix(in srgb, var(--ip-warm) 14%, transparent) 40px,
+    color-mix(in srgb, var(--ip-warm) 4%, transparent) 104px,
+    transparent 134px
+  );
+  transform: translateX(-104%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ip-xfer__row:hover::before {
+  animation: ipTrainPass 1.15s cubic-bezier(0.45, 0.05, 0.35, 0.95) forwards;
+}
+
+@keyframes ipTrainPass {
+  0% {
+    transform: translateX(-104%);
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(40%);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .ip-xfer__leader {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ip-xfer__row::before {
+    display: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   文章页 · 分享 / 版权落款式
+   正文结尾的一条落款：淡虚线之上是分享行（暖色图标 + 一句话 + 按钮），
+   其下一行等宽感的小字版权（作者 · 日期 · 许可）。无底色无框。 */.ip-post-sign {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin-bottom: 0.5rem;
+  padding-top: 1.15rem;
+  border-top: 1px dashed color-mix(in srgb, var(--ip-ink) 22%, transparent);
+}
+
+.ip-post-sign__text {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ip-ink-soft);
+}
+
+.ip-post-sign__icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: var(--ip-warm);
+}
+
+.ip-post-sign__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ip-post-license {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin-bottom: 0.5rem;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: var(--ip-ink-faint);
+}
+
+.ip-post-license__item b {
+  font-weight: 600;
+  color: var(--ip-ink-soft);
+}
+
+.ip-post-license__dot {
+  opacity: 0.6;
+}
+
+.ip-post-license__link {
+  color: var(--ip-warm);
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.ip-post-license__link:hover {
+  opacity: 0.75;
+  text-decoration: underline;
+}
+
+/* 目录面板：极淡的墨色薄纱 + 轻磨砂。
+   去框化后背景图的窗棂横线会透过目录与暗色条目交叠，
+   这里只加一层几乎不可见的底，保证条目可读而不破坏融合感。 */
+html.dark body:not(.homepage) .post-shell .post-outline .card-base {
+  background: color-mix(in srgb, #0d1118 66%, transparent) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+}

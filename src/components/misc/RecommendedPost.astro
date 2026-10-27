@@ -17,68 +17,62 @@ const relatedIds = JSON.stringify(relatedPosts.map((p) => p.id));
 ---
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-  {/* 左栏：相关文章（静态） */}
+  {/* 左栏：相关文章（静态）—— 同向换乘 */}
   {relatedPosts.length > 0 && (
-    <div class="card-base p-5 md:p-6 flex flex-col">
-      <div class="flex items-center gap-2 pb-3 mb-1 border-b border-dashed border-(--line-divider)">
+    <div class="ip-xfer">
+      <div class="ip-xfer__head">
         <Icon
           name="material-symbols:signpost"
-          class="text-xl text-(--primary)"
+          class="ip-xfer__icon"
+          aria-hidden="true"
         />
-        <span class="text-base font-bold text-black/75 dark:text-white/75 transition">
-          {i18n(I18nKey.relatedPosts)}
-        </span>
-        <span class="ml-auto text-xs px-2 py-0.5 rounded-full bg-(--btn-regular-bg) text-(--btn-content) transition">
-          {i18n(I18nKey.smartRecommend)}
-        </span>
+        <span class="ip-xfer__title">{i18n(I18nKey.relatedPosts)}</span>
+        <span class="ip-xfer__badge">{i18n(I18nKey.smartRecommend)}</span>
       </div>
-      {relatedPosts.map((post, idx) => (
-        <a
-          href={getPostUrlBySlug(post.id)}
-          class:list={[
-            "group flex items-center gap-3 px-3 py-3 -mx-1 rounded-lg",
-            "transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-[0.98]",
-            idx < relatedPosts.length - 1 && "border-b border-dashed border-(--line-divider)",
-          ]}
-        >
-          <div class="shrink-0 w-6 h-6 rounded-md bg-(--enter-btn-bg) text-(--primary) flex items-center justify-center text-sm font-bold transition">
-            {idx + 1}
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="font-bold text-sm text-black/75 dark:text-white/75 truncate transition group-hover:text-(--primary)">
-              {post.data.title}
-            </div>
-            <div class="flex items-center gap-1.5 text-xs text-black/30 dark:text-white/30 transition mt-0.5">
-              {post.data.category && (
-                <span class="shrink-0 px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10 text-black/40 dark:text-white/40">
-                  {post.data.category}
-                </span>
-              )}
-              <span class="truncate">{post.data.description || formatDateToYYYYMMDD(post.data.published)}</span>
-            </div>
-          </div>
-          <Icon
-            name="material-symbols:chevron-right-rounded"
-            class="shrink-0 text-xl text-black/15 dark:text-white/15 transition group-hover:text-(--primary) group-hover:translate-x-0.5"
-          />
-        </a>
-      ))}
+      <div role="list">
+        {relatedPosts.map((post, idx) => (
+          <a
+            href={getPostUrlBySlug(post.id)}
+            class="ip-xfer__row"
+            role="listitem"
+          >
+            <span class="ip-xfer__no" aria-hidden="true">
+              {String(idx + 1).padStart(2, "0")}
+            </span>
+            <span class="ip-xfer__main">
+              <span class="ip-xfer__name">{post.data.title}</span>
+              <span class="ip-xfer__meta">
+                {post.data.category && (
+                  <b class="ip-xfer__cat">{post.data.category}</b>
+                )}
+                <i class="ip-xfer__desc">
+                  {post.data.description ||
+                    formatDateToYYYYMMDD(post.data.published)}
+                </i>
+              </span>
+            </span>
+            <span class="ip-xfer__leader" aria-hidden="true"></span>
+            <span class="ip-xfer__arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 12h15" /><path d="M13 6l6 6-6 6" />
+              </svg>
+            </span>
+          </a>
+        ))}
+      </div>
     </div>
   )}
 
-  {/* 右栏：随机文章（客户端 fetch 渲染） */}
-  <div class="card-base p-5 md:p-6 flex flex-col">
-    <div class="flex items-center gap-2 pb-3 mb-1 border-b border-dashed border-(--line-divider)">
+  {/* 右栏：随机文章（客户端 fetch 渲染）—— 随机快线 */}
+  <div class="ip-xfer">
+    <div class="ip-xfer__head">
       <Icon
         name="material-symbols:recommend"
-        class="text-xl text-(--primary)"
+        class="ip-xfer__icon"
+        aria-hidden="true"
       />
-      <span class="text-base font-bold text-black/75 dark:text-white/75 transition">
-        {i18n(I18nKey.randomPosts)}
-      </span>
-      <span class="ml-auto text-xs px-2 py-0.5 rounded-full bg-(--btn-regular-bg) text-(--btn-content) transition">
-        {i18n(I18nKey.randomRecommend)}
-      </span>
+      <span class="ip-xfer__title">{i18n(I18nKey.randomPosts)}</span>
+      <span class="ip-xfer__badge">{i18n(I18nKey.randomRecommend)}</span>
     </div>
     <div
       id="random-posts-list"
@@ -124,51 +118,52 @@ function renderRandomPosts() {
 
       var a = document.createElement('a');
       a.href = href;
-      a.className = 'group flex items-center gap-3 px-3 py-3 -mx-1 rounded-lg transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-[0.98]'
-        + (idx < picked.length - 1 ? ' border-b border-dashed border-(--line-divider)' : '');
+      a.className = 'ip-xfer__row';
+      a.setAttribute('role', 'listitem');
 
-      var num = document.createElement('div');
-      num.className = 'shrink-0 w-6 h-6 rounded-md bg-(--enter-btn-bg) text-(--primary) flex items-center justify-center text-sm font-bold transition';
-      num.textContent = String(idx + 1);
+      var num = document.createElement('span');
+      num.className = 'ip-xfer__no';
+      num.setAttribute('aria-hidden', 'true');
+      num.textContent = String(idx + 1).padStart(2, '0');
 
-      var content = document.createElement('div');
-      content.className = 'flex-1 min-w-0';
+      var main = document.createElement('span');
+      main.className = 'ip-xfer__main';
 
-      var title = document.createElement('div');
-      title.className = 'font-bold text-sm text-black/75 dark:text-white/75 truncate transition group-hover:text-(--primary)';
-      title.textContent = post.title;
+      var name = document.createElement('span');
+      name.className = 'ip-xfer__name';
+      name.textContent = post.title;
 
-      var meta = document.createElement('div');
-      meta.className = 'flex items-center gap-1.5 text-xs text-black/30 dark:text-white/30 transition mt-0.5';
+      var meta = document.createElement('span');
+      meta.className = 'ip-xfer__meta';
 
       if (post.category) {
-        var cat = document.createElement('span');
-        cat.className = 'shrink-0 px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10 text-black/40 dark:text-white/40';
+        var cat = document.createElement('b');
+        cat.className = 'ip-xfer__cat';
         cat.textContent = post.category;
         meta.appendChild(cat);
       }
 
-      var desc = document.createElement('span');
-      desc.className = 'truncate';
+      var desc = document.createElement('i');
+      desc.className = 'ip-xfer__desc';
       desc.textContent = post.description || new Date(post.published).toISOString().substring(0, 10);
       meta.appendChild(desc);
 
-      content.appendChild(title);
-      content.appendChild(meta);
+      main.appendChild(name);
+      main.appendChild(meta);
 
-      var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.setAttribute('width', '24');
-      svg.setAttribute('height', '24');
-      svg.setAttribute('viewBox', '0 0 24 24');
-      svg.setAttribute('class', 'shrink-0 text-xl text-black/15 dark:text-white/15 transition group-hover:text-(--primary) group-hover:translate-x-0.5');
-      var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('fill', 'currentColor');
-      path.setAttribute('d', 'M9.29 6.71a1 1 0 0 0 0 1.41L13.17 12l-3.88 3.88a1 1 0 1 0 1.41 1.41l4.59-4.59a1 1 0 0 0 0-1.41L10.7 6.7a1 1 0 0 0-1.41.01z');
-      svg.appendChild(path);
+      var leader = document.createElement('span');
+      leader.className = 'ip-xfer__leader';
+      leader.setAttribute('aria-hidden', 'true');
+
+      var arrow = document.createElement('span');
+      arrow.className = 'ip-xfer__arrow';
+      arrow.setAttribute('aria-hidden', 'true');
+      arrow.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15"/><path d="M13 6l6 6-6 6"/></svg>';
 
       a.appendChild(num);
-      a.appendChild(content);
-      a.appendChild(svg);
+      a.appendChild(main);
+      a.appendChild(leader);
+      a.appendChild(arrow);
       fragment.appendChild(a);
     });
 

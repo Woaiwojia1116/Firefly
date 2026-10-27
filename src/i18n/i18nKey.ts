@@ -9,6 +9,8 @@ enum I18nKey {
 	searchSummary = "searchSummary",
 	searchContent = "searchContent",
 	searchViewMore = "searchViewMore",
+	searchClear = "searchClear",
+	searchFocus = "searchFocus",
 	other = "other",
 
 	tags = "tags",
@@ -23,11 +25,19 @@ enum I18nKey {
 	announcement = "announcement",
 	announcementClose = "announcementClose",
 
+	// 导航栏工具面板
+	tools = "tools",
+	theme = "theme",
+	themeLight = "themeLight",
+	themeDark = "themeDark",
+	themeSystem = "themeSystem",
+	gotIt = "gotIt",
+	viewDetails = "viewDetails",
+
 	comments = "comments",
 	commentSection = "commentSection",
 	commentSubtitle = "commentSubtitle",
 	commentNotConfigured = "commentNotConfigured",
-	guestbookCommentHint = "guestbookCommentHint",
 
 	untitled = "untitled",
 	uncategorized = "uncategorized",
@@ -79,8 +89,18 @@ enum I18nKey {
 	license = "license",
 	friends = "friends",
 	friendsDescription = "friendsDescription",
-	guestbook = "guestbook",
-	guestbookDescription = "guestbookDescription",
+
+	// 动态页面（写动态为隐藏弹窗，仅博主使用）
+	moments = "moments",
+	momentsDescription = "momentsDescription",
+	momentsEmpty = "momentsEmpty",
+	momentsCompose = "momentsCompose",
+	momentsMail = "momentsMail",
+	momentsPlaceholder = "momentsPlaceholder",
+	momentsImage = "momentsImage",
+	momentsPublish = "momentsPublish",
+	momentsCancel = "momentsCancel",
+	momentsRetry = "momentsRetry",
 	bangumi = "bangumi",
 
 	// 番组计划筛选和状态文本
@@ -291,6 +311,9 @@ enum I18nKey {
 
 	// 相册页面
 	gallery = "gallery",
+
+	// 技术栈页面
+	techStack = "techStack",
 	galleryDescription = "galleryDescription",
 	galleryPhotos = "galleryPhotos",
 	galleryAlbums = "galleryAlbums",

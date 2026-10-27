@@ -35,6 +35,10 @@ const widgetId =
 ---
 
 <div id={widgetId} class:list={["music-player-widget w-full relative transition-all duration-300", className]} style={style} role="region" aria-label={i18n(I18nKey.music)}>
+<!-- 列表收起/展开开关：转发到下方抽屉开关，箭头随开合旋转 -->
+<button class="music-list-toggle" data-music-list-toggle type="button" aria-label="收起/展开列表" title="收起/展开列表">
+    <Icon name="material-symbols:keyboard-arrow-up-rounded" class="text-xl" aria-hidden="true" />
+</button>
 
     <!-- Top Row: Cover & Info -->
 <div class="flex items-center gap-2 mb-2 px-1">
@@ -606,6 +610,24 @@ const widgetId =
             ui.btnDrawer.classList.add('text-(--primary)');
         }
     });
+
+    // ── 列表收起/展开开关：转发到抽屉开关，箭头随开合旋转 ──
+    var listToggle = widget.querySelector('[data-music-list-toggle]');
+    if (listToggle) {
+        var syncListToggle = function () {
+            var open = ui.playlistDrawer.style.gridTemplateRows === '1fr';
+            listToggle.classList.toggle('is-collapsed', !open);
+        };
+        listToggle.addEventListener('click', function () {
+            ui.btnDrawer.click();
+            syncListToggle();
+        });
+        new MutationObserver(syncListToggle).observe(ui.playlistDrawer, {
+            attributes: true,
+            attributeFilter: ['style'],
+        });
+        syncListToggle();
+    }
 
     // ── Lyrics user scroll detection ─────────────────────────
     function resetScrollTimeout() {

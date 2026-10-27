@@ -191,8 +191,64 @@ html.is-animating .transition-swup-fade {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #ffd9e1 0%, #fff0f3 50%, #ffe4ec 100%);
+    /* 深夜蓝黑底，与全站「雨夜山城」背景同一色系，发光小鱼在暗处更出彩 */
+    background: radial-gradient(130% 100% at 50% 0%, #1a1d2e 0%, #0b0c14 55%, #07080d 100%);
     /* sits above the progress bar (9999) and all content */
+}
+
+/* 两团缓慢流动的氛围光斑：暖橘 + 冷蓝，呼应首页的灯火与夜色。
+   纯 CSS 动画，GPU 合成，reduced-motion 时静止。 */
+.lottie-entry-overlay::before,
+.lottie-entry-overlay::after {
+    content: "";
+    position: absolute;
+    width: 60vmax;
+    height: 60vmax;
+    border-radius: 50%;
+    filter: blur(40px);
+    pointer-events: none;
+}
+
+.lottie-entry-overlay::before {
+    top: -22vmax;
+    right: -18vmax;
+    background: radial-gradient(circle, rgba(230, 161, 115, 0.13) 0%, transparent 62%);
+    animation: lottie-aurora-warm 11s ease-in-out infinite alternate;
+}
+
+.lottie-entry-overlay::after {
+    bottom: -24vmax;
+    left: -16vmax;
+    background: radial-gradient(circle, rgba(96, 120, 190, 0.16) 0%, transparent 62%);
+    animation: lottie-aurora-cool 13s ease-in-out infinite alternate;
+}
+
+@keyframes lottie-aurora-warm {
+    from { transform: translate3d(0, 0, 0) scale(1); opacity: 0.75; }
+    to   { transform: translate3d(-6vmax, 4vmax, 0) scale(1.18); opacity: 1; }
+}
+
+@keyframes lottie-aurora-cool {
+    from { transform: translate3d(0, 0, 0) scale(1.12); opacity: 0.8; }
+    to   { transform: translate3d(5vmax, -4vmax, 0) scale(0.95); opacity: 1; }
+}
+
+/* 与首页副标题呼应的一句小字幕，淡入 + 轻微上浮 */
+.lottie-entry-caption {
+    position: relative;
+    margin-top: 1.5rem;
+    font-size: 0.9375rem;
+    letter-spacing: 0.28em;
+    text-indent: 0.28em;
+    color: rgba(239, 232, 218, 0.55);
+    opacity: 0;
+    animation: lottie-caption-in 1.2s ease-out 0.6s forwards;
+    user-select: none;
+}
+
+@keyframes lottie-caption-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 .lottie-entry-overlay.lottie-fade-out {
@@ -211,15 +267,15 @@ html.is-animating .transition-swup-fade {
     font-size: 0.875rem;
     font-weight: 500;
     letter-spacing: 0.05em;
-    color: color-mix(in oklch, var(--text) 70%, transparent);
-    background: color-mix(in oklch, var(--page-bg) 55%, transparent);
-    border: 1px solid color-mix(in oklch, var(--text) 12%, transparent);
+    color: rgba(239, 232, 218, 0.66);
+    background: rgba(239, 232, 218, 0.06);
+    border: 1px solid rgba(239, 232, 218, 0.16);
     border-radius: 9999px;
     cursor: pointer;
     opacity: 0;
     pointer-events: none;
     transform: translateY(8px);
-    transition: opacity 300ms ease, transform 300ms ease;
+    transition: opacity 300ms ease, transform 300ms ease, color 200ms ease, border-color 200ms ease, background 200ms ease;
     backdrop-filter: blur(12px) saturate(180%);
     -webkit-backdrop-filter: blur(12px) saturate(180%);
     user-select: none;
@@ -232,9 +288,9 @@ html.is-animating .transition-swup-fade {
 }
 
 .lottie-skip-btn:hover {
-    color: var(--text);
-    background: color-mix(in oklch, var(--page-bg) 70%, transparent);
-    border-color: color-mix(in oklch, var(--text) 22%, transparent);
+    color: #e6a173;
+    background: rgba(230, 161, 115, 0.1);
+    border-color: rgba(230, 161, 115, 0.4);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -254,7 +310,9 @@ html.is-animating .transition-swup-fade {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: color-mix(in oklch, var(--page-bg) 80%, transparent);
+    /* 与全站夜色一致的深色玻璃，任何页面切换时观感统一 */
+    background:
+        radial-gradient(120% 90% at 50% 40%, rgba(26, 29, 46, 0.55) 0%, rgba(7, 8, 13, 0.78) 100%);
     backdrop-filter: blur(6px);
     opacity: 0;
     pointer-events: none;
@@ -278,5 +336,14 @@ html.is-animating .transition-swup-fade {
     }
     .lottie-loading-overlay {
         transition: none;
+    }
+    .lottie-entry-overlay::before,
+    .lottie-entry-overlay::after {
+        animation: none;
+    }
+    .lottie-entry-caption {
+        opacity: 0.55;
+        animation: none;
+        transform: none;
     }
 }

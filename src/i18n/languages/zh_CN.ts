@@ -12,6 +12,8 @@ export const zh_CN: Translation = {
 	[Key.searchSummary]: "摘要",
 	[Key.searchContent]: "内容",
 	[Key.searchViewMore]: "查看更多结果 ({count} 个更多)",
+	[Key.searchClear]: "清空",
+	[Key.searchFocus]: "聚焦",
 	[Key.other]: "其他",
 	[Key.all]: "全部",
 
@@ -44,17 +46,30 @@ export const zh_CN: Translation = {
 	// 公告栏
 	[Key.announcement]: "公告",
 	[Key.announcementClose]: "关闭",
+	[Key.tools]: "工具",
+	[Key.theme]: "主题",
+	[Key.themeLight]: "浅色",
+	[Key.themeDark]: "深色",
+	[Key.themeSystem]: "跟随系统",
+	[Key.gotIt]: "知道了",
+	[Key.viewDetails]: "查看详情",
 
 	[Key.comments]: "评论",
 	[Key.commentSection]: "评论区",
 	[Key.commentSubtitle]: "分享你的想法，与大家交流讨论",
 	[Key.commentNotConfigured]: "评论系统暂未配置",
-	[Key.guestbookCommentHint]:
-		"您还未在配置文件中启用评论系统，启用后访客才可在此留言",
 	[Key.friends]: "友链",
 	[Key.friendsDescription]: "这里是我的朋友们，欢迎互相访问交流",
-	[Key.guestbook]: "留言",
-	[Key.guestbookDescription]: "欢迎在这里留下你的足迹，分享你的想法和建议",
+	[Key.moments]: "动态",
+	[Key.momentsDescription]: "碎碎念与日常片段，一条一条正在发生的事",
+	[Key.momentsEmpty]: "还没有动态，写下第一条吧",
+	[Key.momentsCompose]: "写动态",
+	[Key.momentsMail]: "博主邮箱（与配置一致，仅首次需要填写）",
+	[Key.momentsPlaceholder]: "这一刻的想法…",
+	[Key.momentsImage]: "图片链接（选填）",
+	[Key.momentsPublish]: "发布",
+	[Key.momentsCancel]: "取消",
+	[Key.momentsRetry]: "重试",
 	[Key.untitled]: "无标题",
 	[Key.uncategorized]: "未分类",
 	[Key.noTags]: "无标签",
@@ -83,6 +98,8 @@ export const zh_CN: Translation = {
 	[Key.readTime]: "阅读时长",
 	[Key.license]: "许可协议",
 	[Key.bangumi]: "番组计划",
+
+	[Key.techStack]: "技术栈",
 
 	// 番组计划筛选和状态文本
 	[Key.bangumiTitle]: "我的番组计划",
