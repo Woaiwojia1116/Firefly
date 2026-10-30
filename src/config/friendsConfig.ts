@@ -141,6 +141,15 @@ export const friendsConfig: FriendLink[] = [
 		weight: 10, // 权重，数字越大排序越靠前
 		enabled: true, // 是否启用
 	},
+	{
+		title: "冷汐的杂货铺",
+		imgurl: "https://lengxiqwq.com/avatar.jpg",
+		desc: "你好谢谢小笼包再见",
+		siteurl: "https://lengxiqwq.com",
+		tags: ["Blog"],
+		weight: 10, // 权重，数字越大排序越靠前
+		enabled: true, // 是否启用
+	},
 ];
 
 // 获取启用的友链并进行排序
