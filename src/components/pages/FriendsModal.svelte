@@ -8,6 +8,7 @@
  */
 
 import { onMount } from "svelte";
+import { copyText } from "../../utils/clipboard";
 
 /** 将元素移动到 document.body，销毁时自动移除（SSR 安全） */
 function portal(node: HTMLElement) {
@@ -48,6 +49,7 @@ let closing = $state(false);
 let figEl: HTMLDivElement | undefined = $state();
 let figW = $state(0);
 let copiedIdx = $state(-1);
+let failedIdx = $state(-1);
 // 用户滚轮接管缩放后的状态（null = 跟随默认构图）
 let userZoom = $state<number | null>(null);
 let userAnchor = $state<{ x: number; y: number } | null>(null);
@@ -87,6 +89,7 @@ function close() {
 		isOpen = false;
 		closing = false;
 		copiedIdx = -1;
+		failedIdx = -1;
 		userZoom = null;
 		userAnchor = null;
 	}, 280);
@@ -107,22 +110,17 @@ function onOverlayClick(e: MouseEvent) {
 }
 
 async function copyField(i: number, value: string) {
+	let ok = false;
 	try {
-		await navigator.clipboard.writeText(value);
+		ok = await copyText(value);
 	} catch {
-		// 非安全上下文的兜底
-		const ta = document.createElement("textarea");
-		ta.value = value;
-		ta.style.position = "fixed";
-		ta.style.opacity = "0";
-		document.body.appendChild(ta);
-		ta.select();
-		document.execCommand("copy");
-		document.body.removeChild(ta);
+		ok = false;
 	}
-	copiedIdx = i;
+	copiedIdx = ok ? i : -1;
+	failedIdx = ok ? -1 : i;
 	setTimeout(() => {
 		if (copiedIdx === i) copiedIdx = -1;
+		if (failedIdx === i) failedIdx = -1;
 	}, 1500);
 }
 
@@ -268,13 +266,14 @@ $effect(() => {
                 <button
                   class="friends-letter-row"
                   class:copied={copiedIdx === i}
+                  class:failed={failedIdx === i}
                   style:--stagger={`${0.18 + i * 0.09}s`}
                   onclick={() => copyField(i, field.value)}
                   type="button"
                   title={`点击复制${field.label}`}
                 >
                   <span class="friends-letter-row-label">
-                    {copiedIdx === i ? "已复制 ✓" : field.label}
+                    {copiedIdx === i ? "已复制 ✓" : failedIdx === i ? "复制失败" : field.label}
                   </span>
                   <span class="friends-letter-row-value">{field.value}</span>
                   <svg class="friends-letter-row-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -568,6 +567,10 @@ $effect(() => {
     background: rgba(112, 86, 55, 0.14);
   }
 
+  .friends-letter-row.failed {
+    background: rgba(169, 68, 56, 0.12);
+  }
+
   .friends-letter-row-label {
     flex-shrink: 0;
     font-size: 11px;
@@ -579,6 +582,10 @@ $effect(() => {
 
   .friends-letter-row.copied .friends-letter-row-label {
     color: #6d8b57;
+  }
+
+  .friends-letter-row.failed .friends-letter-row-label {
+    color: #a94438;
   }
 
   .friends-letter-row-value {

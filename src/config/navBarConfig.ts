@@ -73,7 +73,7 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		children: [
 			{
 				name: "GitHub",
-				url: "https://github.com/CuteLeaf/Firefly",
+				url: "https://github.com/Woaiwojia1116",
 				external: true,
 				icon: "fa7-brands:github",
 			},

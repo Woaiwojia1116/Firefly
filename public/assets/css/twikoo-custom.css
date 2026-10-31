@@ -1,144 +1,632 @@
 /*
- * Twikoo 主题覆盖样式
- * 在 twikoo.css 之后加载，用于覆盖默认样式并跟随站点主题色。
- * Firefly 主题专用：https://github.com/CuteLeaf/Firefly
+ * Twikoo 主题覆盖样式 —— 「萤火 · 夜航」版
+ * 在 twikoo.css 之后加载。设计目标：评论区不再像嵌进来的第三方组件，
+ * 而是文章的最后一节——表单字段是半透明玻璃面（壁纸上的输入需要
+ * 一块属于自己的面），列表是编辑排版（等宽时间、细线分隔），
+ * 按钮是一枚安静的余烬。
+ * 颜色全部取自内页设计系统（--ip-*）与全站令牌（--fy-*），明暗自动适配。
  */
 
-/* 主题变量：跟随全站内页「纸面 + 暖调」设计系统（--ip-*），明暗主题自动适配 */
+/* ── 变量映射：跟随内页「纸面 + 暖调」设计系统 ─────────────────────── */
 .twikoo {
+  --tk-line: var(--ip-line);
+  --tk-line-soft: var(--ip-line-soft);
   --tk-accent: var(--ip-warm);
   --tk-bg: var(--ip-surface-2);
-  --tk-border: var(--ip-line);
+  --tk-border: var(--tk-line);
   --tk-text: var(--ip-ink);
   --tk-muted: var(--ip-ink-soft);
-  --tk-accent-soft: color-mix(in oklch, var(--ip-warm) 18%, transparent);
+  --tk-faint: var(--ip-ink-faint);
+  --tk-accent-soft: color-mix(in oklch, var(--ip-warm) 16%, transparent);
+  --tk-danger: color-mix(in oklch, #e05d4b 82%, var(--ip-ink));
+  --tk-radius: var(--ip-radius-sm);
+  color: var(--tk-text);
 }
 
-/* 强调色文本：评论标题、操作按钮、排序入口等统一使用主题主色 */
-.twikoo .tk-comments-title,
-.twikoo .tk-action-link,
-.twikoo .tk-action-icon,
-.twikoo .tk-icon.__comments,
-.twikoo .tk-sort-select,
-.twikoo .tk-nick-link:hover,
-.twikoo .tk-expand,
-.twikoo .tk-login-msg a,
-.twikoo .tk-panel-logout {
-  color: var(--tk-accent);
+/* 深色文章页是「去框化」语境：--ip-line 在 .post-shell 内已被置为透明，
+   卡片描边 / 分隔线随之消失是正确行为；但表单是需要边界的输入区，
+   这里用墨色重新给出最低限度的线，保住信纸下划线的可读性。 */
+html.dark body:not(.homepage) .post-shell .twikoo {
+  --tk-line: color-mix(in oklch, var(--ip-ink) 24%, transparent);
+  --tk-line-soft: color-mix(in oklch, var(--ip-ink) 13%, transparent);
 }
 
-/* 全局边框：评论模块内部元素边框统一跟随主题分割线 */
+/* 全局边框：评论模块内部元素边框统一跟随主题分割线（含管理面板） */
 .twikoo,
 .twikoo * {
   border-color: var(--tk-border);
 }
 
-/* 全局文字：评论模块默认文字色 */
-.twikoo {
-  color: var(--tk-text);
+/* ── 工具行：Twikoo 自带标题行只留排序入口；评论数已并入外壳眉标 ──── */
+.ip-comments .tk-comments-count {
+  display: none;
 }
 
-/* 高亮元素：标签、分页当前项、主按钮背景色改为主题主色 */
-.twikoo .tk-tag-blue,
-.twikoo .tk-pagination-pager.__current,
-.twikoo .el-button--primary,
-.twikoo .el-button--primary.is-plain:focus,
-.twikoo .el-button--primary.is-plain:hover {
-  background-color: var(--tk-accent);
-  border-color: var(--tk-accent);
+.twikoo .tk-comments-title {
+  margin-bottom: 0;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--tk-line-soft);
+  font-size: inherit;
+  font-weight: normal;
+  /* 评论数已并入外壳眉标，这行只剩排序 / 刷新等列表工具，靠右 */
+  justify-content: flex-end;
 }
 
-/* 蓝色标签：保持主题色文字 + 主题浅色背景 */
-.twikoo .tk-tag-blue {
-  color: var(--tk-accent);
-  background-color: var(--tk-accent-soft);
-}
-
-/* 表单与面板基础色：纸面浅底填充，颜色跟随内页设计系统 */
-.twikoo .tk-sort-select,
-.twikoo .el-input__inner,
-.twikoo .el-textarea__inner,
-.twikoo .el-input-group__append,
-.twikoo .el-input-group__prepend,
-.twikoo .OwO .OwO-body,
-.twikoo .tk-preview-container {
-  background-color: var(--tk-bg);
-  border-color: var(--tk-border);
-  color: var(--tk-text);
-}
-
-/* 输入框无边框：靠底色填充区分区域 */
-.twikoo .el-input__inner,
-.twikoo .el-textarea__inner,
-.twikoo .tk-sort-select {
-  border: none;
-}
-
-/* 输入类 hover 态：不加描边，底色掺入一点暖调 */
-.twikoo .el-input__inner:hover,
-.twikoo .el-textarea__inner:hover,
-.twikoo .tk-sort-select:hover {
-  background-color: color-mix(in oklch, var(--tk-bg) 90%, var(--tk-accent) 10%);
-}
-
-/* 输入类 focus 态：底色略深，不用描边和外发光 */
-.twikoo .el-input__inner:focus,
-.twikoo .el-textarea__inner:focus,
-.twikoo .tk-sort-select:focus {
-  border-color: transparent;
-  box-shadow: none;
-  background-color: color-mix(in oklch, var(--tk-bg) 86%, var(--tk-accent) 14%);
-}
-
-/* 新版排序样式：并排文字按钮，仅改文字颜色（默认/悬停/激活） */
+/* 排序入口：等宽小字，激活项亮暖色并加下划线 */
 .twikoo .tk-comments-sort .tk-sort-item {
+  font-family: var(--ip-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  padding-bottom: 3px;
+  border-bottom: 1px solid transparent;
   color: var(--tk-muted);
+  transition: color var(--fy-dur-fast, 160ms) ease, border-color var(--fy-dur-fast, 160ms) ease;
 }
 
-.twikoo .tk-comments-sort .tk-sort-item:hover {
-  color: var(--tk-accent);
-}
-
+.twikoo .tk-comments-sort .tk-sort-item:hover,
 .twikoo .tk-comments-sort .tk-sort-item:focus-visible {
-  color: var(--tk-accent);
+  color: var(--tk-text);
+  outline: none;
 }
 
 .twikoo .tk-comments-sort .tk-sort-item.__active {
   color: var(--tk-accent);
+  border-bottom-color: var(--tk-accent);
 }
 
-/* 次级按钮样式：无边框，浅底填充 */
-.twikoo .el-button:not(.el-button--primary):not(.el-button--text) {
-  background-color: color-mix(in oklch, var(--tk-bg) 90%, var(--tk-accent) 10%);
-  border-color: transparent;
-  color: var(--tk-text);
+.twikoo .tk-icon.__comments {
+  color: var(--tk-faint);
 }
 
-/* 次级按钮交互态：悬停/聚焦时文字切换到主题主色 */
-.twikoo .el-button:not(.el-button--primary):not(.el-button--text):hover,
-.twikoo .el-button:not(.el-button--primary):not(.el-button--text):focus {
-  border-color: transparent;
+.twikoo .tk-icon.__comments:hover {
   color: var(--tk-accent);
 }
 
-/* 主按钮/当前分页文字：保持白字对比度 */
-.twikoo .el-button--text,
-.twikoo .tk-pagination-pager.__current,
-.twikoo .el-button--primary,
-.twikoo .el-button--primary:hover,
-.twikoo .el-button--primary:focus {
-  color: #fff;
+/* ── 提交区：信纸 ──────────────────────────────────────────────────── */
+.twikoo .tk-submit {
+  margin-top: 1.45rem;
 }
 
-/* 次要信息文字：时间、额外信息、计数等使用弱化文本色 */
+/* 访客头像：圆形，坐在纸面上，无底盒 */
+.twikoo .tk-submit .tk-avatar {
+  height: 2.25rem;
+  width: 2.25rem;
+  margin-right: 0.9rem;
+  border-radius: 50%;
+  background-color: transparent;
+}
+
+.twikoo .tk-submit .tk-avatar .tk-avatar-img {
+  height: 2.25rem;
+  border-radius: 50%;
+}
+
+/* 昵称 / 邮箱 / 网址：半透明玻璃填充字段——壁纸上的输入需要一块
+   属于自己的面，而不是几根悬空的线。标签是字段内的前置格。 */
+.twikoo {
+  --tk-field: var(--tk-bg);
+  --tk-field-hover: color-mix(in oklch, var(--tk-bg) 92%, var(--tk-accent) 8%);
+  --tk-field-focus: color-mix(in oklch, var(--tk-bg) 86%, var(--tk-accent) 14%);
+}
+
+.twikoo .tk-meta-input {
+  margin-bottom: 1.1rem;
+}
+
+.twikoo .tk-meta-input .el-input + .el-input {
+  margin-left: 1.1rem;
+}
+
+/* 字段外框：聚焦时在这层画出整框的暖色细环（标签 + 输入一起亮） */
+.twikoo .tk-meta-input .el-input {
+  border-radius: var(--tk-radius);
+  transition: box-shadow var(--fy-dur-fast, 160ms) ease;
+}
+
+.twikoo .tk-meta-input .el-input .el-input-group__prepend {
+  width: auto;
+  min-width: 0;
+  padding: 0 0.6rem 0 0.9rem;
+  white-space: nowrap;
+  background-color: var(--tk-field);
+  border: none;
+  border-radius: var(--tk-radius) 0 0 var(--tk-radius);
+  box-shadow: none;
+  font-size: 0.8rem;
+  color: var(--tk-faint);
+  transition: background-color var(--fy-dur-fast, 160ms) ease;
+}
+
+.twikoo .tk-meta-input .el-input .el-input__inner {
+  height: 2.6rem;
+  line-height: 2.6rem;
+  padding: 0 0.9rem 0 0;
+  background-color: var(--tk-field);
+  border: none;
+  border-radius: 0 var(--tk-radius) var(--tk-radius) 0;
+  box-shadow: none;
+  font-size: 0.88rem;
+  color: var(--tk-text);
+  transition: background-color var(--fy-dur-fast, 160ms) ease;
+}
+
+.twikoo .tk-meta-input .el-input .el-input__inner::placeholder {
+  color: color-mix(in oklch, var(--tk-faint) 70%, transparent);
+}
+
+/* 悬停：整块字段微微染暖 */
+.twikoo .tk-meta-input .el-input:hover .el-input__inner,
+.twikoo .tk-meta-input .el-input:hover .el-input-group__prepend {
+  background-color: var(--tk-field-hover);
+}
+
+/* 聚焦：填充加深 + 一圈暖色细环，让焦点落在整块字段上 */
+.twikoo .tk-meta-input .el-input:focus-within {
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--tk-accent) 45%, transparent);
+}
+
+.twikoo .tk-meta-input .el-input:focus-within .el-input__inner,
+.twikoo .tk-meta-input .el-input:focus-within .el-input-group__prepend {
+  background-color: var(--tk-field-focus);
+}
+
+.twikoo .tk-meta-input .el-input .el-input__inner:focus-visible {
+  outline: none;
+}
+
+/* 邮箱校验失败：警示色细环 */
+.twikoo .tk-meta-input .el-input:has(.el-input__inner:invalid) {
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--tk-danger) 60%, transparent);
+}
+
+/* 正文输入：同一块玻璃面，字数计数器常驻右下角 */
+.twikoo .tk-input .el-textarea__inner {
+  padding: 0.75rem 0.9rem 1.9rem;
+  min-height: 7rem;
+  background-color: var(--tk-field);
+  border: none;
+  border-radius: var(--tk-radius);
+  box-shadow: none;
+  font-size: 0.92rem;
+  line-height: 1.85;
+  color: var(--tk-text);
+  resize: none;
+  transition: background-color var(--fy-dur-fast, 160ms) ease, box-shadow var(--fy-dur-fast, 160ms) ease;
+}
+
+.twikoo .tk-input .el-textarea__inner::placeholder {
+  color: color-mix(in oklch, var(--tk-faint) 70%, transparent);
+}
+
+.twikoo .tk-input .el-textarea__inner:hover {
+  background-color: var(--tk-field-hover);
+}
+
+.twikoo .tk-input .el-textarea__inner:focus {
+  background-color: var(--tk-field-focus);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--tk-accent) 45%, transparent);
+}
+
+/* 字数计数器：等宽小字，坐在填充面右下角 */
+.twikoo .el-textarea .el-input__count {
+  right: 0.9rem;
+  bottom: 0.55rem;
+  background: transparent !important;
+  color: var(--tk-faint);
+  font-family: var(--ip-mono);
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.twikoo .el-textarea .el-input__count-inner {
+  background: transparent;
+}
+
+/* 输入禁用态：降对比 */
+.twikoo .el-input.is-disabled .el-input__inner,
+.twikoo .el-textarea.is-disabled .el-textarea__inner {
+  background-color: color-mix(in srgb, var(--tk-field) 60%, transparent);
+  border: none;
+  color: color-mix(in oklch, var(--tk-text) 45%, transparent);
+  opacity: 1;
+  -webkit-text-fill-color: color-mix(in oklch, var(--tk-text) 45%, transparent);
+}
+
+/* ── 动作行：表情 / 图片 / Markdown 靠左，预览与发送靠右 ──────────── */
+.twikoo .tk-row.actions {
+  margin-top: 0.9rem;
+  margin-bottom: 0;
+  margin-left: 3.15rem; /* 与正文输入左缘对齐（头像 2.25rem + 间距 0.9rem） */
+}
+
+.twikoo .tk-submit-action-icon,
+.twikoo .tk-action-icon {
+  color: var(--tk-faint);
+  transition: color var(--fy-dur-fast, 160ms) ease;
+}
+
+.twikoo .tk-submit-action-icon:hover,
+.twikoo .tk-action-icon:hover {
+  color: var(--tk-accent);
+}
+
+.twikoo .tk-submit-action-icon.__markdown {
+  color: var(--tk-faint);
+}
+
+/* 错误信息：随主题明暗调和的警示红 */
+.twikoo .tk-error-message {
+  color: var(--tk-danger);
+}
+
+/* ── 次要按钮与管理面板：跟随后台主题色，不抢戏 ──────────────────── */
+
+/* 非主要按钮（预览、管理面板的取消等）：细线幽灵样式 */
+.twikoo .el-button:not(.el-button--primary):not(.el-button--text) {
+  padding: 0.34rem 0.9rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+  background-color: transparent;
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius);
+  color: var(--tk-muted);
+  transition: color var(--fy-dur-fast, 160ms) ease, border-color var(--fy-dur-fast, 160ms) ease,
+    background-color var(--fy-dur-fast, 160ms) ease;
+}
+
+.twikoo .el-button:not(.el-button--primary):not(.el-button--text):hover,
+.twikoo .el-button:not(.el-button--primary):not(.el-button--text):focus {
+  color: var(--tk-accent);
+  border-color: color-mix(in oklch, var(--tk-accent) 45%, transparent);
+  background-color: var(--tk-accent-soft);
+}
+
+/* 文字按钮（管理面板的链接式操作）：主题暖色 */
+.twikoo .el-button--text {
+  color: var(--tk-accent);
+}
+
+/* 其余主要按钮（管理面板的确定 / 刷新等）：与发送按钮同一枚余烬 */
+.twikoo .el-button--primary {
+  background-color: var(--tk-accent);
+  border-color: var(--tk-accent);
+  color: #241d19;
+}
+
+.twikoo .el-button--primary:hover,
+.twikoo .el-button--primary:focus {
+  background-color: color-mix(in oklch, var(--tk-accent) 88%, #fff 12%);
+  border-color: color-mix(in oklch, var(--tk-accent) 88%, #fff 12%);
+  color: #241d19;
+}
+
+.twikoo .el-button--primary.is-disabled,
+.twikoo .el-button--primary.is-disabled:hover,
+.twikoo .el-button--primary.is-disabled:focus {
+  background-color: var(--tk-accent);
+  border-color: var(--tk-accent);
+  color: #241d19;
+  opacity: 0.42;
+}
+
+/* 预览按钮：细线幽灵按钮 */
+.twikoo .el-button.tk-preview {
+  padding: 0.34rem 0.9rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+  background-color: transparent;
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius);
+  color: var(--tk-muted);
+  transition: color var(--fy-dur-fast, 160ms) ease, border-color var(--fy-dur-fast, 160ms) ease,
+    background-color var(--fy-dur-fast, 160ms) ease;
+}
+
+.twikoo .el-button.tk-preview:hover,
+.twikoo .el-button.tk-preview:focus {
+  color: var(--tk-accent);
+  border-color: color-mix(in oklch, var(--tk-accent) 45%, transparent);
+  background-color: var(--tk-accent-soft);
+}
+
+/* 发送按钮：一枚余烬——暖底深字，悬停时才发光 */
+.twikoo .el-button.tk-send {
+  padding: 0.46rem 1.35rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  background-color: var(--tk-accent);
+  border: none;
+  border-radius: var(--tk-radius);
+  color: #241d19;
+  transition: background-color var(--fy-dur-fast, 160ms) ease, box-shadow var(--fy-dur-med, 320ms) ease,
+    opacity var(--fy-dur-fast, 160ms) ease;
+}
+
+.twikoo .el-button.tk-send:hover,
+.twikoo .el-button.tk-send:focus-visible {
+  background-color: color-mix(in oklch, var(--tk-accent) 88%, #fff 12%);
+  box-shadow: 0 0 16px 1px var(--fy-glow, transparent);
+  color: #241d19;
+}
+
+.twikoo .el-button.tk-send:active {
+  background-color: color-mix(in oklch, var(--tk-accent) 86%, #000 14%);
+  box-shadow: none;
+  color: #241d19;
+}
+
+.twikoo .el-button.tk-send.is-disabled,
+.twikoo .el-button.tk-send.is-disabled:hover,
+.twikoo .el-button.tk-send.is-disabled:focus {
+  background-color: var(--tk-accent);
+  color: #241d19;
+  opacity: 0.42;
+}
+
+.twikoo .el-button.tk-preview:focus-visible,
+.twikoo .el-button.tk-send:focus-visible {
+  outline: 1px solid color-mix(in oklch, var(--tk-accent) 70%, transparent);
+  outline-offset: 2px;
+}
+
+/* 预览内容：一块安静的草稿纸 */
+.twikoo .tk-preview-container {
+  margin-left: 3.15rem;
+  margin-top: 0.9rem;
+  padding: 0.85rem 1.05rem;
+  background-color: color-mix(in oklch, var(--tk-bg) 55%, transparent);
+  border: 1px solid var(--tk-line-soft);
+  border-radius: var(--tk-radius);
+  font-size: 0.92rem;
+  line-height: 1.85;
+  word-break: break-word;
+}
+
+/* ── 表情面板（OwO）：纸面 + 细线 ─────────────────────────────────── */
+.twikoo .OwO .OwO-body {
+  background-color: var(--tk-bg);
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius);
+  box-shadow: var(--ip-shadow);
+  color: var(--tk-text);
+}
+
+.twikoo .OwO .OwO-body .OwO-items .OwO-item:hover {
+  background-color: var(--tk-accent-soft);
+}
+
+.twikoo .OwO .OwO-body .OwO-bar .OwO-packages li:hover,
+.twikoo .OwO .OwO-body .OwO-bar .OwO-packages .OwO-package-active {
+  color: var(--tk-accent);
+}
+
+/* ── 评论列表：编辑排版 ────────────────────────────────────────────── */
+.twikoo .tk-comments-container {
+  min-height: 6rem;
+  margin-top: 0.4rem;
+}
+
+/* 空状态：一句安静的邀请 */
+.twikoo .tk-comments-no {
+  padding: 2.4rem 0;
+  font-size: 0.88rem;
+  color: var(--tk-faint);
+}
+
+/* 评论条目：头像 + 主体；条目之间细线分隔 */
+.twikoo .tk-comment {
+  margin-top: 0;
+  padding-top: 1.35rem;
+}
+
+.twikoo .tk-comments-container > .tk-comment + .tk-comment {
+  border-top: 1px solid var(--tk-line-soft);
+}
+
+.twikoo .tk-avatar {
+  border-radius: 50%;
+}
+
+.twikoo .tk-avatar.tk-has-avatar {
+  background-color: color-mix(in oklch, var(--tk-bg) 70%, transparent);
+}
+
+.twikoo .tk-avatar .tk-avatar-img {
+  border-radius: 50%;
+  color: color-mix(in oklch, var(--tk-accent) 45%, var(--tk-faint) 55%);
+}
+
+.twikoo .tk-avatar .tk-avatar-img svg,
+.twikoo .tk-avatar .tk-avatar-img svg path {
+  fill: currentColor;
+}
+
+/* 昵称 / 时间：名字用正文墨色，时间归入等宽小字 */
+.twikoo .tk-nick,
+.twikoo .tk-nick-link {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--tk-text);
+}
+
+.twikoo .tk-nick-link {
+  text-decoration: none;
+  transition: color var(--fy-dur-fast, 160ms) ease;
+}
+
+.twikoo .tk-nick-link:hover {
+  color: var(--tk-accent);
+}
+
+.twikoo .tk-time {
+  margin-left: 0.6rem;
+  font-family: var(--ip-mono);
+  font-size: 0.72rem;
+  font-weight: normal;
+  letter-spacing: 0.06em;
+  color: var(--tk-faint);
+}
+
+/* 内容：与正文相近的阅读行高 */
+.twikoo .tk-content {
+  margin-top: 0.5rem;
+  font-size: 0.92rem;
+  line-height: 1.85;
+  color: color-mix(in oklch, var(--tk-text) 92%, transparent);
+}
+
+.twikoo .tk-content a {
+  color: var(--tk-accent);
+}
+
+.twikoo .tk-content img {
+  max-width: 100%;
+  border-radius: var(--tk-radius);
+}
+
+.twikoo .tk-content p {
+  margin: 0 0 0.5em;
+}
+
+.twikoo .tk-content p:last-child {
+  margin-bottom: 0;
+}
+
+.twikoo .tk-content blockquote {
+  margin: 0.4em 0;
+  padding: 0.1em 0 0.1em 0.9em;
+  border-left: 2px solid color-mix(in oklch, var(--tk-accent) 55%, transparent);
+  color: var(--tk-muted);
+}
+
+.twikoo .tk-content code {
+  padding: 0.1em 0.4em;
+  background-color: var(--tk-bg);
+  border-radius: var(--tk-radius);
+  font-family: var(--ip-mono);
+  font-size: 0.85em;
+}
+
+.twikoo .tk-comment .vemoji {
+  max-height: 2em;
+  vertical-align: middle;
+}
+
+/* 浏览器 / 系统等附加信息：等宽弱化 */
 .twikoo .tk-extras,
 .twikoo .tk-footer,
 .twikoo .tk-extra-text,
 .twikoo .tk-action-count {
+  color: var(--tk-faint);
+}
+
+.twikoo .tk-extras {
+  margin-top: 0.45rem;
+  font-family: var(--ip-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+}
+
+.twikoo .tk-extra {
+  margin-top: 0;
+  margin-right: 0.85rem;
+}
+
+/* 标签胶囊：博客身份用暖调软底，其余语义标签降低存在感 */
+.twikoo .tk-tag {
+  padding: 0.1em 0.65em;
+  font-size: 0.7rem;
+  border-radius: 999px;
+}
+
+.twikoo .tk-tag-green {
+  background-color: var(--tk-accent-soft);
+  border: 1px solid color-mix(in oklch, var(--tk-accent) 40%, transparent);
+  color: var(--tk-accent);
+}
+
+.twikoo .tk-tag-blue {
+  background-color: color-mix(in oklch, var(--fy-moon, #93a7e0) 14%, transparent);
+  border: 1px solid color-mix(in oklch, var(--fy-moon, #93a7e0) 40%, transparent);
+  color: var(--fy-moon, #93a7e0);
+}
+
+.twikoo .tk-tag-yellow,
+.twikoo .tk-tag-red {
+  border-radius: 999px;
+  opacity: 0.85;
+}
+
+/* 评论悬停出现的操作（回复等） */
+.twikoo .tk-action-link {
   color: var(--tk-muted);
 }
 
-/* 加载指示器颜色：加载图标和文字统一主题色 */
+.twikoo .tk-action-link:hover {
+  color: var(--tk-accent);
+}
+
+/* 展开回复 */
+.twikoo .tk-expand {
+  font-family: var(--ip-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: var(--tk-muted);
+  transition: color var(--fy-dur-fast, 160ms) ease;
+}
+
+.twikoo .tk-expand:hover {
+  color: var(--tk-accent);
+}
+
+/* 楼中楼：细线引出的支线 */
+.twikoo .tk-replies {
+  margin-top: 1.05rem;
+  padding-left: 1.05rem;
+  border-left: 1px solid var(--tk-line-soft);
+}
+
+.twikoo .tk-replies .tk-avatar {
+  border-radius: 50%;
+}
+
+/* ── 分页与页脚 ────────────────────────────────────────────────────── */
+.twikoo .tk-pagination {
+  margin-top: 1.3rem;
+}
+
+.twikoo .tk-pagination-pager {
+  border-radius: 999px;
+  font-family: var(--ip-mono);
+  font-size: 0.78rem;
+  color: var(--tk-muted);
+  transition: color var(--fy-dur-fast, 160ms) ease, box-shadow var(--fy-dur-fast, 160ms) ease;
+}
+
+.twikoo .tk-pagination-pager:hover {
+  color: var(--tk-text);
+}
+
+.twikoo .tk-pagination-pager.__current {
+  background-color: transparent;
+  color: var(--tk-accent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--tk-accent) 50%, transparent);
+}
+
+.twikoo .tk-footer {
+  margin-top: 1.4rem;
+  font-family: var(--ip-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-align: end;
+}
+
+.twikoo .tk-footer a {
+  color: inherit;
+}
+
+/* 加载指示器：主题色 */
 .twikoo .tk-loading-spinner .path,
 .twikoo .el-loading-spinner .path,
 .twikoo .el-loading-spinner i,
@@ -147,18 +635,7 @@
   color: var(--tk-accent);
 }
 
-/* 默认头像主题化：仅调整图标颜色，不额外添加底色 */
-
-.twikoo .tk-avatar .tk-avatar-img {
-  color: color-mix(in oklch, var(--tk-accent) 58%, var(--tk-muted) 42%);
-}
-
-.twikoo .tk-avatar .tk-avatar-img svg,
-.twikoo .tk-avatar .tk-avatar-img svg path {
-  fill: currentColor;
-}
-
-/* 加载遮罩居中：刷新评论时的 loading 指示器居中显示 */
+/* 刷新评论时的 loading 遮罩居中且不遮纸面 */
 .twikoo .tk-comments-container {
   position: relative;
 }
@@ -169,6 +646,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  background-color: transparent;
 }
 
 .twikoo .el-loading-spinner {
@@ -178,93 +656,45 @@
   width: auto;
 }
 
-/* 输入框禁用态：降低对比度并保持边框统一 */
-.twikoo .el-input.is-disabled .el-input__inner,
-.twikoo .el-textarea.is-disabled .el-textarea__inner {
-  background-color: color-mix(in oklch, var(--tk-bg) 88%, var(--tk-border) 12%);
-  border-color: var(--tk-border);
-  color: color-mix(in oklch, var(--tk-text) 55%, var(--tk-bg) 45%);
+/* ── 萤火：发送成功时从按钮飘起的一点暖光 ─────────────────────────── */
+.ff-firefly {
+  position: fixed;
+  z-index: 70;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--fy-accent, #e6a173);
+  box-shadow:
+    0 0 10px 2px var(--fy-glow, rgba(230, 161, 115, 0.32)),
+    0 0 3px var(--fy-accent, #e6a173);
+  pointer-events: none;
+  animation: ff-rise 1.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-/* 占位符颜色：统一弱化文本风格 */
-.twikoo .el-input__inner::placeholder,
-.twikoo .el-textarea__inner::placeholder {
-  color: color-mix(in oklch, var(--tk-muted) 75%, var(--tk-bg) 25%);
+@keyframes ff-rise {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.4);
+  }
+
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -120%) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-130%, -360%) scale(0.75);
+  }
 }
 
-/* 标签单元格定宽：Element 前置标签是 width:1px 的 table-cell，宽度由表格
-   算法分配，在不同浏览器 / 系统缩放下会被挤压（只剩一个字）或溢出
-   （左侧被容器裁掉）。改为显式固定宽度，布局完全确定：
-   两字中文标签 + 左右内边距，英文最长 “Website” 也放得下。 */
-.twikoo .tk-meta-input .el-input-group__prepend {
-  width: 4.5rem;
-  min-width: 0;
-  padding: 0 0.5rem;
-  text-align: center;
+@media (prefers-reduced-motion: reduce) {
+  .ff-firefly {
+    display: none;
+  }
 }
 
-/* 输入组前后缀：背景与文字色跟随主题 */
-.twikoo .el-input-group__append,
-.twikoo .el-input-group__prepend {
-  background-color: color-mix(in oklch, var(--tk-bg) 90%, var(--tk-accent) 10%);
-  color: var(--tk-muted);
-}
-
-/* 主按钮基础态：背景与边框使用主题主色 */
-.twikoo .el-button--primary {
-  background-color: var(--tk-accent);
-  border-color: var(--tk-accent);
-}
-
-/* 主按钮 hover/focus 态：轻微提亮 */
-.twikoo .el-button--primary:hover,
-.twikoo .el-button--primary:focus {
-  background-color: color-mix(in oklch, var(--tk-accent) 88%, #fff 12%);
-  border-color: color-mix(in oklch, var(--tk-accent) 88%, #fff 12%);
-}
-
-/* 主按钮 active 态：轻微压暗 */
-.twikoo .el-button--primary:active,
-.twikoo .el-button--primary.is-active {
-  background-color: color-mix(in oklch, var(--tk-accent) 86%, #000 14%);
-  border-color: color-mix(in oklch, var(--tk-accent) 86%, #000 14%);
-}
-
-/* 主按钮禁用态：降低饱和和透明度 */
-.twikoo .el-button--primary.is-disabled,
-.twikoo .el-button--primary.is-disabled:hover,
-.twikoo .el-button--primary.is-disabled:focus,
-.twikoo .el-button--primary.is-disabled:active {
-  color: color-mix(in oklch, #fff 70%, transparent);
-  background-color: color-mix(in oklch, var(--tk-accent) 55%, transparent);
-  border-color: color-mix(in oklch, var(--tk-accent) 55%, transparent);
-}
-
-/* 其他语义按钮：success/warning/danger/info 统一主题化 */
-.twikoo .el-button--success,
-.twikoo .el-button--warning,
-.twikoo .el-button--danger,
-.twikoo .el-button--info {
-  color: var(--tk-text);
-  background-color: color-mix(in oklch, var(--tk-bg) 88%, var(--tk-accent) 12%);
-  border-color: color-mix(in oklch, var(--tk-border) 72%, var(--tk-accent) 28%);
-}
-
-/* 其他语义按钮交互态：悬停/聚焦强调主题主色 */
-.twikoo .el-button--success:hover,
-.twikoo .el-button--warning:hover,
-.twikoo .el-button--danger:hover,
-.twikoo .el-button--info:hover,
-.twikoo .el-button--success:focus,
-.twikoo .el-button--warning:focus,
-.twikoo .el-button--danger:focus,
-.twikoo .el-button--info:focus {
-  color: var(--tk-accent);
-  border-color: var(--tk-accent);
-  background-color: color-mix(in oklch, var(--tk-bg) 84%, var(--tk-accent) 16%);
-}
-
-/* 全屏透明模式变量：背景、边框和文字在透明壁纸下重新平衡 */
+/* ── 全屏透明壁纸模式：背景、边框和文字重新平衡 ───────────────────── */
 body.wallpaper-transparent .twikoo {
   --tk-bg: var(--card-bg-transparent);
   --tk-border: color-mix(in oklch, var(--line-divider) 70%, transparent 30%);
@@ -272,13 +702,11 @@ body.wallpaper-transparent .twikoo {
   --tk-muted: color-mix(in oklch, var(--card-bg) 28%, #666 72%);
 }
 
-/* 全屏透明模式（暗色）：进一步提高文字对比度 */
 :root.dark body.wallpaper-transparent .twikoo {
   --tk-text: color-mix(in oklch, var(--card-bg) 8%, #fff 92%);
   --tk-muted: color-mix(in oklch, var(--card-bg) 40%, #c0c4cc 60%);
 }
 
-/* 全屏透明模式面板：开启毛玻璃效果 */
 body.wallpaper-transparent .twikoo .el-input__inner,
 body.wallpaper-transparent .twikoo .el-textarea__inner,
 body.wallpaper-transparent .twikoo .el-input-group__append,

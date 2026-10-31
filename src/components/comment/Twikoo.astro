@@ -55,7 +55,70 @@ interface Props {
     }
   }
 
-  // 给单条评论添加标签（在元素插入 DOM 前调用）
+  // 评论框占位语：前端固定覆盖，不依赖 Twikoo 后台的 PLACEHOLDER 配置。
+  // 想换文案改这一行即可；删掉 applyPlaceholder 的调用则交还给后台配置。
+  const FF_COMMENT_PLACEHOLDER = "说什么好呢୧(๑•̀⌄•́๑)૭";
+
+  function applyPlaceholder() {
+    const area = document.querySelector(".tk-input .el-textarea__inner");
+    if (area && area.placeholder !== FF_COMMENT_PLACEHOLDER) {
+      area.placeholder = FF_COMMENT_PLACEHOLDER;
+    }
+  }
+
+  // 把评论数并入外壳眉标：COMMENTS · N（Twikoo 自带的「N 条评论」由 CSS 隐藏）
+  // 注意：Twikoo 的 Vue 实例挂载时会替换掉 #tcomment 元素，
+  // 所有选择器都要从渲染出来的 .twikoo 根上找，不能依赖 #tcomment。
+  function syncEyebrowCount() {
+    const eyebrow = document.querySelector(".ip-comments-eyebrow-count");
+    const count = document.querySelector(".tk-comments-count > span:first-child");
+    if (!eyebrow || !count) return;
+    const n = count.textContent.trim();
+    if (!n || eyebrow.textContent === `· ${n}`) return;
+    eyebrow.textContent = `· ${n}`;
+    eyebrow.hidden = false;
+  }
+
+  // ── 萤火：点击发送后，若列表里真的多出一条评论，就从按钮飘起一点暖光 ──
+  let fireflyArmedUntil = 0;
+  let fireflyBaseline = 0;
+
+  function armFirefly() {
+    fireflyArmedUntil = Date.now() + 12000;
+    fireflyBaseline = document.querySelectorAll(".tk-comment").length;
+  }
+
+  function spawnFirefly() {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (document.querySelector(".ff-firefly")) return; // 一次只飘一点
+    const btn = document.querySelector(".tk-send");
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const dot = document.createElement("span");
+    dot.className = "ff-firefly";
+    dot.style.left = `${rect.left + rect.width / 2}px`;
+    dot.style.top = `${rect.top + rect.height / 2}px`;
+    document.body.appendChild(dot);
+    dot.addEventListener("animationend", () => dot.remove());
+  }
+
+  function maybeCelebrate() {
+    if (Date.now() > fireflyArmedUntil) return;
+    if (document.querySelectorAll(".tk-comment").length <= fireflyBaseline) return;
+    fireflyArmedUntil = 0;
+    spawnFirefly();
+  }
+
+  document.addEventListener(
+    "click",
+    function (event) {
+      if (event.target instanceof Element && event.target.closest(".tk-send")) {
+        armFirefly();
+      }
+    },
+    true
+  );
+
   function addTagToComment(comment) {
     if (!masterTag || !masterTag.label) return;
     if (comment.querySelector(".firefly-master-tag")) return;
@@ -87,11 +150,12 @@ interface Props {
     tag.style.cssText = `
       display: inline-block;
       margin-left: 6px;
-      padding: 1px 6px;
+      padding: 1px 8px;
       font-size: 11px;
       font-weight: 500;
-      line-height: 1.4;
-      border-radius: 4px;
+      line-height: 1.5;
+      border-radius: 999px;
+      letter-spacing: 0.04em;
       background-color: ${masterTag.bgColor || "#ff6b6b"};
       color: ${masterTag.textColor || "#fff"};
       vertical-align: middle;
@@ -107,72 +171,37 @@ interface Props {
     comments.forEach(addTagToComment);
   }
 
-  // 拦截容器 DOM 插入方法，在评论插入前同步加标签
-  function patchCommentContainer() {
-    const container = document.getElementById("tcomment");
-    if (!container || container.__fireflyPatched) return;
+  // 监听评论加载完成（Twikoo 异步渲染评论）。
+  // 观察点必须挂在 Vue 渲染出来的 .twikoo 根元素上：#tcomment 在挂载时
+  // 会被整个替换掉，挂上去的 observer 和 DOM 拦截都会随它一起失效。
+  function observeComments() {
+    const target = document.querySelector(".twikoo");
 
-    const methods = ["appendChild", "insertBefore", "append", "prepend"];
-
-    for (const method of methods) {
-      const original = container[method];
-      if (!original) continue;
-
-      container[method] = function (...args) {
-        const nodes = args[0] instanceof NodeList ? Array.from(args[0]) : [args[0]];
-
-        for (const node of nodes) {
-          if (node.nodeType !== Node.ELEMENT_NODE) continue;
-          const comments = node.classList?.contains("tk-comment")
-            ? [node]
-            : node.querySelectorAll?.(".tk-comment") || [];
-          comments.forEach(addTagToComment);
-        }
-
-        return original.apply(this, args);
-      };
+    if (!target) {
+      // init 的 promise resolve 时组件可能尚未渲染完成，稍后重试
+      setTimeout(observeComments, 400);
+      return;
     }
 
-    container.__fireflyPatched = true;
-  }
-
-  // 监听评论加载完成（Twikoo 异步渲染评论）
-  function observeComments() {
-    if (!masterTag || (!masterTag.nickname && !masterTag.email)) return;
-
-    // 拦截 DOM 插入，标签和评论同步出现
-    patchCommentContainer();
-
-    // 立即执行一次，处理 init 已完成后的初始渲染
     applyMasterTag();
+    syncEyebrowCount();
+    applyPlaceholder();
 
-    // 用 rAF 合并同帧内的多次 DOM 变更，作为兜底
+    // 用 rAF 合并同帧内的多次 DOM 变更
     let rafId = null;
     const scheduleApply = () => {
       if (rafId !== null) return;
       rafId = requestAnimationFrame(() => {
         rafId = null;
         applyMasterTag();
+        syncEyebrowCount();
+        applyPlaceholder();
+        maybeCelebrate();
       });
     };
 
     const observer = new MutationObserver(scheduleApply);
-
-    const target = document.querySelector("#tcomment");
-    if (target) {
-      observer.observe(target, { childList: true, subtree: true });
-    }
-
-    // 定时轮询兜底：30 秒后自动停止
-    let elapsed = 0;
-    const fallback = setInterval(() => {
-      elapsed += 1000;
-      if (elapsed >= 30000) {
-        clearInterval(fallback);
-        return;
-      }
-      scheduleApply();
-    }, 1000);
+    observer.observe(target, { childList: true, subtree: true });
   }
 
   // 页面加载时初始化
