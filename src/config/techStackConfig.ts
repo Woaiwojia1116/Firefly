@@ -32,8 +32,6 @@ export interface TechStackConfig {
 	asciiCaption: string;
 	/** 右侧信息分组（按顺序输出） */
 	sections: TechStackSection[];
-	/** 终端窗口下方的一句话备注 */
-	note: string;
 }
 
 export const techStackConfig: TechStackConfig = {
@@ -76,5 +74,4 @@ export const techStackConfig: TechStackConfig = {
 			],
 		},
 	],
-	note: "本页由站点配置文件驱动，改 techStackConfig.ts 即可更新",
 };

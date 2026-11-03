@@ -56,6 +56,20 @@ function loadImage(src: string): Promise<HTMLImageElement | null> {
 	});
 }
 
+function colorToHex(color: string): string {
+	// Works with any CSS color format (rgb, oklch, hex...) by rasterizing one pixel
+	const tempCanvas = document.createElement("canvas");
+	tempCanvas.width = 1;
+	tempCanvas.height = 1;
+	const c = tempCanvas.getContext("2d");
+	if (!c) return "#4a4a4a";
+	c.fillStyle = color;
+	c.fillRect(0, 0, 1, 1);
+	const d = c.getImageData(0, 0, 1, 1).data;
+	const toHex = (n: number) => n.toString(16).padStart(2, "0");
+	return `#${toHex(d[0])}${toHex(d[1])}${toHex(d[2])}`;
+}
+
 function getLines(
 	ctx: CanvasRenderingContext2D,
 	text: string,
@@ -110,13 +124,14 @@ async function generatePoster() {
 	try {
 		const scale = 2;
 		const width = 425 * scale;
-		const padding = 24 * scale;
+		const frame = 16 * scale;
+		const themeHex = colorToHex(themeColor);
 
 		// 1. Prepare resources
 		const qrCodeUrl = await QRCode.toDataURL(url, {
-			margin: 1,
+			margin: 0,
 			width: 100 * scale,
-			color: { dark: "#000000", light: "#ffffff" },
+			color: { dark: themeHex, light: "#ffffff" },
 		});
 		const [qrImg, coverImg, avatarImg] = await Promise.all([
 			loadImage(qrCodeUrl),
@@ -124,7 +139,7 @@ async function generatePoster() {
 			avatar ? loadImage(avatar) : Promise.resolve(null),
 		]);
 
-		// 2. Setup Canvas for measuring
+		// 2. Setup Canvas
 		const canvas = document.createElement("canvas");
 		const ctx = canvas.getContext("2d");
 		if (!ctx) throw new Error("Canvas context not available");
@@ -133,75 +148,57 @@ async function generatePoster() {
 		// Initial height estimation, will be adjusted
 		canvas.height = 1000 * scale;
 
-		// 3. Layout Calculation
-		const contentWidth = width - padding * 2;
-		let currentY = 0;
+		// 3. Layout Calculation (polaroid photo print)
+		const photoX = frame;
+		const photoY = frame;
+		const photoW = width - frame * 2;
+		const photoH = 460 * scale;
+		const contentW = photoW - 100 * scale; // right column reserved for QR
 
-		// Cover
-		const coverHeight = (coverImage ? 200 : 120) * scale;
-		currentY += coverHeight;
-		currentY += padding; // Gap after cover
-
-		// Meta (Date on Cover) - No extra height needed
-
-		// Title
-		ctx.font = `700 ${24 * scale}px 'Roboto', sans-serif`;
-		const titleLines = getLines(ctx, title, contentWidth);
-		const titleLineHeight = 30 * scale;
+		ctx.font = `700 ${20 * scale}px 'Roboto', sans-serif`;
+		const titleLines = getLines(ctx, title, contentW).slice(0, 3);
+		const titleLineHeight = 28 * scale;
 		const titleHeight = titleLines.length * titleLineHeight;
-		currentY += titleHeight;
-		currentY += 16 * scale; // Gap
+		const titleTop = photoY + photoH + 20 * scale;
 
 		// Description
+		let descLines: string[] = [];
+		const descLineHeight = 18 * scale;
 		let descHeight = 0;
 		if (description) {
-			ctx.font = `${14 * scale}px 'Roboto', sans-serif`;
-			const descLines = getLines(ctx, description, contentWidth - 16 * scale); // minus border width and gap
-			// Limit to 6 lines
-			const maxDescLines = 6;
-			const displayDescLines = descLines.slice(0, maxDescLines);
-			const descLineHeight = 25 * scale; // 1.8 line-height approx
-			descHeight = displayDescLines.length * descLineHeight;
-			currentY += descHeight;
-			// currentY += 24 * scale; // Gap to footer (Removed to reduce whitespace)
-		} else {
-			currentY += 8 * scale; // Smaller gap if no desc
+			ctx.font = `${12 * scale}px 'Roboto', sans-serif`;
+			descLines = getLines(ctx, description, contentW).slice(0, 2);
+			descHeight = descLines.length * descLineHeight;
 		}
 
-		// Footer (Author + QR)
-		// Footer top border + padding
-		currentY += 24 * scale;
-		const footerHeight = 64 * scale; // Avatar/QR height
-		currentY += footerHeight;
-		currentY += padding; // Bottom padding
+		const footerY =
+			titleTop + titleHeight + (description ? 8 * scale + descHeight + 10 * scale : 12 * scale);
+
+		const qrTop = titleTop;
+		const qrSize = 76 * scale;
+		const qrBlockH = (14 + 76 + 16) * scale; // scan hint + QR + site title
+		const footerH = 40 * scale;
 
 		// 4. Resize Canvas to fit content
-		canvas.height = currentY;
+		const bandBottom = Math.max(footerY + footerH, qrTop + qrBlockH) + 18 * scale;
+		canvas.height = bandBottom;
 
 		// 5. Draw Content
-		// Fill Background
+		// Fill Background (white photo paper)
 		ctx.fillStyle = "#ffffff";
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-		// Draw Decorative Circles
+		// Subtle paper grain
 		ctx.save();
-		ctx.globalAlpha = 0.1;
-		ctx.fillStyle = themeColor;
-
-		// Top Right Circle
-		// CSS: top: -50px, right: -50px, width: 150px, height: 150px
-		// Radius = 75px
-		// Center X = width + 50 - 75 = width - 25
-		// Center Y = -50 + 75 = 25
-		ctx.beginPath();
-		ctx.arc(width - 25 * scale, 25 * scale, 75 * scale, 0, Math.PI * 2);
-		ctx.fill();
-
-		// Bottom Left Circle
-		// Adjusted to cover the avatar
-		ctx.beginPath();
-		ctx.arc(10 * scale, canvas.height - 10 * scale, 50 * scale, 0, Math.PI * 2);
-		ctx.fill();
+		ctx.fillStyle = "rgba(0, 0, 0, 0.025)";
+		for (let i = 0; i < 500; i++) {
+			ctx.fillRect(
+				Math.random() * width,
+				Math.random() * canvas.height,
+				1 * scale,
+				1 * scale,
+			);
+		}
 		ctx.restore();
 
 		// Parse Date
@@ -221,7 +218,7 @@ async function generatePoster() {
 		if (coverImg) {
 			// Object-fit: cover implementation
 			const imgRatio = coverImg.width / coverImg.height;
-			const targetRatio = width / coverHeight;
+			const targetRatio = photoW / photoH;
 			let sx: number;
 			let sy: number;
 			let sWidth: number;
@@ -244,122 +241,88 @@ async function generatePoster() {
 				sy,
 				sWidth,
 				sHeight,
-				0,
-				0,
-				width,
-				coverHeight,
+				photoX,
+				photoY,
+				photoW,
+				photoH,
 			);
 		} else {
 			ctx.save();
 			ctx.fillStyle = themeColor;
-			ctx.globalAlpha = 0.2;
-			ctx.fillRect(0, 0, width, coverHeight);
+			ctx.globalAlpha = 0.15;
+			ctx.fillRect(photoX, photoY, photoW, photoH);
 			ctx.restore();
 		}
 
-		// Draw Date Overlay
+		// Hairline around the photo
+		ctx.strokeStyle = "rgba(0, 0, 0, 0.08)";
+		ctx.lineWidth = 1 * scale;
+		ctx.strokeRect(photoX, photoY, photoW, photoH);
+
+		// Film date stamp (bottom-right of the photo)
 		if (dateObj) {
-			const dateBoxW = 60 * scale;
-			const dateBoxH = 60 * scale;
-			const dateBoxX = padding;
-			const dateBoxY = coverHeight - dateBoxH;
-
-			// Background (Semi-transparent black)
-			ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
-			drawRoundedRect(ctx, dateBoxX, dateBoxY, dateBoxW, dateBoxH, 4 * scale);
-			ctx.fill();
-
-			// Day
-			ctx.fillStyle = "#ffffff";
-			ctx.textAlign = "center";
-			ctx.textBaseline = "middle";
-			ctx.font = `700 ${30 * scale}px 'Roboto', sans-serif`;
-			ctx.fillText(dateObj.day, dateBoxX + dateBoxW / 2, dateBoxY + 24 * scale);
-
-			// Line
-			ctx.beginPath();
-			ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
-			ctx.lineWidth = 1 * scale;
-			ctx.moveTo(dateBoxX + 10 * scale, dateBoxY + 42 * scale);
-			ctx.lineTo(dateBoxX + dateBoxW - 10 * scale, dateBoxY + 42 * scale);
-			ctx.stroke();
-
-			// Year Month
-			ctx.font = `${10 * scale}px 'Roboto', sans-serif`;
+			ctx.save();
+			ctx.textAlign = "right";
+			ctx.textBaseline = "alphabetic";
+			ctx.font = `700 ${14 * scale}px 'Courier New', monospace`;
+			// Dark under-shadow for legibility on light photo areas
+			ctx.shadowColor = "rgba(0, 0, 0, 0.45)";
+			ctx.shadowBlur = 3 * scale;
+			ctx.fillStyle = "#ffab5e";
 			ctx.fillText(
-				`${dateObj.year} ${dateObj.month}`,
-				dateBoxX + dateBoxW / 2,
-				dateBoxY + 51 * scale,
+				`'${dateObj.year.slice(2)} ${dateObj.month} ${dateObj.day}`,
+				photoX + photoW - 10 * scale,
+				photoY + photoH - 10 * scale,
 			);
+			// Orange glow pass
+			ctx.shadowColor = "#ff9f43";
+			ctx.fillText(
+				`'${dateObj.year.slice(2)} ${dateObj.month} ${dateObj.day}`,
+				photoX + photoW - 10 * scale,
+				photoY + photoH - 10 * scale,
+			);
+			ctx.restore();
 		}
 
-		// Reset Y for drawing
-		let drawY = coverHeight + padding;
+		// Washi tape on the top edge of the photo
+		ctx.save();
+		ctx.translate(width / 2, 12 * scale);
+		ctx.rotate(-0.05);
+		ctx.fillStyle = themeColor;
+		ctx.globalAlpha = 0.45;
+		drawRoundedRect(ctx, -55 * scale, -12 * scale, 110 * scale, 24 * scale, 2 * scale);
+		ctx.fill();
+		ctx.restore();
 
 		// Draw Title
 		ctx.textBaseline = "top";
 		ctx.textAlign = "left";
-		ctx.font = `700 ${24 * scale}px 'Roboto', sans-serif`;
-		ctx.fillStyle = "#111827";
+		ctx.font = `700 ${20 * scale}px 'Roboto', sans-serif`;
+		ctx.fillStyle = "#2d2a26";
+		let drawY = titleTop;
 		titleLines.forEach((line) => {
-			ctx.fillText(line, padding, drawY);
+			ctx.fillText(line, photoX, drawY);
 			drawY += titleLineHeight;
 		});
-		drawY += 16 * scale - (titleLineHeight - 24 * scale); // Adjust for line-height diff
 
 		// Draw Description
-		if (description) {
-			// Draw vertical line
-			ctx.fillStyle = "#e5e7eb";
-			const descLineH = descHeight; // Approximate
-			// Extend the line slightly above and below the text
-			drawRoundedRect(
-				ctx,
-				padding,
-				drawY - 8 * scale,
-				4 * scale,
-				descLineH + 8 * scale,
-				2 * scale,
-			);
-			ctx.fill();
-
-			ctx.font = `${14 * scale}px 'Roboto', sans-serif`;
-			ctx.fillStyle = "#4b5563";
-			const descLines = getLines(ctx, description, contentWidth - 16 * scale);
-			const maxDescLines = 6;
-
-			descLines.slice(0, maxDescLines).forEach((line) => {
-				ctx.fillText(line, padding + 16 * scale, drawY);
-				drawY += 25 * scale; // line height
+		if (description && descLines.length) {
+			ctx.font = `${12 * scale}px 'Roboto', sans-serif`;
+			ctx.fillStyle = "rgba(45, 42, 38, 0.55)";
+			descLines.forEach((line) => {
+				ctx.fillText(line, photoX, drawY + 8 * scale);
+				drawY += descLineHeight;
 			});
-			// drawY += 24 * scale; // Removed to reduce whitespace
-		} else {
-			drawY += 8 * scale;
 		}
 
-		// Draw Footer Divider
-		drawY += 24 * scale; // Spacing before line
-		ctx.beginPath();
-		ctx.strokeStyle = "#f3f4f6";
-		ctx.lineWidth = 1 * scale;
-		ctx.moveTo(padding, drawY);
-		ctx.lineTo(width - padding, drawY);
-		ctx.stroke();
-		drawY += 24 * scale; // Spacing after line
-
-		// Draw Footer Content
-		const footerY = drawY;
-
 		// Left: Author
+		const avatarSize = 36 * scale;
 		if (avatarImg) {
 			ctx.save();
-			const avatarSize = 64 * scale;
-			const avatarX = padding;
-
 			// Circle clip
 			ctx.beginPath();
 			ctx.arc(
-				avatarX + avatarSize / 2,
+				photoX + avatarSize / 2,
 				footerY + avatarSize / 2,
 				avatarSize / 2,
 				0,
@@ -368,72 +331,71 @@ async function generatePoster() {
 			ctx.closePath();
 			ctx.clip();
 
-			ctx.drawImage(avatarImg, avatarX, footerY, avatarSize, avatarSize);
+			ctx.drawImage(avatarImg, photoX, footerY, avatarSize, avatarSize);
 			ctx.restore();
 
 			// Border for avatar
 			ctx.beginPath();
 			ctx.arc(
-				avatarX + (64 * scale) / 2,
-				footerY + (64 * scale) / 2,
-				(64 * scale) / 2,
+				photoX + avatarSize / 2,
+				footerY + avatarSize / 2,
+				avatarSize / 2,
 				0,
 				Math.PI * 2,
 			);
-			ctx.strokeStyle = "#ffffff";
-			ctx.lineWidth = 2 * scale;
+			ctx.strokeStyle = "rgba(0, 0, 0, 0.08)";
+			ctx.lineWidth = 1 * scale;
 			ctx.stroke();
 		}
 
-		const authorTextX = padding + (avatar ? 64 * scale + 16 * scale : 0);
-		const textCenterY = footerY + 32 * scale;
+		const authorTextX = photoX + (avatarImg ? avatarSize + 10 * scale : 0);
 
-		ctx.fillStyle = "#9ca3af";
-		ctx.font = `${12 * scale}px 'Roboto', sans-serif`;
-		ctx.fillText(i18n(I18nKey.author), authorTextX, textCenterY - 20 * scale);
-
-		ctx.fillStyle = "#1f2937";
-		ctx.font = `700 ${20 * scale}px 'Roboto', sans-serif`;
-		ctx.fillText(author, authorTextX, textCenterY + 4 * scale);
+		ctx.textAlign = "left";
+		ctx.textBaseline = "middle";
+		ctx.fillStyle = "#2d2a26";
+		ctx.font = `700 ${15 * scale}px 'Roboto', sans-serif`;
+		ctx.fillText(author, authorTextX, footerY + avatarSize / 2 + 2 * scale);
 
 		// Right: QR Code
-		const qrSize = 64 * scale;
-		const qrX = width - padding - qrSize;
+		const qrX = width - frame - qrSize;
+		const qrCX = qrX + qrSize / 2;
 
-		// QR Background/Shadow effect (simplified as border)
+		// Scan hint above QR
+		ctx.textAlign = "center";
+		ctx.textBaseline = "middle";
+		ctx.fillStyle = "rgba(45, 42, 38, 0.55)";
+		ctx.font = `${10 * scale}px 'Roboto', sans-serif`;
+		ctx.fillText(i18n(I18nKey.scanToRead), qrCX, qrTop + 7 * scale);
+
+		// QR card with soft shadow
+		const qrY = qrTop + 14 * scale;
 		ctx.fillStyle = "#ffffff";
-		// Shadow simulation
-		ctx.shadowColor = "rgba(0, 0, 0, 0.05)";
-		ctx.shadowBlur = 4 * scale;
+		ctx.shadowColor = "rgba(0, 0, 0, 0.06)";
+		ctx.shadowBlur = 6 * scale;
 		ctx.shadowOffsetY = 2 * scale;
-		drawRoundedRect(ctx, qrX, footerY, qrSize, qrSize, 4 * scale);
+		drawRoundedRect(
+			ctx,
+			qrX - 5 * scale,
+			qrY - 5 * scale,
+			qrSize + 10 * scale,
+			qrSize + 10 * scale,
+			6 * scale,
+		);
 		ctx.fill();
 		ctx.shadowColor = "transparent"; // Reset shadow
+		ctx.strokeStyle = "rgba(0, 0, 0, 0.08)";
+		ctx.lineWidth = 1 * scale;
+		ctx.stroke();
 
 		// Draw QR
-		const qrInnerSize = 56 * scale;
-		const qrPadding = (qrSize - qrInnerSize) / 2;
 		if (qrImg) {
-			ctx.drawImage(
-				qrImg,
-				qrX + qrPadding,
-				footerY + qrPadding,
-				qrInnerSize,
-				qrInnerSize,
-			);
+			ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
 		}
 
-		// Site Info (Left of QR)
-		const siteInfoX = qrX - 16 * scale;
-		ctx.textAlign = "right";
-
-		ctx.fillStyle = "#9ca3af";
-		ctx.font = `${12 * scale}px 'Roboto', sans-serif`;
-		ctx.fillText(i18n(I18nKey.scanToRead), siteInfoX, textCenterY - 20 * scale);
-
-		ctx.fillStyle = "#1f2937";
-		ctx.font = `700 ${20 * scale}px 'Roboto', sans-serif`;
-		ctx.fillText(siteTitle, siteInfoX, textCenterY + 4 * scale);
+		// Site title under QR
+		ctx.fillStyle = "#2d2a26";
+		ctx.font = `700 ${10 * scale}px 'Roboto', sans-serif`;
+		ctx.fillText(siteTitle, qrCX, qrY + qrSize + 9 * scale);
 
 		// Finalize
 		posterImage = canvas.toDataURL("image/png");
@@ -495,22 +457,22 @@ function portal(node: HTMLElement) {
   <!-- svelte-ignore a11y-click-events-have-key-events -->
   <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div use:portal class="fixed inset-0 z-9999 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 transition-opacity" on:click={closeModal}>
-    <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-[440px] w-full max-h-[90vh] overflow-y-auto flex flex-col shadow-2xl transform transition-all" on:click={(e) => e.stopPropagation()}>
-      
-      <div class="p-6 flex justify-center bg-gray-50 dark:bg-gray-900 min-h-[200px] items-center">
+    <div class="bg-(--card-bg) border border-(--line-color) rounded-2xl max-w-[440px] w-full max-h-[90vh] overflow-y-auto flex flex-col shadow-2xl transform transition-all" on:click={(e) => e.stopPropagation()}>
+
+      <div class="p-6 flex justify-center bg-(--page-bg) min-h-[200px] items-center">
         {#if posterImage}
-          <img src={posterImage} alt="Poster" class="max-w-full h-auto shadow-lg rounded-lg" />
+          <img src={posterImage} alt="Poster" class="max-w-full h-auto rounded-md shadow-lg" />
         {:else}
            <div class="flex flex-col items-center gap-3">
-             <div class="w-8 h-8 border-2 border-gray-200 rounded-full animate-spin" style="border-top-color: {themeColor}"></div>
-             <span class="text-sm text-gray-500">{i18n(I18nKey.generatingPoster)}</span>
+             <div class="w-8 h-8 border-2 border-(--line-color) rounded-full animate-spin" style="border-top-color: var(--primary)"></div>
+             <span class="text-sm text-(--btn-content)">{i18n(I18nKey.generatingPoster)}</span>
            </div>
         {/if}
       </div>
-      
-      <div class="p-4 border-t border-gray-100 dark:border-gray-700 grid grid-cols-2 gap-3">
-        <button 
-          class="py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+
+      <div class="p-4 border-t border-(--line-divider) grid grid-cols-2 gap-3">
+        <button
+          class="btn-regular py-3 rounded-xl font-medium active:scale-[0.98] transition-all flex items-center justify-center gap-2"
           on:click={copyLink}
         >
           {#if copied}
@@ -521,9 +483,9 @@ function portal(node: HTMLElement) {
             <span>{i18n(I18nKey.copyLink)}</span>
           {/if}
         </button>
-        <button 
+        <button
           class="py-3 text-white rounded-xl font-medium active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-90"
-          style="background-color: {themeColor};"
+          style="background-color: var(--primary);"
           on:click={downloadPoster}
           disabled={!posterImage}
         >

@@ -100,16 +100,17 @@ export class TOCManager {
 	}
 
 	/**
-	 * 生成徽章内容
+	 * 生成徽章 class：定位 class 必须挂在徽章 div 本身，
+	 * 否则绝对定位拿不到 left 值，圆点会落到文字起点上
 	 */
-	private generateBadgeContent(depth: number, heading1Count: number): string {
+	private generateBadgeClass(depth: number): string {
 		if (depth === this.minDepth) {
-			return heading1Count.toString();
+			return "toc-badge-index";
 		}
 		if (depth === this.minDepth + 1) {
-			return '<span class="toc-badge-dot"></span>';
+			return "toc-badge-dot";
 		}
-		return '<span class="toc-badge-dot toc-badge-dot-sm"></span>';
+		return "toc-badge-dot-sm";
 	}
 
 	/**
@@ -148,7 +149,6 @@ export class TOCManager {
 				return;
 			}
 
-			const badgeContent = this.generateBadgeContent(depth, heading1Count);
 			if (depth === this.minDepth) {
 				heading1Count++;
 			}
@@ -187,8 +187,8 @@ export class TOCManager {
 		  aria-label="${escapedHeadingText}"
 		  title="${escapedHeadingText}"
         >
-			  <div class="toc-badge ${depth === this.minDepth ? "toc-badge-index" : ""}">
-            ${badgeContent}
+			  <div class="toc-badge ${this.generateBadgeClass(depth)}">
+            ${depth === this.minDepth ? heading1Count : ""}
           </div>
 			  <div class="toc-label ${depth <= this.minDepth + 1 ? "toc-label-primary" : "toc-label-secondary"}">${headingText}</div>
         </a>

@@ -191,24 +191,19 @@
 	max-width: calc(100% - 0.5rem);
 }
 
-/* 标记统一挂到轨道上 */
+/* 标记统一挂到轨道上：徽章中心对齐轨道中线，层级高于行灯，
+   让光段从"站点"背后滑过而不遮住编号 */
 .toc-content .toc-badge {
 	position: absolute;
 	top: 50%;
-	transform: translateY(-50%);
+	left: calc(1.18rem + 1px);
+	transform: translate(-50%, -50%);
 	margin: 0;
+	z-index: 2;
 }
 
-.toc-content .toc-badge-index {
-	left: 0.55rem;
-}
-
-.toc-content .toc-badge-dot {
-	left: 0.99rem;
-}
-
-.toc-content .toc-badge-dot-sm {
-	left: 1.06rem;
+.toc-content .toc-label {
+	max-width: none;
 }
 
 /* 二三级站名略小，维持层级感 */
@@ -220,30 +215,31 @@
 	font-size: 0.76rem;
 }
 
-/* 已读站点：圆点点亮并带一圈光晕 */
+/* 已读站点：圆点点亮并带一圈光晕（跟随主题色相） */
 .toc-item.visible .toc-badge-dot,
 .toc-item.visible .toc-badge-dot-sm {
-	background: var(--ip-warm, var(--primary));
+	background: var(--primary);
 	box-shadow: 0 0 0 3px
-		color-mix(in oklab, var(--ip-warm, var(--primary)) 16%, transparent);
+		color-mix(in oklab, var(--primary) 16%, transparent);
 }
 
-/* 行灯：贴轨滑动的暖色光段（JS 只写 top/height/opacity） */
+/* 行灯：贴轨滑动的主题色光段（JS 只写 top/height/opacity）；
+   宽度中心与轨道中线对齐，层级在徽章之下 */
 .toc-active-indicator {
-	left: 1.13rem;
+	left: calc(1.18rem - 1px);
 	right: auto;
 	width: 4px;
 	border-radius: 2px;
 	background: linear-gradient(
 		180deg,
 		transparent 0,
-		var(--ip-warm, var(--primary)) 16%,
-		var(--ip-warm, var(--primary)) 84%,
+		var(--primary) 16%,
+		var(--primary) 84%,
 		transparent 100%
 	);
 	box-shadow:
 		0 0 10px 1px
-			color-mix(in oklab, var(--ip-warm, var(--primary)) 42%, transparent);
+			color-mix(in oklab, var(--primary) 42%, transparent);
 	z-index: 1;
 	transition:
 		top 0.26s cubic-bezier(0.22, 1, 0.36, 1),
@@ -262,19 +258,11 @@
 		padding-left: 1.9rem;
 	}
 
-	.toc-content .toc-badge-index {
-		left: 0.42rem;
-	}
-
-	.toc-content .toc-badge-dot {
-		left: 0.86rem;
-	}
-
-	.toc-content .toc-badge-dot-sm {
-		left: 0.93rem;
+	.toc-content .toc-badge {
+		left: calc(1.02rem + 1px);
 	}
 
 	.toc-active-indicator {
-		left: 0.97rem;
+		left: calc(1.02rem - 1px);
 	}
 }

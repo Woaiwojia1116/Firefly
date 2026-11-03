@@ -1,5 +1,4 @@
 ---
-import { Icon } from "astro-icon/components";
 import dayjs from "dayjs";
 import { siteConfig, techStackConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
@@ -51,7 +50,7 @@ const isEmphasis = (part: string) => part.startsWith("**") && part.endsWith("**"
       meta={[`v${version}`]}
     />
 
-    <div class="tech-term" role="img" aria-label="技术栈终端展示">
+    <div class="tech-term" data-user={cfg.user} data-host={cfg.host} aria-label="技术栈终端展示">
       <!-- 终端标题栏 -->
       <div class="tech-term-bar">
         <span class="tech-dot tech-dot--r" aria-hidden="true"></span>
@@ -96,15 +95,35 @@ const isEmphasis = (part: string) => part.startsWith("**") && part.endsWith("**"
           </div>
         </div>
 
-        <!-- 待输入行：闪烁光标 -->
+        <!-- 交互历史区（用户命令的回显与输出） -->
+        <div class="tech-history" aria-live="polite"></div>
+
+        <!-- 幽灵提示行：循环淡淡浮现可用命令 -->
+        <p class="tech-ghost" aria-hidden="true">
+          <span class="tech-prompt">{cfg.user}@{cfg.host}</span><span class="tech-path">:~$</span>
+          <span class="tech-ghost-cmd"></span>
+        </p>
+
+        <!-- 待输入行：移动端保持装饰性闪烁光标，桌面端由脚本切换为可输入 -->
         <p class="tech-cmd tech-cmd--idle" aria-hidden="true">
           <span class="tech-prompt">{cfg.user}@{cfg.host}</span><span class="tech-path">:~$</span>
           <span class="tech-caret tech-caret--blink"></span>
         </p>
+
+        <!-- 可输入行：仅桌面端显示 -->
+        <p class="tech-cmd tech-cmd--input">
+          <span class="tech-prompt">{cfg.user}@{cfg.host}</span><span class="tech-path">:~$</span>
+          <input
+            class="tech-input"
+            type="text"
+            spellcheck="false"
+            autocomplete="off"
+            autocapitalize="off"
+            aria-label="输入终端命令"
+          />
+        </p>
       </div>
     </div>
-
-    <p class="tech-note">{cfg.note}</p>
 
     <!-- 屏幕阅读器可读的完整文本 -->
     <ul class="sr-only-tech">
@@ -119,6 +138,144 @@ const isEmphasis = (part: string) => part.startsWith("**") && part.endsWith("**"
     </ul>
   </div>
 </MainGridLayout>
+
+<script>
+  // /tech 终端交互：仅桌面端（可悬停 + 精确指针）启用输入
+  const GHOST_COMMANDS = ["neofetch", "whoami", "ls"];
+  const GHOST_INTERVAL = 4200;
+
+  function initTechTerm() {
+    for (const term of document.querySelectorAll<HTMLElement>(
+      ".tech-term:not([data-term-ready])",
+    )) {
+      term.dataset.termReady = "1";
+
+      const input = term.querySelector<HTMLInputElement>(".tech-input");
+      const body = term.querySelector(".tech-term-body");
+      const history = term.querySelector<HTMLElement>(".tech-history");
+      const ghost = term.querySelector<HTMLElement>(".tech-ghost");
+      const ghostCmd = term.querySelector<HTMLElement>(".tech-ghost-cmd");
+      const output = term.querySelector<HTMLElement>(".tech-output");
+      if (!input || !body || !history || !ghost || !ghostCmd || !output) continue;
+
+      const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
+      const setMode = () => term.classList.toggle("is-interactive", mq.matches);
+      setMode();
+      mq.addEventListener("change", setMode);
+      if (!mq.matches) continue; // 移动端保持纯展示
+
+      const user = term.dataset.user ?? "user";
+      const host = term.dataset.host ?? "localhost";
+      const hist: string[] = [];
+      let histIdx = 0;
+      let ghostTimer: ReturnType<typeof setInterval> | null = null;
+
+      // 幽灵提示：循环淡淡浮现一条可用命令
+      let ghostIdx = 0;
+      const showGhost = () => {
+        ghostCmd.textContent = GHOST_COMMANDS[ghostIdx % GHOST_COMMANDS.length];
+        ghostIdx++;
+        ghost.classList.remove("is-showing");
+        void ghost.offsetWidth; // 重启动画
+        ghost.classList.add("is-showing");
+      };
+      const stopGhost = () => {
+        if (ghostTimer) clearInterval(ghostTimer);
+        ghostTimer = null;
+        ghost.classList.remove("is-showing");
+      };
+      ghostTimer = setInterval(showGhost, GHOST_INTERVAL);
+      showGhost();
+
+      const echo = (cmdText: string) => {
+        const line = document.createElement("p");
+        line.className = "tech-echo";
+        line.innerHTML =
+          `<span class="tech-prompt"></span><span class="tech-path"></span>`;
+        line.children[0].textContent = `${user}@${host}`;
+        line.children[1].textContent = ":~$";
+        line.appendChild(document.createTextNode(` ${cmdText}`));
+        history.appendChild(line);
+      };
+
+      const print = (text: string) => {
+        const line = document.createElement("p");
+        line.className = "tech-out";
+        line.textContent = text;
+        history.appendChild(line);
+      };
+
+      const run = (raw: string) => {
+        history.replaceChildren(); // 只保留最近一次输入记录
+        echo(raw);
+        const cmd = raw.trim();
+        if (!cmd) return;
+        stopGhost(); // 用户已上手，提示完成使命
+        hist.push(cmd);
+        histIdx = hist.length;
+        const name = cmd.split(/\s+/)[0];
+        switch (name) {
+          case "neofetch": {
+            const clone = output.cloneNode(true) as HTMLElement;
+            history.appendChild(clone);
+            break;
+          }
+          case "whoami":
+            print(user);
+            break;
+          case "ls":
+            print("posts/  friends/  tech.md  secrets/");
+            break;
+          case "clear":
+            history.replaceChildren();
+            break;
+          case "sudo":
+            print(`${user} 不在 sudoers 文件中。该事件将被上报 :)`);
+            break;
+          case "rm":
+            print("已拦截危险操作：博客还想多活几天");
+            break;
+          case "exit":
+            print("exit: 这里没有真正的 shell，窗口也关不掉哦");
+            break;
+          default:
+            print("似乎无事发生");
+        }
+        body.scrollTop = body.scrollHeight;
+      };
+
+      body.addEventListener("click", () => input.focus());
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          run(input.value);
+          input.value = "";
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          if (histIdx > 0) input.value = hist[--histIdx];
+        } else if (e.key === "ArrowDown") {
+          e.preventDefault();
+          if (histIdx < hist.length) histIdx++;
+          input.value = hist[histIdx] ?? "";
+        }
+      });
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initTechTerm);
+  } else {
+    initTechTerm();
+  }
+
+  // Swup 页面切换后重新初始化（兼容不同事件名）
+  document.addEventListener("swup:contentReplaced", initTechTerm);
+  document.addEventListener("swup:content:replace", initTechTerm);
+  document.addEventListener("swup:page:view", initTechTerm);
+  if (typeof window !== "undefined" && window.swup?.hooks) {
+    window.swup.hooks.on("content:replace", initTechTerm);
+    window.swup.hooks.on("page:view", initTechTerm);
+  }
+</script>
 
 <style>
   /* ========== 页面容器 ========== */
@@ -344,12 +501,92 @@ const isEmphasis = (part: string) => part.startsWith("**") && part.endsWith("**"
     50%, 100% { opacity: 0; }
   }
 
-  /* ========== 备注 ========== */
-  .tech-note {
-    margin: 0.9rem 0.15rem 0;
-    font-size: 0.72rem;
-    color: var(--ip-ink-faint);
-    text-align: center;
+  /* ========== 交互：输入行 / 历史区 / 幽灵提示 ========== */
+  .tech-cmd--input {
+    display: none;
+    margin: 0.9rem 0 0;
+  }
+
+  .tech-input {
+    flex: 1;
+    min-width: 6ch;
+    border: none;
+    outline: none;
+    background: transparent;
+    padding: 0;
+    font: inherit;
+    color: #c9d2e0;
+    caret-color: var(--ip-warm);
+  }
+
+  /* 幽灵提示行：默认隐藏，仅交互模式显示 */
+  .tech-ghost {
+    margin: 0.9rem 0 0;
+    font-size: 0.82rem;
+    white-space: nowrap;
+    opacity: 0;
+    display: none;
+  }
+
+  .tech-ghost-cmd {
+    color: rgba(200, 210, 224, 0.55);
+  }
+
+  .tech-ghost.is-showing {
+    animation: techGhostFade 4.2s ease-in-out both;
+  }
+
+  @keyframes techGhostFade {
+    0% { opacity: 0; }
+    12% { opacity: 0.4; }
+    78% { opacity: 0.4; }
+    100% { opacity: 0; }
+  }
+
+  /* 交互模式下：输入行替换装饰光标行 */
+  .tech-term.is-interactive .tech-cmd--input {
+    display: block;
+  }
+
+  .tech-term.is-interactive .tech-cmd--idle {
+    display: none;
+  }
+
+  .tech-term.is-interactive .tech-ghost {
+    display: block;
+  }
+
+  /* 历史输出区 */
+  .tech-history {
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  .tech-history:empty {
+    display: none;
+  }
+
+  .tech-echo {
+    margin: 0.6rem 0 0.15rem;
+    white-space: nowrap;
+  }
+
+  .tech-out {
+    margin: 0 0 0.15rem;
+    color: #c9d2e0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  /* neofetch 重放：克隆节点不重播入场动画 */
+  .tech-history .tech-output {
+    margin-top: 0.5rem;
+  }
+
+  .tech-history .tech-sec,
+  .tech-history .tech-row {
+    animation: none;
+    opacity: 1;
   }
 
   .sr-only-tech {
@@ -395,6 +632,11 @@ const isEmphasis = (part: string) => part.startsWith("**") && part.endsWith("**"
     .tech-caret--typing {
       animation: none;
       opacity: 0;
+    }
+
+    .tech-ghost.is-showing {
+      animation: none;
+      opacity: 0.4;
     }
   }
 </style>
