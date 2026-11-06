@@ -127,13 +127,16 @@ const path = customPath || (id ? `/posts/${id}` : "");
      )
    }
 
-  <!-- Twikoo访问量统计（首页不显示，且文章访问量统计启用时显示） -->
+  <!-- Twikoo访问量统计（首页不显示）
+       计数保留、界面隐藏：Twikoo 需要读取 #twikoo_visitors 元素写入计数，
+       元素不能删，只能用内联 display:none 收起（Tailwind 的 .flex 会压过 hidden 属性），
+       这样每次访问仍然 +1，但页面上看不到数字。 -->
   {
     !isHome &&
       commentConfig.type === 'twikoo' &&
       commentConfig.twikoo?.visitorCount &&
       id && (
-        <div class="flex items-center">
+        <div class="flex items-center" style="display:none" aria-hidden="true">
           <div class="meta-icon">
             <Icon
               name="material-symbols:visibility-outline-rounded"
