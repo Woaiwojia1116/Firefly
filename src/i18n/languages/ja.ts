@@ -284,6 +284,22 @@ export const ja: Translation = {
 	[Key.siteStatsDays]: "{days} 日",
 	[Key.today]: "今日",
 
+	// アクセス統計ページ
+	[Key.stats]: "アクセス統計",
+	[Key.statsDescription]: "すべての訪問を記録 · Powered by Umami",
+	[Key.statsPageviews]: "閲覧数",
+	[Key.statsVisitors]: "ユニーク訪問者",
+	[Key.statsVisits]: "セッション数",
+	[Key.statsDailyAvg]: "1日平均",
+	[Key.statsTrend]: "過去30日間の閲覧推移",
+	[Key.statsTopPosts]: "人気の記事",
+	[Key.statsTopReferrers]: "リファラー",
+	[Key.statsDirect]: "直接アクセス",
+	[Key.statsContent]: "コンテンツ統計",
+	[Key.statsLoading]: "読み込み中…",
+	[Key.statsNoData]: "データなし",
+	[Key.statsNotConfigured]: "Umami 共有 ID が未設定のため、アクセスデータを表示できません",
+
 	// カレンダーコンポーネント
 	[Key.calendarSunday]: "日",
 	[Key.calendarMonday]: "月",

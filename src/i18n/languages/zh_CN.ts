@@ -276,6 +276,22 @@ export const zh_CN: Translation = {
 	[Key.siteStatsDays]: "{days} 天",
 	[Key.today]: "今天",
 
+	// 访问统计页面
+	[Key.stats]: "访问统计",
+	[Key.statsDescription]: "记录每一位到访者的足迹 · 数据来自 Umami",
+	[Key.statsPageviews]: "浏览量",
+	[Key.statsVisitors]: "独立访客",
+	[Key.statsVisits]: "访问次数",
+	[Key.statsDailyAvg]: "日均浏览",
+	[Key.statsTrend]: "近 30 天浏览趋势",
+	[Key.statsTopPosts]: "热门文章",
+	[Key.statsTopReferrers]: "来路来源",
+	[Key.statsDirect]: "直接访问",
+	[Key.statsContent]: "内容统计",
+	[Key.statsLoading]: "加载中…",
+	[Key.statsNoData]: "暂无数据",
+	[Key.statsNotConfigured]: "尚未配置 Umami 分享 ID，访问数据暂不可用",
+
 	// 日历组件
 	[Key.calendarSunday]: "日",
 	[Key.calendarMonday]: "一",

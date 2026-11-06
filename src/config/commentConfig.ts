@@ -10,7 +10,7 @@ export const commentConfig: CommentConfig = {
 		// 设置 Twikoo 评论系统语言
 		lang: "zh-CN",
 		// 是否启用文章访问量统计功能
-		visitorCount: false,
+		visitorCount: true,
 		// 博主评论标签配置：匹配昵称的评论者将显示标签
 		masterTag: {
 			nickname: "ysdy", // 替换为你的评论昵称（昵称始终可见，推荐）

@@ -189,7 +189,9 @@ export const siteConfig: SiteConfig = {
 		// Umami 统计配置
 		umamiAnalytics: {
 			// Umami Website ID
-			websiteId: "",
+			websiteId: "0663a8f5-ca30-4fc3-844b-d4bbcf617904",
+			// Umami 分享 ID（Dashboard → Share URL 中的 token），供 /stats 统计页只读拉取公开数据
+			shareId: "99UuyUnNiHlFqy71",
 			// Umami JS地址，支持使用自建
 			scriptUrl: "https://cloud.umami.is/script.js",
 			// 是否追踪出站链接

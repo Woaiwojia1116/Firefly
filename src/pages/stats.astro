@@ -1,0 +1,520 @@
+---
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+import PageTitle from "@/components/layout/PageTitle.astro";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import { siteConfig } from "@/config";
+import {
+	getCategoryList,
+	getSortedPosts,
+	getTagList,
+} from "@/utils/content-utils";
+import { url } from "@/utils/url-utils";
+
+const umamiConfig = siteConfig.analytics?.umamiAnalytics;
+const shareId = umamiConfig?.shareId?.trim() || "";
+const scriptUrl = umamiConfig?.scriptUrl || "https://cloud.umami.is/script.js";
+const apiBase = new URL(scriptUrl, Astro.site?.origin ?? "https://cloud.umami.is").origin;
+
+// 统计起点：访问量从 2026-11-05 起累计（固定起点，重建站点不会清零）
+const countStartDate = "2026-11-05";
+const startAtMs = new Date(`${countStartDate}T00:00:00+08:00`).getTime();
+const runningDays = Math.max(
+	Math.floor((Date.now() - startAtMs) / 86400000),
+	1,
+);
+
+// 路径 → 标题映射，供客户端把 Umami 的 URL 数据翻译成文章标题
+const posts = await getSortedPosts();
+const titleMap: Record<string, string> = {};
+for (const post of posts) {
+	titleMap[url(`/posts/${post.id}/`)] = post.data.title;
+}
+
+// 内容统计（服务端渲染，不依赖 Umami）
+const categories = await getCategoryList();
+const tags = await getTagList();
+let totalWords = 0;
+for (const post of posts) {
+	if (!post.body) continue;
+	const text = post.body
+		.replace(/```[\s\S]*?```/g, "")
+		.replace(/`[^`]*`/g, "")
+		.replace(/\s+/g, " ")
+		.trim();
+	const chineseChars = text.match(/[\u4e00-\u9fa5]/g) || [];
+	const englishChars = text.match(/[a-zA-Z]/g) || [];
+	totalWords += chineseChars.length + englishChars.length;
+}
+
+const labels = JSON.stringify({
+	loading: i18n(I18nKey.statsLoading),
+	noData: i18n(I18nKey.statsNoData),
+	notConfigured: i18n(I18nKey.statsNotConfigured),
+	direct: i18n(I18nKey.statsDirect),
+});
+
+const contentLine = [
+	`${posts.length} ${i18n(I18nKey.siteStatsPostCount)}`,
+	`${categories.length} ${i18n(I18nKey.siteStatsCategoryCount)}`,
+	`${tags.length} ${i18n(I18nKey.siteStatsTagCount)}`,
+	`${totalWords.toLocaleString()} ${i18n(I18nKey.siteStatsTotalWords)}`,
+].join(" · ");
+---
+
+<MainGridLayout title={i18n(I18nKey.stats)} description={i18n(I18nKey.statsDescription)} hideSidebars>
+    <div class="ip ip-stats-page">
+        <PageTitle
+            eyebrow="Analytics"
+            title={i18n(I18nKey.stats)}
+            icon="material-symbols:insights"
+            desc={i18n(I18nKey.statsDescription)}
+            meta={[`SINCE ${countStartDate}`, `${runningDays}D`]}
+        />
+
+        <!-- 状态提示（未配置 / 加载失败时显示） -->
+        <p id="stats-notice" class="ip-stat-notice" hidden>
+            <span id="stats-notice-text"></span>
+        </p>
+
+        <div
+            id="stats-page"
+            data-api-base={apiBase}
+            data-share-id={shareId}
+            data-start-at={startAtMs}
+            data-days={runningDays}
+            data-title-map={JSON.stringify(titleMap)}
+            data-labels={labels}
+        >
+            <div class="card-base ip-stats-sheet px-6 py-6 md:px-10 md:py-9">
+                <!-- 核心数字 -->
+                <section>
+                    <p class="ip-eyebrow">Overview</p>
+                    <div class="ip-stats-grid">
+                        <div class="ip-stat">
+                            <span class="ip-stat__num" id="stats-pv">--</span>
+                            <span class="ip-stat__label">{i18n(I18nKey.statsPageviews)}</span>
+                        </div>
+                        <div class="ip-stat">
+                            <span class="ip-stat__num" id="stats-uv">--</span>
+                            <span class="ip-stat__label">{i18n(I18nKey.statsVisitors)}</span>
+                        </div>
+                        <div class="ip-stat">
+                            <span class="ip-stat__num" id="stats-visits">--</span>
+                            <span class="ip-stat__label">{i18n(I18nKey.statsVisits)}</span>
+                        </div>
+                        <div class="ip-stat">
+                            <span class="ip-stat__num" id="stats-avg">--</span>
+                            <span class="ip-stat__label">{i18n(I18nKey.statsDailyAvg)}</span>
+                        </div>
+                    </div>
+                </section>
+
+                <hr class="ip-rule" />
+
+                <!-- 近 30 天趋势 -->
+                <section>
+                    <p class="ip-eyebrow">Trend · 30D</p>
+                    <div id="stats-trend" class="ip-stats-trend">
+                        <p class="ip-stat-empty">{i18n(I18nKey.statsLoading)}</p>
+                    </div>
+                    <p class="ip-stats-range" id="stats-trend-range" hidden>
+                        <span id="stats-trend-start"></span>
+                        <span class="ip-sep"> → </span>
+                        <span id="stats-trend-end"></span>
+                    </p>
+                </section>
+
+                <hr class="ip-rule" />
+
+                <!-- 热门文章 -->
+                <section>
+                    <p class="ip-eyebrow">Top Posts</p>
+                    <ol id="stats-top-posts" class="ip-stat-rows">
+                        <li class="ip-stat-empty">{i18n(I18nKey.statsLoading)}</li>
+                    </ol>
+                </section>
+
+                <hr class="ip-rule" />
+
+                <!-- 来路来源 -->
+                <section>
+                    <p class="ip-eyebrow">Referrers</p>
+                    <ul id="stats-referrers" class="ip-stat-rows">
+                        <li class="ip-stat-empty">{i18n(I18nKey.statsLoading)}</li>
+                    </ul>
+                </section>
+
+                <hr class="ip-rule" />
+
+                <!-- 内容统计 -->
+                <section>
+                    <p class="ip-eyebrow">Content</p>
+                    <p class="ip-meta">{contentLine}</p>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <style is:global>
+        /* ── 统计页：内页设计系统（纸面 + 细线 + 等宽眉标）────────────
+           栏宽与搜索页一致（46rem），行语言与归档 / 搜索结果对齐。
+           样式必须全局：排行行由客户端脚本生成，拿不到 scoped 标记。 */
+        .ip-stats-page {
+            width: 100% !important;
+            max-width: 46rem;
+            margin-inline: auto;
+        }
+
+        /* 核心数字：细线分栏，墨色数字 + 等宽大写小标签 */
+        .ip-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .ip-stat {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            padding: 0.15rem 1.1rem;
+            border-left: 1px solid var(--ip-line);
+        }
+
+        .ip-stat:first-child {
+            border-left: 0;
+            padding-left: 0.1rem;
+        }
+
+        .ip-stat__num {
+            font-size: clamp(1.55rem, 3vw, 2.05rem);
+            font-weight: 600;
+            line-height: 1.15;
+            letter-spacing: 0.01em;
+            color: var(--ip-ink);
+        }
+
+        .ip-stat__label {
+            font-family: var(--ip-mono);
+            font-size: 0.68rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--ip-ink-faint);
+        }
+
+        @media (max-width: 640px) {
+            .ip-stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                row-gap: 1.15rem;
+            }
+
+            .ip-stat:nth-child(3) {
+                border-left: 0;
+                padding-left: 0.1rem;
+            }
+        }
+
+        /* 趋势图：暖色细柱 + 基线细线 + 等宽日期范围 */
+        .ip-stats-trend svg {
+            display: block;
+            width: 100%;
+            height: 8.5rem;
+            border-bottom: 1px solid var(--ip-line);
+        }
+
+        .ip-stats-range {
+            margin: 0.65rem 0 0;
+            font-family: var(--ip-mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.12em;
+            color: var(--ip-ink-faint);
+        }
+
+        /* 排行行：编号 → 标题 → 计数，细线分隔，与搜索结果同一语汇 */
+        .ip-stat-rows {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .ip-stat-row {
+            display: grid;
+            grid-template-columns: 2.2rem minmax(0, 1fr) auto;
+            align-items: baseline;
+            gap: 0.8rem;
+            padding: 0.72rem 0.1rem;
+            border-bottom: 1px solid var(--ip-line-soft);
+        }
+
+        .ip-stat-rows > .ip-stat-row:last-child {
+            border-bottom: 0;
+        }
+
+        .ip-stat-row__idx {
+            font-family: var(--ip-mono);
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            color: var(--ip-ink-faint);
+        }
+
+        .ip-stat-row__title {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--ip-ink);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: color 0.25s ease;
+        }
+
+        a.ip-stat-row__title:hover {
+            color: var(--ip-warm);
+        }
+
+        .ip-stat-row__count {
+            font-family: var(--ip-mono);
+            font-size: 0.74rem;
+            letter-spacing: 0.06em;
+            color: var(--ip-ink-soft);
+        }
+
+        .ip-stat-empty {
+            margin: 0.35rem 0 0.25rem;
+            font-family: var(--ip-mono);
+            font-size: 0.74rem;
+            letter-spacing: 0.1em;
+            color: var(--ip-ink-faint);
+        }
+
+        /* 未配置 / 失败提示：细虚线框 + 等宽小字 */
+        .ip-stat-notice {
+            margin: 0 0 1.2rem;
+            padding: 0.6rem 0.95rem;
+            border: 1px dashed var(--ip-line);
+            border-radius: var(--ip-radius-sm);
+            font-family: var(--ip-mono);
+            font-size: 0.74rem;
+            letter-spacing: 0.05em;
+            color: var(--ip-ink-soft);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .ip-stat-row__title {
+                transition: none;
+            }
+        }
+    </style>
+
+    <script>
+        import {
+            fetchMetrics,
+            fetchSummary,
+            fetchTimeseries,
+            type UmamiPoint,
+            type UmamiShareConfig,
+            type UmamiSummary,
+        } from "@/utils/umami";
+
+        // Swup 切页会触发多次 astro:page-load，用 WeakSet 防止重复初始化
+        const seen = new WeakSet<HTMLElement>();
+
+        function fmt(n: number): string {
+            return n.toLocaleString();
+        }
+
+        function escapeHtml(s: string): string {
+            return s
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;");
+        }
+
+        function showNotice(root: HTMLElement, text: string) {
+            const notice = document.getElementById("stats-notice");
+            const noticeText = document.getElementById("stats-notice-text");
+            if (notice && noticeText) {
+                noticeText.textContent = text;
+                notice.hidden = false;
+            }
+            // 区块内的加载占位全部置为「暂无数据」
+            const labels = JSON.parse(root.dataset.labels || "{}");
+            const empty = `<p class="ip-stat-empty">${escapeHtml(labels.noData || "--")}</p>`;
+            const trend = document.getElementById("stats-trend");
+            if (trend) trend.innerHTML = empty;
+            ["stats-top-posts", "stats-referrers"].forEach((id) => {
+                const list = document.getElementById(id);
+                if (list) list.innerHTML = `<li class="ip-stat-empty">${escapeHtml(labels.noData || "--")}</li>`;
+            });
+        }
+
+        function renderOverview(summary: UmamiSummary, days: number) {
+            const set = (id: string, value: string) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = value;
+            };
+            set("stats-pv", fmt(summary.pageviews));
+            set("stats-uv", fmt(summary.visitors));
+            set("stats-visits", fmt(summary.visits));
+            // 站点运行较久而数据较新时日均会小于 1，保留一位小数避免显示成 0
+            const avg = summary.pageviews / Math.max(days, 1);
+            set("stats-avg", avg >= 10 ? fmt(Math.round(avg)) : avg.toFixed(1));
+        }
+
+        function renderTrend(series: UmamiPoint[]) {
+            const container = document.getElementById("stats-trend");
+            const range = document.getElementById("stats-trend-range");
+            if (!container) return;
+
+            // Umami 只返回有数据的日子，补齐完整的 30 天序列，缺数据的天填 0，
+            // 否则只有一个点时柱宽会撑满整张图
+            const byDate = new Map(series.map((p) => [p.x.slice(0, 10), p.y]));
+            const now = Date.now();
+            const days: UmamiPoint[] = [];
+            for (let i = 29; i >= 0; i--) {
+                const key = new Date(now - i * 86400000).toISOString().slice(0, 10);
+                days.push({ x: key, y: byDate.get(key) ?? 0 });
+            }
+
+            const W = 600;
+            const H = 140;
+            const max = Math.max(...days.map((p) => p.y), 1);
+            const bw = W / days.length;
+            const bars = days
+                .map((p, i) => {
+                    const h = Math.max((p.y / max) * (H - 16), p.y > 0 ? 3 : 2);
+                    const x = i * bw + bw * 0.2;
+                    const y = H - h;
+                    const opacity = p.y > 0 ? 0.9 : 0.3;
+                    const label = `${p.x} · ${p.y}`;
+                    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(bw * 0.6).toFixed(1)}" height="${h.toFixed(1)}" rx="1.5" fill="var(--ip-warm)" opacity="${opacity}"><title>${escapeHtml(label)}</title></rect>`;
+                })
+                .join("");
+
+            container.innerHTML =
+                `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="pageviews trend">${bars}</svg>`;
+
+            if (range) {
+                range.hidden = false;
+                const startEl = document.getElementById("stats-trend-start");
+                const endEl = document.getElementById("stats-trend-end");
+                if (startEl) startEl.textContent = days[0].x;
+                if (endEl) endEl.textContent = days[days.length - 1].x;
+            }
+        }
+
+        function renderTopPosts(rows: UmamiPoint[], titleMap: Record<string, string>) {
+            const list = document.getElementById("stats-top-posts");
+            if (!list) return;
+
+            // Umami 返回的路径可能带百分号编码（中文 slug），解码后再匹配标题
+            const safeDecode = (s: string) => {
+                try {
+                    return decodeURIComponent(s);
+                } catch {
+                    return s;
+                }
+            };
+
+            const items = rows
+                .filter((row) => titleMap[safeDecode(row.x)] || titleMap[row.x])
+                .slice(0, 10)
+                .map((row, i) => {
+                    const title = escapeHtml(titleMap[safeDecode(row.x)] || titleMap[row.x] || row.x);
+                    const href = escapeHtml(row.x);
+                    const idx = String(i + 1).padStart(2, "0");
+                    return (
+                        `<li class="ip-stat-row">` +
+                        `<span class="ip-stat-row__idx">${idx}</span>` +
+                        `<a href="${href}" class="ip-stat-row__title">${title}</a>` +
+                        `<span class="ip-stat-row__count">${fmt(row.y)}</span>` +
+                        `</li>`
+                    );
+                });
+
+            list.innerHTML = items.length
+                ? items.join("")
+                : `<li class="ip-stat-empty">—</li>`;
+        }
+
+        function renderReferrers(rows: UmamiPoint[], directLabel: string) {
+            const list = document.getElementById("stats-referrers");
+            if (!list) return;
+
+            const items = rows.slice(0, 5).map((row, i) => {
+                const name = row.x ? escapeHtml(row.x) : escapeHtml(directLabel);
+                const idx = String(i + 1).padStart(2, "0");
+                return (
+                    `<li class="ip-stat-row">` +
+                    `<span class="ip-stat-row__idx">${idx}</span>` +
+                    `<span class="ip-stat-row__title">${name}</span>` +
+                    `<span class="ip-stat-row__count">${fmt(row.y)}</span>` +
+                    `</li>`
+                );
+            });
+
+            list.innerHTML = items.length
+                ? items.join("")
+                : `<li class="ip-stat-empty">—</li>`;
+        }
+
+        async function initStatsPage(root: HTMLElement) {
+            if (seen.has(root)) return;
+            seen.add(root);
+
+            const labels = JSON.parse(root.dataset.labels || "{}") as Record<string, string>;
+            const shareId = root.dataset.shareId || "";
+
+            if (!shareId) {
+                showNotice(root, labels.notConfigured || "");
+                return;
+            }
+
+            const cfg: UmamiShareConfig = {
+                apiBase: root.dataset.apiBase || "",
+                shareId,
+            };
+            const startAt = Number(root.dataset.startAt) || 0;
+            const days = Number(root.dataset.days) || 1;
+            const now = Date.now();
+            const monthAgo = now - 30 * 86400000;
+
+            const [summaryRes, seriesRes, urlsRes, refsRes] = await Promise.allSettled([
+                fetchSummary(cfg, startAt, now),
+                fetchTimeseries(cfg, monthAgo, now, "day"),
+                fetchMetrics(cfg, "path", startAt, now, 30),
+                fetchMetrics(cfg, "referrer", startAt, now, 5),
+            ]);
+
+            if (summaryRes.status === "rejected" && seriesRes.status === "rejected") {
+                showNotice(root, labels.noData || "");
+                return;
+            }
+
+            if (summaryRes.status === "fulfilled") {
+                renderOverview(summaryRes.value, days);
+            }
+            if (seriesRes.status === "fulfilled") {
+                renderTrend(seriesRes.value);
+            }
+            if (urlsRes.status === "fulfilled") {
+                const titleMap = JSON.parse(root.dataset.titleMap || "{}") as Record<string, string>;
+                renderTopPosts(urlsRes.value, titleMap);
+            }
+            if (refsRes.status === "fulfilled") {
+                renderReferrers(refsRes.value, labels.direct || "");
+            }
+        }
+
+        function run() {
+            const root = document.getElementById("stats-page");
+            if (root instanceof HTMLElement) initStatsPage(root);
+        }
+
+        document.addEventListener("astro:page-load", run);
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", run, { once: true });
+        } else {
+            run();
+        }
+    </script>
+</MainGridLayout>

@@ -278,6 +278,22 @@ export const zh_TW: Translation = {
 	[Key.siteStatsDays]: "{days} 天",
 	[Key.today]: "今天",
 
+	// 訪問統計頁面
+	[Key.stats]: "訪問統計",
+	[Key.statsDescription]: "記錄每一位到訪者的足跡 · 資料來自 Umami",
+	[Key.statsPageviews]: "瀏覽量",
+	[Key.statsVisitors]: "獨立訪客",
+	[Key.statsVisits]: "訪問次數",
+	[Key.statsDailyAvg]: "日均瀏覽",
+	[Key.statsTrend]: "近 30 天瀏覽趨勢",
+	[Key.statsTopPosts]: "熱門文章",
+	[Key.statsTopReferrers]: "來源",
+	[Key.statsDirect]: "直接訪問",
+	[Key.statsContent]: "內容統計",
+	[Key.statsLoading]: "載入中…",
+	[Key.statsNoData]: "暫無資料",
+	[Key.statsNotConfigured]: "尚未設定 Umami 分享 ID，訪問資料暫不可用",
+
 	// 日曆組件
 	[Key.calendarSunday]: "日",
 	[Key.calendarMonday]: "一",

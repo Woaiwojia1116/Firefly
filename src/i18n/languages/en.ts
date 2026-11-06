@@ -285,6 +285,22 @@ export const en: Translation = {
 	[Key.siteStatsDays]: "{days} days",
 	[Key.today]: "Today",
 
+	// Visitor stats page
+	[Key.stats]: "Visitor Stats",
+	[Key.statsDescription]: "Tracking every visit · Powered by Umami",
+	[Key.statsPageviews]: "Pageviews",
+	[Key.statsVisitors]: "Visitors",
+	[Key.statsVisits]: "Visits",
+	[Key.statsDailyAvg]: "Daily Average",
+	[Key.statsTrend]: "Pageviews · Last 30 Days",
+	[Key.statsTopPosts]: "Top Posts",
+	[Key.statsTopReferrers]: "Referrers",
+	[Key.statsDirect]: "Direct",
+	[Key.statsContent]: "Content",
+	[Key.statsLoading]: "Loading…",
+	[Key.statsNoData]: "No data yet",
+	[Key.statsNotConfigured]: "Umami share ID is not configured, visitor stats unavailable",
+
 	// Calendar Component
 	[Key.calendarSunday]: "Sun",
 	[Key.calendarMonday]: "Mon",

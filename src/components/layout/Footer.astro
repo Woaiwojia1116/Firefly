@@ -2,6 +2,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { footerConfig, profileConfig, siteConfig } from "@/config";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
 import { url } from "@/utils/url-utils";
 
 const currentYear = new Date().getFullYear();
@@ -84,7 +86,8 @@ const timezone = siteConfig.timezone || "Asia/Shanghai";
       &copy; <span id="copyright-year">{currentYear}</span>
       {profileConfig.name}. All Rights Reserved. /
       <a class="transition link text-(--primary) font-medium" target="_blank" href={url("rss.xml")}>RSS</a> /
-      <a class="transition link text-(--primary) font-medium" target="_blank" href={url("sitemap-index.xml")}>Sitemap</a>
+      <a class="transition link text-(--primary) font-medium" target="_blank" href={url("sitemap-index.xml")}>Sitemap</a> /
+      <a class="transition link text-(--primary) font-medium" href={url("stats/")}>{i18n(I18nKey.stats)}</a>
     </div>
     <div class="m-0.5">
       Powered by

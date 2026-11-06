@@ -286,6 +286,22 @@ export const ru: Translation = {
 	[Key.siteStatsDays]: "{days} дней",
 	[Key.today]: "Сегодня",
 
+	// Страница статистики посещений
+	[Key.stats]: "Статистика посещений",
+	[Key.statsDescription]: "Учёт каждого визита · Powered by Umami",
+	[Key.statsPageviews]: "Просмотры",
+	[Key.statsVisitors]: "Посетители",
+	[Key.statsVisits]: "Визиты",
+	[Key.statsDailyAvg]: "В среднем за день",
+	[Key.statsTrend]: "Просмотры за 30 дней",
+	[Key.statsTopPosts]: "Популярные записи",
+	[Key.statsTopReferrers]: "Источники",
+	[Key.statsDirect]: "Напрямую",
+	[Key.statsContent]: "Контент",
+	[Key.statsLoading]: "Загрузка…",
+	[Key.statsNoData]: "Пока нет данных",
+	[Key.statsNotConfigured]: "Umami share ID не настроен, статистика посещений недоступна",
+
 	// Компонент календаря
 	[Key.calendarSunday]: "Вс",
 	[Key.calendarMonday]: "Пн",

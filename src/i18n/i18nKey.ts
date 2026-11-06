@@ -275,6 +275,22 @@ enum I18nKey {
 	siteStatsDays = "siteStatsDays",
 	today = "today",
 
+	// 访问统计页面
+	stats = "stats",
+	statsDescription = "statsDescription",
+	statsPageviews = "statsPageviews",
+	statsVisitors = "statsVisitors",
+	statsVisits = "statsVisits",
+	statsDailyAvg = "statsDailyAvg",
+	statsTrend = "statsTrend",
+	statsTopPosts = "statsTopPosts",
+	statsTopReferrers = "statsTopReferrers",
+	statsDirect = "statsDirect",
+	statsContent = "statsContent",
+	statsLoading = "statsLoading",
+	statsNoData = "statsNoData",
+	statsNotConfigured = "statsNotConfigured",
+
 	// 日历组件
 	calendarSunday = "calendarSunday",
 	calendarMonday = "calendarMonday",

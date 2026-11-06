@@ -139,9 +139,12 @@ html.is-animating .transition-swup-fade {
    5. Navigation Progress Bar
    -------------------------------------------------------------------------- */
 
+/* 与全站内页设计系统同一套语汇：暖调细线，从透明淡入，不用主题色的霓虹光条。
+   --ip-warm 在夜色皮肤 / 暗色主题下会自动变成 #e6a173，无需另写分支。 */
 #progress-bar {
-    --progress-height: 3px;
+    --progress-height: 2px;
     --progress-duration: 8s;
+    --progress-ink: var(--ip-warm);
 
     position: fixed;
     top: 0;
@@ -150,9 +153,17 @@ html.is-animating .transition-swup-fade {
     height: var(--progress-height);
     z-index: 9999;
     pointer-events: none;
-    background: var(--primary);
-    box-shadow: 0 0 8px color-mix(in oklch, var(--primary) 60%, transparent);
+    border-radius: 0 1px 1px 0;
+    /* 起点 24px 渐隐，像一笔从暗处拉出的细线 */
+    background: linear-gradient(
+        90deg,
+        transparent 0,
+        var(--progress-ink) 24px,
+        var(--progress-ink) 100%
+    );
+    box-shadow: 0 1px 6px color-mix(in oklch, var(--progress-ink) 18%, transparent);
     opacity: 0;
+    transition: opacity 180ms ease-out;
 }
 
 @keyframes progress-loading {

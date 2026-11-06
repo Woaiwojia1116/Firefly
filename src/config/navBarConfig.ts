@@ -46,6 +46,13 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 				url: "/tech/",
 				icon: "material-symbols:terminal",
 			},
+
+			// 访问统计页面
+			{
+				name: "访问统计",
+				url: "/stats/",
+				icon: "material-symbols:insights",
+			},
 		],
 	});
 
